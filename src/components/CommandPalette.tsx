@@ -437,9 +437,7 @@ export const CommandPalette = ({
 	const handleSelect = (item: SearchItem): void => {
 		report("click", item);
 		onOpenChange(false);
-		if (item.action === "talk-to-sales") {
-			window.dispatchEvent(new Event("open-talk-to-sales"));
-		} else if (item.external) {
+		if (item.external) {
 			window.open(item.href, "_blank", "noopener");
 		} else {
 			navigate(item.href);

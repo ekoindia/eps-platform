@@ -94,7 +94,6 @@ export const Header = () => {
 	const [activeMobileAccordion, setActiveMobileAccordion] =
 		useState<DropdownKey | null>(null);
 	// const [getStartedOpen, setGetStartedOpen] = useState(false);
-	const [talkToSalesOpen, setTalkToSalesOpen] = useState(false);
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchTrigger, setSearchTrigger] =
 		useState<PaletteTrigger>("keyboard");
@@ -296,17 +295,6 @@ export const Header = () => {
 			const timer = setTimeout(load, 200);
 			return () => clearTimeout(timer);
 		}
-	}, []);
-
-	useEffect(() => {
-		// const openDialog = () => setGetStartedOpen(true);
-		const openSales = () => setTalkToSalesOpen(true);
-		// window.addEventListener("open-get-started", openDialog);
-		window.addEventListener("open-talk-to-sales", openSales);
-		return () => {
-			// window.removeEventListener("open-get-started", openDialog);
-			window.removeEventListener("open-talk-to-sales", openSales);
-		};
 	}, []);
 
 	// Trigger enter handlers — these only swap between already-open panels; they never
@@ -573,9 +561,7 @@ export const Header = () => {
 						setActiveMobileAccordion={setActiveMobileAccordion}
 						mobileMenuOpen={mobileMenuOpen}
 						isScrolled={isScrolled}
-						talkToSalesOpen={talkToSalesOpen}
 						setMobileMenuOpen={setMobileMenuOpen}
-						setTalkToSalesOpen={setTalkToSalesOpen}
 						panelHoverHandlers={panelHoverHandlers}
 					/>
 				</Suspense>
