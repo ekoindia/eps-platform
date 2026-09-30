@@ -28,9 +28,7 @@ function renderPanel(state: AuthState) {
 				setActiveMobileAccordion={vi.fn()}
 				mobileMenuOpen={false}
 				isScrolled={false}
-				talkToSalesOpen={false}
 				setMobileMenuOpen={vi.fn()}
-				setTalkToSalesOpen={vi.fn()}
 				panelHoverHandlers={{ onMouseEnter: vi.fn(), onMouseLeave: vi.fn() }}
 			/>
 		</MemoryRouter>,

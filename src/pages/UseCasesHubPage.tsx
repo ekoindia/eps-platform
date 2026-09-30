@@ -221,19 +221,10 @@ const UseCasesHubPage = () => {
 								Ready to get started?
 							</h2>
 							<p className="text-muted-foreground text-lg mb-8">
-								Talk to our solutions team or explore the APIs directly.
+								Explore the APIs and start building in the sandbox.
 							</p>
 							<div className="flex flex-wrap justify-center gap-4">
-								<Button
-									variant="gold"
-									size="lg"
-									onClick={() =>
-										window.dispatchEvent(new Event("open-talk-to-sales"))
-									}
-								>
-									Talk to Our Solutions Team
-								</Button>
-								<Button variant="outline" size="lg" asChild>
+								<Button variant="gold" size="lg" asChild>
 									<a href="/docs">
 										Explore APIs <ArrowRight className="w-4 h-4" />
 									</a>

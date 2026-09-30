@@ -46,7 +46,7 @@ Data-driven pages are generated from these — edit data here, not page componen
 
 | File | Configures | Edit when |
 |------|-----------|-----------|
-| [`src/lib/data/api-products.ts`](../src/lib/data/api-products.ts) | Product registry: id, name, slug, href, category, `shortDesc`, `disabled` flag | Add/remove/hide a product |
+| [`src/lib/data/api-products.ts`](../src/lib/data/api-products.ts) | Product registry: id, name, slug, href, category, `shortDesc`, `disabled` flag (hides the product everywhere, including its recipes, `/security` bullets and cross-product `next` links; no manual cleanup) | Add/remove/hide a product |
 | [`src/lib/data/api-product-pages.ts`](../src/lib/data/api-product-pages.ts) | Per-product **marketing/content**: hero, overview, features, benefits, use cases, who-should-use, integration steps, FAQs, SEO. **No technical API data** (that lives in the spec layer below) | Change product-page copy |
 | [`src/lib/data/industries.ts`](../src/lib/data/industries.ts) | Industry pages: challenges, packs, use-case scenarios, FAQs | Add/edit an industry |
 | [`src/lib/data/solutions.ts`](../src/lib/data/solutions.ts) | Solution packs: bundled APIs, workflow, comparisons, FAQs | Add/edit a solution pack |

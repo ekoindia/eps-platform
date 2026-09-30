@@ -38,6 +38,7 @@ const SolutionsPage = lazy(() => import("./pages/SolutionsPage"));
 const UseCasesHubPage = lazy(() => import("./pages/UseCasesHubPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const FaqPage = lazy(() => import("./pages/FaqPage"));
+const SecurityPage = lazy(() => import("./pages/SecurityPage"));
 const AiPage = lazy(() => import("./pages/AiPage"));
 const AgentsPage = lazy(() => import("./pages/AgentsPage"));
 const DocsIndexPage = lazy(() => import("./pages/docs/DocsIndexPage"));
@@ -141,6 +142,7 @@ const App = ({
 
 									{/* FAQ */}
 									<Route path="/faq" element={<FaqPage />} />
+									<Route path="/security" element={<SecurityPage />} />
 
 									{/* AI Agents */}
 									<Route path="/ai" element={<AiPage />} />

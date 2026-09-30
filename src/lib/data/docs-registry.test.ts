@@ -16,6 +16,7 @@ import {
 	type NavLeaf,
 	type NavNode,
 	RESERVED_SLUGS,
+	withoutLinksInto,
 } from "@/lib/data/docs-registry";
 import { API_SPECS } from "@/lib/data/api-specs";
 import { GUIDES } from "@/content/docs/docs-guides";
@@ -362,5 +363,18 @@ describe("nextEndpointInGroup", () => {
 					.length === 1,
 		);
 		if (lonely) expect(nextEndpointInGroup(lonely)).toBeUndefined();
+	});
+});
+
+describe("withoutLinksInto", () => {
+	it("drops next-links into a hidden product, keeps the rest", () => {
+		const spec = API_SPECS.find((s) => (s.responseTypes ?? []).some((rt) => rt.next))!;
+		const target = spec.responseTypes!.find((rt) => rt.next)!.next!;
+		const stripped = withoutLinksInto(spec, new Set([target]));
+		expect(stripped.responseTypes!.some((rt) => rt.next === target)).toBe(false);
+		expect(stripped.responseTypes!.map((rt) => rt.id)).toEqual(
+			spec.responseTypes!.map((rt) => rt.id),
+		);
+		expect(withoutLinksInto(spec, new Set())).toBe(spec);
 	});
 });

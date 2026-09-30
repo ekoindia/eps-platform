@@ -50,8 +50,6 @@ export interface SearchItem {
 	href: string;
 	/** Opens in a new tab instead of SPA navigation */
 	external?: boolean;
-	/** Special action instead of navigation */
-	action?: "talk-to-sales";
 	category: SearchCategory;
 	/** Extra terms fed to cmdk's fuzzy filter via the CommandItem `keywords` prop */
 	keywords: string[];
@@ -313,6 +311,28 @@ const PAGE_ITEMS: Omit<SearchItem, "typeWeight">[] = [
 		suggested: true,
 	},
 	{
+		id: "page:security",
+		label: "Security & Data Protection",
+		sublabel: "Data residency, Aadhaar handling, audits, API & transaction security",
+		href: "/security",
+		category: "page",
+		keywords: [
+			"security",
+			"data residency",
+			"data localisation",
+			"compliance",
+			"iso 27001",
+			"aadhaar",
+			"biometric",
+			"encryption",
+			"tls",
+			"ip whitelisting",
+			"audit",
+			"azure",
+		],
+		icon: ShieldCheck,
+	},
+	{
 		id: "page:ai",
 		label: "EPS for AI agents",
 		sublabel: "Context packs, MCP server, machine bundle",
@@ -394,17 +414,6 @@ const PAGE_ITEMS: Omit<SearchItem, "typeWeight">[] = [
 		icon: BookOpen,
 		suggested: true,
 	},
-	// {
-	//   id: "page:talk-to-sales",
-	//   label: "Talk to Sales",
-	//   sublabel: "Get pricing & a guided demo",
-	//   href: "#",
-	//   action: "talk-to-sales",
-	//   category: "page",
-	//   keywords: ["contact", "sales", "pricing", "demo", "support"],
-	//   icon: MessageCircle,
-	//   suggested: true,
-	// },
 	{
 		id: "page:about-us",
 		label: "About Us",

@@ -50,6 +50,7 @@ import PricingPage from "./pages/PricingPage";
 
 // FAQ
 import FaqPage from "./pages/FaqPage";
+import SecurityPage from "./pages/SecurityPage";
 
 // AI Agents
 import AiPage from "./pages/AiPage";
@@ -131,6 +132,7 @@ const AppServer = ({
 
 									{/* FAQ */}
 									<Route path="/faq" element={<FaqPage />} />
+									<Route path="/security" element={<SecurityPage />} />
 
 									{/* AI Agents */}
 									<Route path="/ai" element={<AiPage />} />

@@ -1,24 +1,23 @@
 import { ApiChip } from "@/components/ApiChip";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
+import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { GetStartedButton } from "@/components/GetStartedButton";
 import { IndustryCard } from "@/components/IndustryCard";
 import { MiniToc } from "@/components/MiniToc";
+import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { FaqSection } from "@/components/sections/FaqSection";
-import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
 import { TrustStrip } from "@/components/sections/TrustStrip";
-import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { SolutionCard } from "@/components/SolutionCard";
 import { Button } from "@/components/ui/button";
+import { docsHref } from "@/lib/data/docs-registry";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
 import { SOLUTIONS_MAP, resolvePackApi } from "@/lib/data/solutions";
 import { ArrowRight } from "lucide-react";
-import { docsHref } from "@/lib/data/docs-registry";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FadeIn } from "@/components/FadeIn";
 
 interface SolutionPageLayoutProps {
 	data: SolutionData;
@@ -330,7 +329,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
 				)}
 
 				{/* Bottom CTA */}
-				<LeadFormCTASection />
+				{/* <LeadFormCTASection /> */}
 			</main>
 			<MiniToc maxLevel={2} />
 			<Footer />

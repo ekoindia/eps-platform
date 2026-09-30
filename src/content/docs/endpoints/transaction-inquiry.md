@@ -15,8 +15,8 @@ look up by your **`client_ref_id`, prefix it** with `client_ref_id:`:
 > `/tools/reference/transaction/2886601782`.
 >
 > If you never received Eko's TID (say, due to a network timeout) but sent your
-> own unique reference `567890`, look it up with
-> `/tools/reference/transaction/client_ref_id:567890`.
+> own unique reference `ORD2026000123`, look it up with
+> `/tools/reference/transaction/client_ref_id:ORD2026000123`.
 
 > [!WARNING]
 > **Transaction timeout**

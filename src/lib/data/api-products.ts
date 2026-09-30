@@ -10,7 +10,11 @@ export interface ApiProductRef {
 	slug: string;
 	category: ApiProductCategory;
 	shortDesc: string;
-	/** When true, the product page is completely hidden from the website */
+	/**
+	 * When true, the product is hidden everywhere: product page, its specs' docs,
+	 * its recipes (`RECIPES`), its `/security` bullets and FAQ mentions, and
+	 * other products' response-type `next` links into it. No manual cleanup needed.
+	 */
 	disabled?: boolean;
 }
 

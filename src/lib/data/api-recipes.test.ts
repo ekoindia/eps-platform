@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	activeRecipes,
+	ALL_RECIPES,
 	assertRecipeSlugs,
 	branchCondition,
 	RECIPES,
@@ -11,6 +13,14 @@ import {
 import { API_SPECS } from "@/lib/data/api-specs";
 
 describe("api-recipes", () => {
+	it("drops recipes of disabled products, keeps product-less ones", () => {
+		const withoutDmt = activeRecipes(ALL_RECIPES, (id) => id !== "dmt");
+		expect(withoutDmt.some((r) => r.productId === "dmt")).toBe(false);
+		expect(withoutDmt.some((r) => r.productId === "aeps")).toBe(true);
+		const productless = { ...ALL_RECIPES[0], productId: undefined };
+		expect(activeRecipes([productless], () => false)).toEqual([productless]);
+	});
+
 	it("ships at least the two exemplar recipes", () => {
 		const ids = RECIPES.map((r) => r.id);
 		expect(ids).toContain("dmt-fino-send-money");

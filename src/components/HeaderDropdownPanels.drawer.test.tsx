@@ -32,9 +32,7 @@ function renderDrawer(state: AuthState) {
 				setActiveMobileAccordion={vi.fn()}
 				mobileMenuOpen
 				isScrolled={false}
-				talkToSalesOpen={false}
 				setMobileMenuOpen={setMobileMenuOpen}
-				setTalkToSalesOpen={vi.fn()}
 				panelHoverHandlers={{ onMouseEnter: vi.fn(), onMouseLeave: vi.fn() }}
 			/>
 		</MemoryRouter>,

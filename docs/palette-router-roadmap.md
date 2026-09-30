@@ -20,7 +20,7 @@ status updates the board and appends to the progress log in the same commit.
 | 0 | Palette telemetry: GTM counts + redacted query log in SQLite, admin Search logs page | ✅ **Live in prod**, verified 2026-09-28 | — |
 | 0b | Baseline data collection (2–4 weeks at sample rate 1) | ⏳ **Running since 2026-09-28** — first review ~2026-10-12, eval-set cut ~2026-10-26 | — |
 | 1a | Rules + MiniSearch **action cards** (zero-MB comparator) | ✅ All 4 intents built 2026-09-28; flag **on in prod** since PR #131 | 2026-09-28 |
-| 1a+ | Query audit: 164 synthetic labelled queries (`scripts/palette-eval/audit.jsonl`), misses fixed | ✅ 2026-09-28 — held-out test at the gate (intent 0.89, refusal 0.91, precision 0.90); deployed 2026-09-29 (PR #134), `bodyIndexLoaded: true` confirmed in prod | 2026-09-29 |
+| 1a+ | Query audit: 164 synthetic labelled queries (`scripts/palette-eval/audit.jsonl`), misses fixed | ✅ 2026-09-28 — held-out test at the gate (intent 0.89, refusal 0.91, precision 0.90); deployed 2026-09-29 (PR #134), `bodyIndexLoaded: true` confirmed in prod; 4 dev misses fixed, deployed 2026-09-29 (PR #135) | 2026-09-29 |
 | 1b | Needle spike: JS API, browser cost, base-model sanity | ⬜ Not started | — |
 | 1c | Eval set + gate run (comparator vs Needle, end to end) | ⬜ Needs 0b data | — |
 | 2 | Needle build behind `VITE_SHOW_NEEDLE` | ⬜ Only if Needle clearly beats 1a at the gate | — |
@@ -253,6 +253,15 @@ signup started/completed, chat availability equal across arms.
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-29** — PR #135 merged to `main` at 09:41 IST (released by the
+  prod poller a few minutes later): **deploy date for before/after
+  comparison.** Ships the 4 dev-miss fixes (no card on body-only or
+  non-API best hits, IFSC "Fetch" summary, `api docs` alias), the
+  "Full-text index loaded" admin card (needs the eps-backend release), and
+  "payments" not "payouts" in verification copy. Browser-verified on the
+  dev server before merge. Next: confirm the admin card in prod, then the
+  Phase 1b spike or the ~2026-10-12 review.
 
 - **2026-09-29** — Query-audit fixes (full-text index `constructor` fix,
   strict card search, rule and content fixes) merged to `main` in PR #134

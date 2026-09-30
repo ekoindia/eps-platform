@@ -12,7 +12,6 @@ import { PricingTable } from "@/components/pricing/PricingTable";
 import { PricingTabs } from "@/components/pricing/PricingTabs";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { FaqSection } from "@/components/sections/FaqSection";
-import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
 import { SITE_URL } from "@/lib/config/site";
 import {
@@ -222,11 +221,11 @@ const PricingPage = () => {
 					<FaqSection faqs={ALL_FAQS} variant="default" />
 
 					{/* Bottom CTA */}
-					<LeadFormCTASection
+					{/* <LeadFormCTASection
 						heading="Start building today"
 						formTitle="Get API Access"
 						description="Sign up now, test in the free sandbox, and go live in days — not weeks."
-					/>
+					/> */}
 				</main>
 				<Footer />
 			</div>

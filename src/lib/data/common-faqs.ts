@@ -13,6 +13,7 @@
  */
 
 import { API_ENVIRONMENTS } from "./api-auth";
+import { CLIENT_REF_ID_LENGTH, SECURITY_FAQS, SECURITY_PATH } from "./security";
 
 /**
  * Display categories. Mutually exclusive by design: `/docs/faqs` renders one
@@ -26,7 +27,7 @@ export const FAQ_TAGS = [
 	"ai",
 	"support",
 	"pricing",
-	"compliance",
+	"security",
 ] as const;
 
 export type FaqTag = (typeof FAQ_TAGS)[number];
@@ -134,9 +135,9 @@ export const COMMON_API_FAQS: FAQ[] = [
 	},
 	{
 		q: "Do I need to whitelist my server IP?",
-		a: "Production API access may require your **static public (server) IP** to be whitelisted. If your calls work from Postman but fail or time out from your own server, that is almost always the cause — share your static public IP with us so we can whitelist it.",
+		a: "It's optional. **IP whitelisting** is available for **production** access as an extra layer of security — share your **static public (server) IP** with us and we'll whitelist it.",
 		tag: "integration",
-		links: [{ label: "Developer docs", href: "/docs" }],
+		links: [{ label: "Security & data protection", href: `${SECURITY_PATH}#api-security` }],
 	},
 	{
 		q: "Can an AI coding agent build the integration for me?",
@@ -200,11 +201,7 @@ export const GLOBAL_REFERENCE_FAQS: FAQ[] = [
 		tag: "integration",
 		links: [{ label: "Transaction flows (recipes)", href: "/recipe" }],
 	},
-	{
-		q: "What data privacy and compliance standards does Eko follow?",
-		a: "Eko follows applicable **RBI** and data-protection guidelines for its regulated banking and KYC services. Aadhaar-based KYC is performed **only with explicit customer consent**.",
-		tag: "compliance",
-	},
+	...SECURITY_FAQS,
 	{
 		q: "How do I report an integration issue?",
 		a: 'Share the complete request and response so we can debug in one round trip:\n\n- The full `curl` (including headers)\n- The response body, verbatim\n- The timestamp of the call\n- Your `initiator_id`, `user_code` and `client_ref_id`\n\nIssues raised with these details are resolved **much** faster than "the API is failing".',
@@ -212,7 +209,7 @@ export const GLOBAL_REFERENCE_FAQS: FAQ[] = [
 	},
 	{
 		q: "Are there any common integration gotchas to know?",
-		a: "Three frequent ones:\n\n- `client_ref_id` must be **at most 20 characters** and unique per request.\n- Calling the sandbox base URL with live credentials (or vice-versa) fails auth — see [How Authentication Works](/docs/how-auth-works).\n- The `JSESSIONID` cookie Postman adds automatically is **harmless** — it has no effect on the API and can be ignored.",
+		a: `Three frequent ones:\n\n- \`client_ref_id\` must be **${CLIENT_REF_ID_LENGTH.min}–${CLIENT_REF_ID_LENGTH.max} characters** and unique per request.\n- Calling the sandbox base URL with live credentials (or vice-versa) fails auth — see [How Authentication Works](/docs/how-auth-works).\n- The \`JSESSIONID\` cookie Postman adds automatically is **harmless** — it has no effect on the API and can be ignored.`,
 		tag: "integration",
 		links: [{ label: "Error codes reference", href: "/docs/error-codes" }],
 	},

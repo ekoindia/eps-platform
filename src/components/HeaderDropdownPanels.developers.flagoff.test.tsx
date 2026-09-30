@@ -32,9 +32,7 @@ describe("desktop Developers dropdown with the console feature off", () => {
 					setActiveMobileAccordion={vi.fn()}
 					mobileMenuOpen={false}
 					isScrolled={false}
-					talkToSalesOpen={false}
 					setMobileMenuOpen={vi.fn()}
-					setTalkToSalesOpen={vi.fn()}
 					panelHoverHandlers={{ onMouseEnter: vi.fn(), onMouseLeave: vi.fn() }}
 				/>
 			</MemoryRouter>,

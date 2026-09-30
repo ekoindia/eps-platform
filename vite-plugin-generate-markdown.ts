@@ -218,6 +218,13 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
+				// -- Security & data protection -------------------------------------
+				await writeFile(
+					path.join(outDir, "security.md"),
+					bundle.renderSecurityMarkdown(),
+				);
+				written++;
+
 				// -- Sample partner agreement ---------------------------------------
 				// Copied verbatim: the authored markdown file IS the twin, so the
 				// page and the .md can never drift.
@@ -404,6 +411,7 @@ interface MarkdownBundle {
 	) => string;
 	renderPricingMarkdown: () => string;
 	renderFaqMarkdown: (faqs: unknown[]) => string;
+	renderSecurityMarkdown: () => string;
 	DOCUMENTED_SPECS: Array<{ slug: string }>;
 	renderEndpointMarkdown: (spec: unknown) => string;
 	renderDocsIndexMarkdown: () => string;
@@ -543,6 +551,7 @@ async function loadRenderBundle(
 		renderProductsIndexMod,
 		renderPricingMod,
 		renderFaqMod,
+		renderSecurityMod,
 		docsRegistryMod,
 		renderDocMod,
 		docsGuidesMod,
@@ -567,6 +576,7 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/lib/markdown/render-products-index.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-pricing.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-faq.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-security.ts"),
 		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-doc.ts"),
 		server.ssrLoadModule("/src/content/docs/docs-guides.ts"),
@@ -600,6 +610,7 @@ async function loadRenderBundle(
 			renderProductsIndexMod.renderProductsIndexTextPart,
 		renderPricingMarkdown: renderPricingMod.renderPricingMarkdown,
 		renderFaqMarkdown: renderFaqMod.renderFaqMarkdown,
+		renderSecurityMarkdown: renderSecurityMod.renderSecurityMarkdown,
 		DOCUMENTED_SPECS: docsRegistryMod.getDocumentedSpecs(),
 		renderEndpointMarkdown: renderDocMod.renderEndpointMarkdown,
 		renderDocsIndexMarkdown: renderDocMod.renderDocsIndexMarkdown,
@@ -673,6 +684,9 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	}
 	if (url === "/faq.md") {
 		return bundle.renderFaqMarkdown(bundle.GLOBAL_FAQS);
+	}
+	if (url === "/security.md") {
+		return bundle.renderSecurityMarkdown();
 	}
 	if (url === "/docs.md") {
 		return bundle.renderDocsIndexMarkdown();

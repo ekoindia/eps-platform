@@ -60,6 +60,7 @@ const footerLinks = {
 	company: [
 		{ label: "About Us", href: "/about-us", internal: true },
 		{ label: "Grievance", href: "/grievance", internal: true },
+		{ label: "Security", href: "/security", internal: true },
 		// { label: "Blogs & Media", href: "/blogs-media", internal: true },
 		{ label: "Signup", href: "/signup", internal: true },
 		{ label: "Privacy Policy", href: "/privacy-policy", internal: true },
@@ -261,6 +262,17 @@ export const Footer = () => {
 								</a>
 							))}
 						</div>
+						{/* DUNS Seal */}
+						<iframe
+							className="mt-6"
+							id="dunsframe"
+							src="https://dunsregistered.dnb.com/SealAuthentication.aspx?Cid=1"
+							width="114px"
+							height="97px"
+							title="D-U-N-S Registered seal"
+							style={{ border: 0, background: "transparent" }}
+							scrolling="no"
+						></iframe>
 					</div>
 
 					{/*

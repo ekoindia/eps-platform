@@ -3,6 +3,10 @@
 Every Eko API request is authenticated with a static key plus a per-request
 HMAC signature. Nothing secret ever travels on the wire in plain form.
 
+All traffic runs over **TLS 1.2+**, and production access can additionally be
+locked to your server's static IP (**optional IP whitelisting**). See
+[Security & data protection](/security) for the full picture.
+
 ## The two keys
 
 | Key                                     | Where it comes from                                                                           | How it's used                                             |

@@ -45,8 +45,6 @@ import {
 } from "lucide-react";
 import {
 	Fragment,
-	lazy,
-	Suspense,
 	type ComponentType,
 	type HTMLAttributes,
 	type ReactNode,
@@ -60,12 +58,6 @@ import {
 } from "react-icons/fa";
 import { SiGooglegemini, SiOpenai, SiPerplexity } from "react-icons/si";
 import { Link } from "react-router-dom";
-
-const TalkToSalesDialog = lazy(() =>
-	import("@/components/TalkToSalesDialog").then((m) => ({
-		default: m.TalkToSalesDialog,
-	})),
-);
 
 /* ------------------------------------------------------------------ */
 /*  Module-level data (moved from Header.tsx)                          */
@@ -120,6 +112,7 @@ const developerLinks: DeveloperLinkItem[] = [
 	{ label: "Build with AI", href: "/ai", icon: Sparkles },
 	{ label: "SDKs & Libraries", href: "/docs/sdk", icon: Package },
 	{ label: "FAQs", href: "/faq", icon: HelpCircle },
+	{ label: "Security", href: "/security", icon: ShieldCheck },
 	{
 		label: "Open Source",
 		href: GITHUB_ORG_URL,
@@ -417,9 +410,7 @@ export interface HeaderDropdownPanelsProps {
 	setActiveMobileAccordion: (v: DropdownKey | null) => void;
 	mobileMenuOpen: boolean;
 	isScrolled: boolean;
-	talkToSalesOpen: boolean;
 	setMobileMenuOpen: (v: boolean) => void;
-	setTalkToSalesOpen: (v: boolean) => void;
 	/** Hover handlers spread on every panel root to keep the dropdown open while inside the panel. */
 	panelHoverHandlers: HoverHandlers;
 }
@@ -429,8 +420,8 @@ export interface HeaderDropdownPanelsProps {
 /* ------------------------------------------------------------------ */
 
 /**
- * All dropdown panels, the mobile side-drawer, the backdrop overlay, and the
- * TalkToSales dialog. Lazy-loaded by Header.tsx after hydration so none of this
+ * All dropdown panels, the mobile side-drawer and the backdrop overlay.
+ * Lazy-loaded by Header.tsx after hydration so none of this
  * code is in the critical main bundle.
  */
 export const HeaderDropdownPanels = ({
@@ -440,9 +431,7 @@ export const HeaderDropdownPanels = ({
 	setActiveMobileAccordion,
 	mobileMenuOpen,
 	isScrolled,
-	talkToSalesOpen,
 	setMobileMenuOpen,
-	setTalkToSalesOpen,
 	panelHoverHandlers,
 }: HeaderDropdownPanelsProps) => {
 	const { state, logout } = useAuth();
@@ -1055,16 +1044,6 @@ export const HeaderDropdownPanels = ({
 					</div>
 				</SheetContent>
 			</Sheet>
-
-			{/* ── TalkToSales dialog ─────────────────────────────────────── */}
-			{talkToSalesOpen && (
-				<Suspense fallback={null}>
-					<TalkToSalesDialog
-						open={talkToSalesOpen}
-						onOpenChange={setTalkToSalesOpen}
-					/>
-				</Suspense>
-			)}
 		</>
 	);
 };

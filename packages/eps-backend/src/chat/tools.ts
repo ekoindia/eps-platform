@@ -73,6 +73,7 @@ const TOPIC_IDS: AgentTopicId[] = [
 	"pricing",
 	"environments",
 	"getting-started",
+	"security",
 ];
 
 /**
@@ -114,7 +115,7 @@ export const CHAT_TOOLS: ChatToolDef[] = [
 	},
 	{
 		name: "get_topic",
-		description: `Cross-cutting EPS reference. Call get_topic("auth") for ANY question touching authentication, signing, headers, keys or the secret-key computation — EPS signing is non-obvious and answers from memory are wrong. Available topics: ${TOPIC_IDS.join(", ")}.`,
+		description: `Cross-cutting EPS reference. Call get_topic("auth") for ANY question touching authentication, signing, headers, keys or the secret-key computation — EPS signing is non-obvious and answers from memory are wrong. Call get_topic("security") for data residency, Aadhaar/biometric storage, audits/compliance, TLS, IP whitelisting or transaction safeguards — quote it as-is. Available topics: ${TOPIC_IDS.join(", ")}.`,
 		inputSchema: {
 			type: "object",
 			properties: {

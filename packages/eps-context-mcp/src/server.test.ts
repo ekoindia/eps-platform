@@ -64,6 +64,28 @@ describe("eps-context-mcp tools", () => {
 		expect(parse(res).backendOnly).toBe(true);
 	});
 
+	it("get_topic('security') returns the IT-confirmed statements", async () => {
+		const client = await connect();
+		const res = await client.callTool({
+			name: "get_topic",
+			arguments: { topic: "security" },
+		});
+		const topic = parse(res);
+		expect(topic.url).toMatch(/\/security$/);
+		expect(JSON.stringify(topic.sections)).toContain("never stored");
+	});
+
+	it("get_faqs filters by the security tag", async () => {
+		const client = await connect();
+		const res = await client.callTool({
+			name: "get_faqs",
+			arguments: { tag: "security" },
+		});
+		const faqs = parse(res);
+		expect(faqs.length).toBeGreaterThan(0);
+		expect(faqs.every((f: { tag: string }) => f.tag === "security")).toBe(true);
+	});
+
 	it("get_meta reports package version + update availability", async () => {
 		const server = createEpsServer(bundle, "baked", {
 			current: "0.1.0",

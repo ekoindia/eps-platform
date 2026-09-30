@@ -76,7 +76,7 @@ const answerComponents = {
  * Rendered in a `div`, never a `p` — react-markdown emits its own `<p>`, and
  * nesting those is invalid HTML that breaks hydration on prerendered pages.
  */
-const FaqAnswer = ({
+export const FaqAnswer = ({
 	content,
 	className,
 }: {
