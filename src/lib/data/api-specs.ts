@@ -11672,7 +11672,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Verify a bank account by transferring ₹1 (penny drop) and retrieve the account holder name, account status, and branch details in real time.",
 		description:
-			"Performs a live penny-drop transaction of ₹1 to the specified bank account and returns the account holder name as registered with the bank, account status, IFSC details, and the UTR of the debit. Use this before payouts to prevent failures and fraud. The ₹1 is credited to the beneficiary — no refund occurs. Supports all IMPS-enabled banks in India.",
+			"Performs a live penny-drop transaction of ₹1 to the specified bank account and returns the account holder name as registered with the bank, account status, bank/branch details, and the Eko transaction id (tid). Use this before payouts to prevent failures and fraud. The ₹1 is credited to the beneficiary — no refund occurs. Supports all IMPS-enabled banks in India.",
 		relevance: "M",
 		bestFor:
 			"Businesses that disburse funds and need to confirm both account existence and the registered account holder name before transferring money.",
@@ -11684,9 +11684,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "bank_account",
-				type: "number",
+				type: "string",
 				required: true,
-				description: "Complete bank account number to be verified.",
+				description:
+					"Complete bank account number to be verified. Send as a string to preserve leading zeros.",
 				example: "026291800001191",
 			},
 			{
@@ -11702,67 +11703,85 @@ const ALL_API_SPECS: ApiSpec[] = [
 		],
 		responseData: [
 			{
-				name: "account_exists",
-				label: "Account Exists?",
-				type: "boolean",
-				description: "Whether the bank account is valid and active.",
-				imp: true,
-				example: true,
-			},
-			{
-				name: "account_name",
+				name: "name_at_bank",
 				label: "Account Holder's Name",
 				type: "string",
 				description:
 					"Account holder name as registered with the bank. Use for name matching against provided details.",
 				imp: true,
-				example: "Rajesh Kumar",
+				example: "JOHN DOE",
 			},
 			{
-				name: "ifsc",
-				label: "IFSC Code",
+				name: "account_status",
+				type: "string",
+				description: "Verification outcome for the account (e.g. VALID).",
+				imp: true,
+				example: "VALID",
+			},
+			{
+				name: "account_status_code",
 				type: "string",
 				description:
-					"IFSC code confirmed by the bank for the verified account.",
+					"Machine-readable account status code (e.g. ACCOUNT_IS_VALID).",
 				imp: true,
-				example: "SBIN0001234",
+				example: "ACCOUNT_IS_VALID",
 			},
 			{
-				name: "bank",
+				name: "bank_name",
 				type: "string",
-				description: "Full name of the bank associated with the account.",
+				description: "Name of the bank associated with the account.",
 				imp: true,
-				example: "State Bank of India",
+				example: "YES BANK",
 			},
 			{
 				name: "branch",
 				type: "string",
 				description: "Branch name associated with the IFSC code.",
-				imp: true,
-				example: "MG Road Branch",
+				example: "SANTACRUZ, MUMBAI",
 			},
 			{
-				name: "utr",
-				label: "Penny-Drop UTR",
+				name: "city",
 				type: "string",
+				description: "City where the bank branch is located.",
+				example: "MUMBAI",
+			},
+			{
+				name: "micr",
+				label: "MICR Code",
+				type: "number",
+				description: "MICR (ECS identification) code of the branch.",
+				example: 400065001,
+			},
+			{
+				name: "reference_id",
+				type: "number",
+				description: "Unique reference id created for this verification.",
+				example: 5205950,
+			},
+			{
+				name: "tid",
+				label: "Transaction ID",
+				type: "number",
 				description:
-					"Unique Transaction Reference number of the ₹1 penny-drop credit. Useful for reconciliation.",
-				example: "431712345678",
+					"Eko transaction id for this verification. Persist it for reconciliation.",
+				example: 2887347145,
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message: "Bank account verification successful",
-			response_type_id: 1388,
 			data: {
-				account_exists: true,
-				account_name: "Rajesh Kumar",
-				ifsc: "SBIN0001234",
-				bank: "State Bank of India",
-				branch: "MG Road Branch",
-				utr: "431712345678",
+				reference_id: 5205950,
+				city: "MUMBAI",
+				bank_name: "YES BANK",
+				micr: 400065001,
+				account_status_code: "ACCOUNT_IS_VALID",
+				account_status: "VALID",
+				name_at_bank: "JOHN DOE",
+				branch: "SANTACRUZ, MUMBAI",
+				tid: 2887347145,
 			},
+			response_type_id: 0,
+			status: 0,
 		},
 		errorScenarios: [
 			{
@@ -11770,17 +11789,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				statusCode: 200,
 				example: {
 					status: 1,
-					response_status_id: -1,
+					response_status_id: 1,
 					message: "Invalid IFSC code",
-					response_type_id: 1388,
-					data: {
-						account_exists: false,
-						account_name: null,
-						ifsc: "INVALID001",
-						bank: null,
-						branch: null,
-						utr: null,
-					},
 				},
 			},
 			{
@@ -11789,17 +11799,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				statusCode: 200,
 				example: {
 					status: 1,
-					response_status_id: -1,
+					response_status_id: 1,
 					message: "Invalid Account",
-					response_type_id: 1388,
-					data: {
-						account_exists: false,
-						account_name: null,
-						ifsc: "SBIN0001234",
-						bank: "State Bank of India",
-						branch: "MG Road Branch",
-						utr: null,
-					},
 				},
 			},
 			{
@@ -11808,17 +11809,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				statusCode: 200,
 				example: {
 					status: 1,
-					response_status_id: -1,
+					response_status_id: 1,
 					message: "Bank not supported for verification",
-					response_type_id: 1388,
-					data: {
-						account_exists: false,
-						account_name: null,
-						ifsc: null,
-						bank: null,
-						branch: null,
-						utr: null,
-					},
 				},
 			},
 		],
@@ -11935,68 +11927,86 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "array",
 				required: true,
 				description:
-					"Array of bank account objects to verify. Each entry must contain bank_account and ifsc. Optionally include user_code per entry to attribute verifications to different retailers.",
+					"Array of bank account objects to verify. Each entry must contain a unique reference_id, bank_account and ifsc.",
 				example: [
 					{
-						bank_account: "1234567890",
-						ifsc: "SBIN0001234",
+						reference_id: "1",
+						bank_account: "026291800001191",
+						ifsc: "YESB0000262",
 					},
 					{
-						bank_account: "9876543210123",
-						ifsc: "HDFC0005678",
+						reference_id: "2",
+						bank_account: "00011020001772",
+						ifsc: "HDFC0000001",
 					},
 				],
+			},
+			{
+				name: "entries[].reference_id",
+				type: "string",
+				required: true,
+				description:
+					"Your unique id for this entry within the batch. It is returned with this entry's result in the Bulk Bank Account Verification Status API.",
+				example: "1",
 			},
 			{
 				name: "entries[].bank_account",
 				type: "string",
 				required: true,
-				description: "Bank account number for this entry.",
-				example: "1234567890",
+				description:
+					"Bank account number for this entry. Send as a string to preserve leading zeros.",
+				example: "026291800001191",
 			},
 			{
 				name: "entries[].ifsc",
 				type: "string",
 				required: true,
 				description: "IFSC code for this entry's bank account.",
-				example: "SBIN0001234",
-			},
-			{
-				name: "entries[].user_code",
-				type: "string",
-				required: false,
-				description:
-					"Per-entry retailer user code, if attributing individual verifications to different agents.",
-				example: "20810200",
+				example: "YESB0000262",
 			},
 		],
 		responseData: [
 			{
 				name: "bulk_reference_id",
-				type: "string",
+				type: "number",
 				description:
 					"Unique reference ID for this bulk verification batch. Pass this to the Bulk Bank Account Verification Status API to poll for per-account results.",
 				imp: true,
-				example: "3356655212",
+				example: 90438,
 			},
 			{
-				name: "reference_id",
+				name: "status",
+				label: "Batch Status",
+				type: "string",
+				description: "Processing state of the batch (e.g. RECEIVED).",
+				imp: true,
+				example: "RECEIVED",
+			},
+			{
+				name: "bulk_verification_id",
+				type: "string",
+				description: "Verification id assigned to the batch.",
+				example: "2887347146",
+			},
+			{
+				name: "tid",
+				label: "Transaction ID",
 				type: "number",
 				description:
-					"Numeric reference ID for the submitted batch request, used for internal tracking.",
-				example: 123456,
+					"Eko transaction id for this batch. Persist it for reconciliation.",
+				example: 2887347146,
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message:
-				"Bulk verification request accepted. Poll status API for results.",
-			response_type_id: 1388,
 			data: {
-				bulk_reference_id: "3356655212",
-				reference_id: 123456,
+				bulk_reference_id: 90438,
+				bulk_verification_id: "2887347146",
+				tid: 2887347146,
+				status: "RECEIVED",
 			},
+			response_type_id: 0,
+			status: 0,
 		},
 		errorScenarios: [
 			{
@@ -12004,10 +12014,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Invalid or malformed entries array — missing required fields in one or more entries",
 				statusCode: 400,
 				example: {
+					response_status_id: 1,
+					code: "Bad request, please check API documentation",
+					response_type_id: 1,
+					type: "validation_error",
+					message: "Bad request, please check API documentation",
 					status: 1,
-					response_status_id: -1,
-					message: "Invalid request: entries array is missing or malformed",
-					data: null,
 				},
 			},
 			{
@@ -12015,15 +12027,15 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Invalid IFSC in one or more entries — batch accepted but affected entries fail in status poll",
 				statusCode: 200,
 				example: {
-					status: 0,
 					response_status_id: 0,
-					message:
-						"Bulk verification request accepted. Poll status API for results.",
-					response_type_id: 1388,
 					data: {
-						bulk_reference_id: "3356655213",
-						reference_id: 123457,
+						bulk_reference_id: 90439,
+						bulk_verification_id: "2887347147",
+						tid: 2887347147,
+						status: "RECEIVED",
 					},
+					response_type_id: 0,
+					status: 0,
 				},
 			},
 		],
@@ -12052,8 +12064,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Unique id returned by the Bulk Bank Account Verification API for the submitted batch.",
-				example: "3356655212",
+					"The bulk_reference_id returned by the Bulk Bank Account Verification API for the submitted batch.",
+				example: "90438",
 			},
 		],
 		responseData: [
@@ -12068,8 +12080,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 						name: "reference_id",
 						type: "string",
 						description:
-							"Unique reference id created for this account's verification.",
-						example: "983654",
+							"The reference_id you sent for this entry in the Bulk Bank Account Verification request.",
+						example: "1",
 					},
 					{
 						name: "name_at_bank",
@@ -12083,7 +12095,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 						type: "string",
 						description: "Name of the financial institution.",
 						imp: true,
-						example: "STATE BANK OF INDIA",
+						example: "YES BANK",
 					},
 					{
 						name: "utr",
@@ -12096,19 +12108,19 @@ const ALL_API_SPECS: ApiSpec[] = [
 						name: "city",
 						type: "string",
 						description: "City where the bank branch is located.",
-						example: "BANGALORE",
+						example: "MUMBAI",
 					},
 					{
 						name: "branch",
 						type: "string",
 						description: "Bank branch name.",
-						example: "MG ROAD",
+						example: "SANTACRUZ, MUMBAI",
 					},
 					{
 						name: "micr",
-						type: "string",
+						type: "number",
 						description: "MICR (ECS identification) code of the branch.",
-						example: "560002001",
+						example: 400065001,
 					},
 					{
 						name: "name_match_score",
@@ -12134,9 +12146,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 					},
 					{
 						name: "account_status_code",
-						type: "number",
-						description: "Numeric code representing the account status.",
-						example: 0,
+						type: "string",
+						description:
+							"Machine-readable account status code (e.g. ACCOUNT_IS_VALID).",
+						example: "ACCOUNT_IS_VALID",
 					},
 				],
 			},
@@ -12149,28 +12162,32 @@ const ALL_API_SPECS: ApiSpec[] = [
 			data: {
 				entries: [
 					{
-						reference_id: "983654",
+						reference_id: "1",
 						name_at_bank: "JOHN DOE",
-						bank_name: "STATE BANK OF INDIA",
+						bank_name: "YES BANK",
 						utr: "SBIN0123456789",
-						city: "BANGALORE",
-						branch: "MG ROAD",
-						micr: "560002001",
+						city: "MUMBAI",
+						branch: "SANTACRUZ, MUMBAI",
+						micr: 400065001,
 						name_match_score: "100",
 						name_match_result: "MATCH",
 						account_status: "VALID",
-						account_status_code: 0,
+						account_status_code: "ACCOUNT_IS_VALID",
 					},
 				],
 			},
 		},
 		errorScenarios: [
 			{
-				scenario: "Missing bulk_reference_id",
+				scenario: "Missing or invalid bulk_reference_id",
 				statusCode: 400,
 				example: {
+					response_status_id: 1,
+					code: "Bad request, please check API documentation",
+					response_type_id: 1,
+					type: "validation_error",
+					message: "Bad request, please check API documentation",
 					status: 1,
-					message: "Bad request — bulk_reference_id is required",
 				},
 			},
 			{
