@@ -23,6 +23,7 @@ import { readNextParam } from "@/lib/auth/next-param";
 import { ESIGN_ID } from "@/lib/connect/esign";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
 import { EKOSTORE_KYC_ID } from "@/lib/connect/use-ekostore";
+import { useEsignPending } from "@/lib/connect/esign-pending";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
 import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
@@ -259,6 +260,9 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	// Account state, not entitlement — see DOCUMENTS_ITEM.
 	const kycEnabled = useKycEnabled();
 	const interactions = useRoleTransactionList();
+	// The 223 entitlement, or Home's stale-list fallback having found an
+	// agreement still pending — see `esign-pending.ts`.
+	const esignPending = useEsignPending(interactions);
 	// Whatever this user is entitled to, in place. Built as a flat spread per
 	// group rather than spliced: two independent entitlements land in here, and a
 	// nested ternary per item is how the order quietly goes wrong.
@@ -267,7 +271,16 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 			// Nothing to finish, nothing to show: an empty group renders no caption.
 			title: "Complete your KYC",
 			items: [
-				...flowItem(interactions, ESIGN_DOCUMENTS),
+				...(esignPending
+					? [
+							{
+								to: `/console/transaction/${ESIGN_DOCUMENTS.id}`,
+								label: ESIGN_DOCUMENTS.label,
+								icon: ESIGN_DOCUMENTS.icon,
+								end: false,
+							},
+						]
+					: []),
 				...(kycEnabled ? [DOCUMENTS_ITEM] : []),
 			],
 		},

@@ -818,6 +818,17 @@ export const authClient = {
 				signal,
 			}) as Promise<{ message: string }>,
 	},
+	/**
+	 * The stale-list fallback behind the Sign Documents nudge. Proxied for the
+	 * full upstream token; a hit also refreshes the session's entitlements.
+	 */
+	connectEsign: {
+		/** How many agreements this user still has to e-sign. */
+		pending: (): Promise<{ pendingCount: number }> =>
+			request("/connect/esign/pending", { method: "POST" }) as Promise<{
+				pendingCount: number;
+			}>,
+	},
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>

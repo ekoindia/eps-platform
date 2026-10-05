@@ -11,7 +11,8 @@ import {
 import { ErrorNotice } from "@/components/console/ErrorNotice";
 import { Callout } from "@/components/docs/Callout";
 import { authClient } from "@/lib/auth/client";
-import { ESIGN_ID, ESIGN_PATH } from "@/lib/connect/esign";
+import { ESIGN_PATH } from "@/lib/connect/esign";
+import { useEsignPending } from "@/lib/connect/esign-pending";
 import {
 	isPackApproved,
 	KYC_POLL_MS,
@@ -263,7 +264,7 @@ export default function Documents() {
 	// unreadable list means no link, rather than one into a flow this account may
 	// not be able to run. The callout itself still renders — "your documents are
 	// approved" is worth saying either way.
-	const esignPending = Boolean(useRoleTransactionList()?.[String(ESIGN_ID)]);
+	const esignPending = useEsignPending(useRoleTransactionList());
 
 	// The rail hides this page, but the route is reachable by URL — a nav item is
 	// not an access control.
