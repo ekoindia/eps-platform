@@ -28,7 +28,7 @@ import {
 	SHOW_AI_CHAT,
 	SHOW_PALETTE_ACTIONS,
 } from "@/lib/config/features";
-import { ESIGN_ID } from "@/lib/connect/esign";
+import { useEsignPending } from "@/lib/connect/esign-pending";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import type { PaletteSession } from "@/lib/palette-actions/get-started";
 import { resolveAction } from "@/lib/palette-actions/resolve";
@@ -317,17 +317,18 @@ export const CommandPalette = ({
 	const interactions = useRoleTransactionList(
 		SHOW_PALETTE_ACTIONS && isDeveloper,
 	);
+	const esignPending = useEsignPending(interactions);
 	const session = useMemo((): PaletteSession => {
 		if (auth.state.status !== "authed") return { kind: "anon" };
 		if (auth.state.role === "developer") {
 			return {
 				kind: "developer",
 				state: auth.state.me.state,
-				esignPending: Boolean(interactions?.[String(ESIGN_ID)]),
+				esignPending,
 			};
 		}
 		return { kind: auth.state.role };
-	}, [auth.state, interactions]);
+	}, [auth.state, esignPending]);
 
 	// Pinned action card: rules + MiniSearch, same engine, so no extra cost.
 	// Only in the "All" scope — a visitor who picked a tab asked for a list.

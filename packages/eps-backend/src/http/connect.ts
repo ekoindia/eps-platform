@@ -64,6 +64,15 @@ const KYC_LIST_INTERACTION = 539;
 /** `interaction_type_id` for "upload a document". */
 const KYC_UPLOAD_INTERACTION = 523;
 
+/**
+ * `interaction_type_id` for "list my pending agreements" — the read behind the
+ * 223 E-sign flow. Answers `status: 0` with `data.agreementList`.
+ */
+const ESIGN_PENDING_INTERACTION = 300;
+
+/** Pending-agreement reads per session per window. Home caches it for 30s. */
+const ESIGN_PENDING_LIMIT = 30;
+
 /** `intent_id` for a KYC document upload. Upstream wants it on every 523. */
 const KYC_UPLOAD_INTENT = 4;
 
@@ -418,6 +427,83 @@ export function mountConnect(
 		return c.json({
 			documents: Array.isArray(data.document_list) ? data.document_list : [],
 		});
+	});
+
+	/**
+	 * POST /connect/esign/pending → { pendingCount }
+	 *
+	 * The fallback behind the console's Sign Documents nudge, for a session whose
+	 * `/transactions/wlc` list is stale and lacks 223 though an agreement is still
+	 * unsigned. Asks upstream directly, and on a hit re-reads the profile so the
+	 * next interaction-list fetch carries the real 223 row — without that the
+	 * widget at `/console/transaction/223` would open on an id it is not given.
+	 */
+	app.post("/connect/esign/pending", async (c) => {
+		const claim = await requireWidgetSession(c);
+		await enforceRateLimit(
+			kv,
+			`rl:cxesgn:${claim.sid}`,
+			ESIGN_PENDING_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		const upstream = await requireUpstream(claim);
+
+		const envelope = await connect.interact(
+			upstream.accessToken,
+			{ interaction_type_id: ESIGN_PENDING_INTERACTION, locale: "en" },
+			{ xRealIp: c.req.header("x-real-ip") },
+		);
+
+		const message = text(envelope.message, 200);
+		let pendingCount = 0;
+		if (Number(envelope.status ?? -1) !== 0) {
+			// Same "nothing outstanding" wording the KYC list fails with.
+			if (!KYC_NO_RECORDS.test(message)) {
+				throw AppError.fromUpstream(
+					502,
+					"ESIGN_PENDING_FAILED",
+					message || "Couldn't check your pending agreements.",
+				);
+			}
+		} else {
+			const list = (envelope.data as { agreementList?: unknown } | undefined)
+				?.agreementList;
+			// A success without the list is a shape we do not know — fail loud
+			// rather than read it as "nothing pending".
+			if (list !== undefined && !Array.isArray(list)) {
+				throw AppError.fromUpstream(
+					502,
+					"ESIGN_PENDING_FAILED",
+					"Couldn't read your pending agreements.",
+				);
+			}
+			pendingCount = list?.length ?? 0;
+		}
+
+		let refreshed = false;
+		if (pendingCount > 0 && auth.refreshEntitlements) {
+			// Best-effort: the nudge stands on the count alone. The provider
+			// collapses repeats inside its own minimum interval.
+			try {
+				await auth.refreshEntitlements(claim.sid!);
+				refreshed = true;
+			} catch (err) {
+				console.error("[connect] esign entitlement refresh failed", {
+					mobile: claim.sub,
+					sid: claim.sid?.slice(0, 8),
+					err,
+				});
+			}
+		}
+		console.log("[connect] esign pending", {
+			mobile: claim.sub,
+			sid: claim.sid?.slice(0, 8),
+			count: pendingCount,
+			refreshRequested: refreshed,
+		});
+
+		c.header("Cache-Control", "no-store");
+		return c.json({ pendingCount });
 	});
 
 	/**

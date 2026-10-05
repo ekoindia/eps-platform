@@ -174,7 +174,7 @@ export const COMMON_API_FAQS: FAQ[] = [
 export const GLOBAL_REFERENCE_FAQS: FAQ[] = [
 	{
 		q: "How are errors and failures reported?",
-		a: "Every response carries a `status` code (`0` = success), a `response_status_id` and a human-readable `message`. **A `200 OK` with a non-zero `response_status_id` is a business failure, not a transport success** — always check both before treating a call as done. The [Status & Error Codes](/docs/error-codes) reference lists every code and what to do about it.",
+		a: "Every response carries a `status` code (`0` = success), a human-readable `message`, and a `response_status_id` (a UI display hint only — never use it for business logic). **A `200 OK` with a non-zero `status` is a business failure, not a transport success** — always check both before treating a call as done. The [Status & Error Codes](/docs/error-codes) reference lists every code and what to do about it.",
 		tag: "integration",
 		links: [{ label: "Error codes reference", href: "/docs/error-codes" }],
 	},
@@ -197,7 +197,7 @@ export const GLOBAL_REFERENCE_FAQS: FAQ[] = [
 	},
 	{
 		q: "How do I chain multiple API calls into one flow?",
-		a: "Most real use cases are multi-step — onboard a customer, verify them, *then* transact. Rather than stitching endpoints together from the reference, start from a [**transaction flow recipe**](/recipe): each one is an ordered runbook showing which endpoint to call at each step and how to branch on `response_status_id`.\n\nThe same recipes are available to AI agents through our [MCP server](/ai#install), so an agent can execute a whole flow end to end.",
+		a: "Most real use cases are multi-step — onboard a customer, verify them, *then* transact. Rather than stitching endpoints together from the reference, start from a [**transaction flow recipe**](/recipe): each one is an ordered runbook showing which endpoint to call at each step and how to branch on `status` and `response_type_id`.\n\nThe same recipes are available to AI agents through our [MCP server](/ai#install), so an agent can execute a whole flow end to end.",
 		tag: "integration",
 		links: [{ label: "Transaction flows (recipes)", href: "/recipe" }],
 	},

@@ -19,6 +19,7 @@ import {
 } from "@/lib/auth/client";
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { clearConnectTokens } from "@/lib/connect/token";
+import { resetEsignPendingCache } from "@/lib/connect/esign-pending";
 import { resetKycDocumentCache } from "@/lib/connect/kyc-documents";
 import { resetDashboardCache } from "@/lib/console/dashboard";
 import { SHOW_NOTIFICATIONS } from "@/lib/config/features";
@@ -125,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			);
 			resetRoleTransactionCache();
 			resetKycDocumentCache();
+			resetEsignPendingCache();
 			clearConnectTokens();
 			resetDashboardCache();
 			resetWalletBalanceCache();
@@ -258,6 +260,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// One partner's document statuses, held in module scope for the same
 		// remount reason as the balance above.
 		resetKycDocumentCache();
+		// Whether this partner still owes a signature — one partner's answer.
+		resetEsignPendingCache();
 		// Same hazard as the balance: the dashboard's numbers are one partner's
 		// business data, cached in module scope for the same remount reason.
 		resetDashboardCache();

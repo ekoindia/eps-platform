@@ -678,6 +678,32 @@ whose documents were just approved is owed that news whether or not this session
 can resolve their entitlement, and a link into a flow the account cannot run is
 worse than no link.
 
+**Stale-list fallback for the 223 gate.** `/transactions/wlc` is built from the
+upstream token's role claim, which can lag the account by a whole session — and
+then an account that still owes a signature loses every way into the flow. So
+when the account is in state 48 (KYC Pending) or 47 (resubmission), the pack is
+fully approved, and the *resolved* list lacks 223, the Next Steps card asks
+upstream directly:
+
+- `POST /connect/esign/pending` (eps-backend, `http/connect.ts`) runs
+  interaction_type_id **300** (`locale=en`; `client_ref_id` added by the client).
+  Pending = `status: 0` with a non-empty `data.agreementList` (UAT:
+  `response_type_id` 1082, "Pending agreements."). An empty/absent list or a
+  "No Records Found" failure is 0; any other failure, or a non-array list, is
+  `502 ESIGN_PENDING_FAILED`. Answers `{ pendingCount }`; rate-limited 30/window.
+- On a hit the route also calls `auth.refreshEntitlements` (refresh-profile,
+  best-effort, self-collapsing within 60s), and the browser drops its cached
+  interaction list — so the widget at `/console/transaction/223` refetches a list
+  that now carries the real 223 row instead of opening on an id it was not given.
+- `src/lib/connect/esign-pending.ts` holds the answer for **30s** in module
+  memory (a full reload asks again) and shares it via `useSyncExternalStore`.
+  `useEsignPending(list, probe)` = 223 entitled **or** fallback pending. Only the
+  Next Steps card probes, on every Home mount; the rail, ⌘K's get-started card and
+  the Documents callout only read, so they light up once Home has asked. Cleared
+  on sign-out with the other per-session caches.
+- Not probed while the list is unresolved or failed (`null`) — avoids a race on
+  mount, at the cost of no fallback when the list fetch itself fails.
+
 **A 10-minute refetch** (`KYC_POLL_MS`) for as long as the partner stays on the
 page, so an approval that lands while they are looking at it does not wait for
 them to think of reloading. Both surfaces poll: `Documents.tsx` on its own

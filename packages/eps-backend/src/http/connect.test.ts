@@ -34,6 +34,7 @@ function harness(
 		session?: UpstreamSession | null;
 		connect?: Partial<ConnectClient>;
 		getUpstream?: AuthProvider["getUpstream"];
+		refreshEntitlements?: AuthProvider["refreshEntitlements"];
 	} = {},
 ) {
 	const app = new Hono<AppEnv>();
@@ -57,6 +58,7 @@ function harness(
 			"getUpstream" in overrides
 				? overrides.getUpstream
 				: vi.fn(async () => session),
+		refreshEntitlements: overrides.refreshEntitlements,
 	} as unknown as AuthProvider;
 
 	const connect = {
@@ -459,6 +461,104 @@ describe("POST /connect/kyc/documents", () => {
 
 		expect(res.status).toBe(403);
 		expect((await errorOf(res)).code).toBe("NOT_DEVELOPER_SESSION");
+	});
+});
+
+describe("POST /connect/esign/pending", () => {
+	/** The 300 envelope as UAT answers it with one agreement outstanding. */
+	const pendingEnvelope = {
+		response_status_id: -1,
+		response_type_id: 1082,
+		message: "Pending agreements.",
+		status: 0,
+		data: {
+			user_code: "18120001",
+			agreementList: [
+				{
+					requester: 1,
+					agreement_id: "4",
+					agreement_name: "Partner Service Agreement",
+					description: "Pending",
+				},
+			],
+		},
+	};
+
+	/** Posts to the route and returns the response. */
+	function post(app: Hono<AppEnv>) {
+		return app.request("/connect/esign/pending", {
+			method: "POST",
+			...withCookie,
+		});
+	}
+
+	it("counts pending agreements and refreshes entitlements", async () => {
+		const interact = vi.fn(
+			async (_token: string, _fields: Record<string, unknown>) =>
+				pendingEnvelope,
+		);
+		const refreshEntitlements = vi.fn(async () => {});
+		const { app } = harness(developer, {
+			connect: { interact },
+			refreshEntitlements,
+		});
+
+		const res = await post(app);
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ pendingCount: 1 });
+		expect(res.headers.get("Cache-Control")).toBe("no-store");
+		expect(interact.mock.calls[0]?.[1].interaction_type_id).toBe(300);
+		expect(refreshEntitlements).toHaveBeenCalledWith("s-1");
+	});
+
+	it("still answers when the entitlement refresh fails", async () => {
+		const { app } = harness(developer, {
+			connect: { interact: vi.fn(async () => pendingEnvelope) },
+			refreshEntitlements: vi.fn(async () => {
+				throw new Error("refused");
+			}),
+		});
+
+		const res = await post(app);
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ pendingCount: 1 });
+	});
+
+	it("reads an empty list and 'no records found' as nothing pending", async () => {
+		for (const envelope of [
+			{ status: 0, data: { agreementList: [] } },
+			{ status: 0, data: {} },
+			{ status: 1, message: "No Records Found" },
+		]) {
+			const refreshEntitlements = vi.fn(async () => {});
+			const { app } = harness(developer, {
+				connect: { interact: vi.fn(async () => envelope) },
+				refreshEntitlements,
+			});
+
+			const res = await post(app);
+
+			expect(await res.json()).toEqual({ pendingCount: 0 });
+			expect(refreshEntitlements).not.toHaveBeenCalled();
+		}
+	});
+
+	it("502s on a business failure or a malformed list", async () => {
+		for (const envelope of [
+			{ status: 1, message: "Not allowed" },
+			{ status: 0, data: { agreementList: "4" } },
+		]) {
+			const { app } = harness(developer, {
+				connect: { interact: vi.fn(async () => envelope) },
+			});
+
+			const res = await post(app);
+
+			expect(res.status).toBe(502);
+			expect((await errorOf(res)).code).toBe("ESIGN_PENDING_FAILED");
+		}
 	});
 });
 

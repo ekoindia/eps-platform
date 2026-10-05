@@ -339,7 +339,7 @@ export const RecipeFlowchart = ({ recipe }: { recipe: Recipe }) => {
 			used: labels.some((l) => l.startsWith("on status")),
 			gloss: (
 				<>
-					the response's <Mono>response_status_id</Mono> is <Mono>N</Mono>
+					the response's <Mono>status</Mono> is <Mono>N</Mono>
 				</>
 			),
 		},

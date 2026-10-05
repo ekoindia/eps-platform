@@ -1,9 +1,11 @@
 # Status & Error Codes
 
 Eko APIs report status at two levels: the transport-level **HTTP status code**
-and the business-level **`response_status_id`** inside the response envelope. A
-`200 OK` with a non-zero `response_status_id` is a successful call that returned
-a business error — always check both.
+and the business-level **`status`** inside the response envelope. A `200 OK`
+with a non-zero `status` is a successful call that returned a business error —
+always check both. The envelope also carries a
+[`response_status_id`](#frontend-display-status-response_status_id), which is a
+UI display hint only — never use it for business logic.
 
 ## HTTP Status Codes
 
@@ -17,14 +19,14 @@ a business error — always check both.
 
 ## The Response Structure
 
-| Field                | Type   | Meaning                                                      |
-| -------------------- | ------ | ------------------------------------------------------------ |
-| `status`             | number | Primary success indicator (`0` = success).                   |
-| `response_status_id` | number | Granular status id — the codes above.                        |
-| `response_type_id`   | number | Response type id for non-financial requests.                 |
-| `tx_status`          | number | Financial Transactions status code (`0` = success)           |
-| `message`            | string | Human-readable result or error message.                      |
-| `data`               | object | Rest of the response parameters specific to that transaction |
+| Field                | Type   | Meaning                                                                                               |
+| -------------------- | ------ | ----------------------------------------------------------------------------------------------------- |
+| `status`             | number | Primary success indicator (`0` = success).                                                            |
+| `response_status_id` | number | UI display status — not for business logic. [See below](#frontend-display-status-response_status_id). |
+| `response_type_id`   | number | Response type id for non-financial requests.                                                          |
+| `tx_status`          | number | Financial Transactions status code (`0` = success)                                                    |
+| `message`            | string | Human-readable result or error message.                                                               |
+| `data`               | object | Rest of the response parameters specific to that transaction                                          |
 
 ## Input Validation Errors
 
@@ -47,7 +49,7 @@ For example:
 
 ## Financial Transaction Status Codes (`tx_status`)
 
-Financial (money-debit) responses additionally carry `tx_status` and `txstatus_desc`. When `tx_status` is `2` (Awaited), poll the relevant status endpoint rather than retrying the debit.
+Financial (money-debit) responses additionally carry `tx_status` and `txstatus_desc`. When `tx_status` is `2` (Initiated), or `6` (Response Awaited), poll the relevant status endpoint rather than retrying the debit.
 
 | tx_status | Meaning                                         |
 | --------- | ----------------------------------------------- |
@@ -82,3 +84,32 @@ Here are some of the common `status` codes:
 | `585`  | Customer already KYC approved                             |
 | `945`  | Sender/beneficiary monthly limit exhausted                |
 | `1297` | User/Agent not onboarded                                  |
+
+## Frontend Display Status (`response_status_id`)
+
+`response_status_id` is similar to `status`, but its granularity is optimized for
+frontend UX — it tells your UI _how to present_ a result. **Never use it to run
+business or branching logic, or to decide whether a transaction succeeded or
+failed.** Use `status` for that (plus `tx_status` for financial transactions, and
+`response_type_id` for non-financial requests).
+
+For example, both `-1` and `0` denote success, but:
+
+- `-1` is used when information is being pulled (read-only) and the result is
+  self-explanatory — e.g. get customer profile, or get list of recipients.
+- `0` is used for financial transactions, or where data was modified at the
+  backend — e.g. payment successful, or recipient deleted successfully. When
+  `response_status_id` is `0`, the UI can show a green tick or another marker to
+  indicate a successful transaction.
+
+| response_status_id | Meaning                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| `-1`               | Success (read-only information pull)                                                                      |
+| `0`                | Success (financial transaction, or backend state modified successfully). The UI may show a success stamp. |
+| `1`                | Failure                                                                                                   |
+| `2`                | Transaction Initiated                                                                                     |
+| `3`                | Refund Initiated for the financial transaction                                                            |
+| `4`                | Financial Transaction Refunded                                                                            |
+
+If `response_status_id` is missing or unrecognized, show a neutral state and rely
+on `status` for the outcome.

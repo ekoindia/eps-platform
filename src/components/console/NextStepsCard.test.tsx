@@ -1,4 +1,5 @@
 import NextStepsCard from "@/components/console/NextStepsCard";
+import { resetEsignPendingCache } from "@/lib/connect/esign-pending";
 import type { Lifecycle, MeView } from "@/lib/auth/client";
 import { render, screen, within } from "@testing-library/react";
 import { SETUP_FEE_DISCOUNT_PERCENT } from "@/lib/data/api-pricing";
@@ -8,6 +9,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // The pack itself. Null by default — unresolved, unentitled or failed — so
 // every case written before the fetch existed still sees the account-state row.
 const documents = vi.fn();
+
+// The stale-list fallback's upstream ask. Nothing pending by default.
+const esignPendingCall = vi.fn();
+vi.mock("@/lib/auth/client", async (orig) => ({
+	...(await orig<typeof import("@/lib/auth/client")>()),
+	authClient: { connectEsign: { pending: () => esignPendingCall() } },
+}));
 vi.mock("@/lib/connect/kyc-documents", () => ({
 	useKycDocuments: (enabled: boolean) => documents(enabled),
 }));
@@ -38,6 +46,8 @@ function entitledTo(...ids: number[]) {
 }
 
 beforeEach(() => {
+	resetEsignPendingCache();
+	esignPendingCall.mockReset().mockResolvedValue({ pendingCount: 0 });
 	interactions.mockReturnValue(null);
 	documents.mockReset().mockReturnValue(null);
 });
@@ -154,6 +164,45 @@ describe("NextStepsCard", () => {
 		expect(
 			screen.queryByRole("link", { name: /sign document/i }),
 		).not.toBeInTheDocument();
+	});
+
+	describe("stale-list fallback", () => {
+		it("shows the E-sign step when upstream says an agreement is pending", async () => {
+			esignPendingCall.mockResolvedValue({ pendingCount: 1 });
+			interactions.mockReturnValue(entitledTo(491));
+			documents.mockReturnValue(pack(2, 2));
+			renderCard({ state: "kyc-pending" });
+
+			expect(
+				await screen.findByRole("link", { name: /sign document/i }),
+			).toHaveAttribute("href", "/console/transaction/223");
+			expect(
+				within(screen.getAllByRole("listitem")[0]).getByText("Up next"),
+			).toBeInTheDocument();
+		});
+
+		it("does not ask while the pack is not yet approved", () => {
+			interactions.mockReturnValue(entitledTo(491));
+			documents.mockReturnValue(pack(2, 1));
+			renderCard({ state: "kyc-pending" });
+			expect(esignPendingCall).not.toHaveBeenCalled();
+		});
+
+		it("does not ask when 223 is already entitled, or the list is unresolved", () => {
+			documents.mockReturnValue(pack(2));
+			interactions.mockReturnValue(entitledTo(223));
+			renderCard({ state: "kyc-pending" }).unmount();
+			interactions.mockReturnValue(null);
+			renderCard({ state: "kyc-pending" });
+			expect(esignPendingCall).not.toHaveBeenCalled();
+		});
+
+		it("does not ask for an account outside KYC pending/resubmission", () => {
+			interactions.mockReturnValue(entitledTo(491));
+			documents.mockReturnValue(pack(2));
+			renderCard({ state: "active" });
+			expect(esignPendingCall).not.toHaveBeenCalled();
+		});
 	});
 
 	it("heads the card with the E-sign step once 223 is entitled", () => {

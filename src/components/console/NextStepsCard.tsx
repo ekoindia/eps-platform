@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import type { MeView } from "@/lib/auth/client";
 import { ESIGN_ID, ESIGN_PATH } from "@/lib/connect/esign";
+import { useEsignPending } from "@/lib/connect/esign-pending";
 import { type KycPackSummary, summariseDocuments } from "@/lib/connect/kyc";
 import { useKycDocuments } from "@/lib/connect/kyc-documents";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
@@ -181,7 +182,6 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 	// surface has — nothing here can tell a signed pack from an unsigned one, so
 	// the row states what is owed and carries no status.
 	const interactions = useRoleTransactionList();
-	const esignPending = Boolean(interactions?.[String(ESIGN_ID)]);
 	const kycDone = me.state === "active";
 	// Upstream reviewed the pack and refused at least one document. Distinct from
 	// `kyc-pending` in words and colour: "Pending" tells a partner to wait, which
@@ -199,6 +199,18 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 	// must not hide the way in.
 	const documents = useKycDocuments(kycBlocked);
 	const pack = documents ? packStatus(summariseDocuments(documents)) : null;
+	// The stale-list fallback: an account whose pack is approved but whose
+	// resolved list lacks 223 may still owe a signature — a `/transactions/wlc`
+	// list built off a stale token is exactly how it would look. Ask upstream on
+	// every Home visit (the store holds an answer for 30s), and show the row as
+	// if entitled when it says one is pending.
+	const esignPending = useEsignPending(
+		interactions,
+		kycBlocked &&
+			pack?.done === true &&
+			interactions !== null &&
+			!interactions[String(ESIGN_ID)],
+	);
 	// Shared with ⌘K's get_started card, so both name the same step.
 	const next = deriveNextStep({
 		state: me.state,
