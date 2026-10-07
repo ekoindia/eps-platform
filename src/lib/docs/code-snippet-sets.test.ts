@@ -105,18 +105,3 @@ describe("encrypt-aadhaar snippet set", () => {
 		expect(() => encryptAadhaar("1234 1234 1234", publicKeyBase64)).toThrow();
 	});
 });
-
-describe("aadhaar-number-encryption guide", () => {
-	it("publishes a UAT key that parses as an RSA SPKI public key", async () => {
-		const { default: mdx } =
-			await import("../../content/docs/aadhaar-number-encryption.mdx?raw");
-		const uatKey = mdx.match(/### UAT\s+```text\s+(\S+)\s+```/)?.[1];
-		expect(uatKey).toBeDefined();
-		const key = crypto.createPublicKey({
-			key: Buffer.from(uatKey as string, "base64"),
-			format: "der",
-			type: "spki",
-		});
-		expect(key.asymmetricKeyType).toBe("rsa");
-	});
-});

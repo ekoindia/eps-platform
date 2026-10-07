@@ -180,7 +180,7 @@ key**, fetched from eps-backend `GET /credentials/aadhaar-key`. The key lives in
 the backend env (`EPS_AADHAAR_RSA_PUBLIC_KEY_PROD`), never in the repo or the
 site bundle, and the route re-derives `active` from the session's own profile.
 403/404 hide the row; any other failure shows a reload hint. The public docs
-page (`/docs/aadhaar-number-encryption`) carries only the UAT key and points
+page (`/docs/fingpay-aeps-aadhaar-encryption`) carries no key (Fingpay has no UAT) and points
 here for production.
 
 Self-serve signup now exists at `/signup` (OTP → partial account → PAN → PIN),

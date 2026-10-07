@@ -4,10 +4,10 @@ XML blob that is forwarded verbatim, and the customer's Aadhaar number is
 RSA-encrypted before transmission.
 
 > [!NOTE]
-> Encrypt the customer's Aadhaar with Eko's RSA public key (PKCS#1 v1.5
+> Encrypt the customer's Aadhaar with Fingpay's RSA public key (PKCS#1 v1.5
 > padding) and Base64-encode it before sending it as `aadhar`. See the
-> [Aadhaar Number Encryption guide](/docs/aadhaar-number-encryption) for the
-> public key and code samples.
+> [Aadhaar Encryption (Fingpay AePS) guide](/docs/fingpay-aeps-aadhaar-encryption)
+> for how to get the key and code samples.
 
 ## Prerequisites
 
@@ -76,11 +76,9 @@ transaction APIs):
 2. RSA-encrypt the Aadhaar number with the decoded key.
 3. Base64-encode the result and send that as the `aadhar` parameter.
 
-Production public key:
-
-```text
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCaFyrzeDhMaFLx+LZUNOOO14Pj9aPfr+1WOanDgDHxo9NekENYcWUftM9Y17ul2pXr3bqw0GCh4uxNoTQ5cTH4buI42LI8ibMaf7Kppq9MzdzI9/7pOffgdSn+P8J64CJAk3VrVswVgfy8lABt7fL8R6XReI9x8ewwKHhCRTwBgQIDAQAB
-```
+Fingpay has no UAT environment, so there is no UAT key. The production public
+key is in [Console → Credentials](/console/credentials) once your account is
+active.
 
 ## Biometric (PID) capture
 

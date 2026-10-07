@@ -182,8 +182,8 @@ public class BiometricActivity extends AppCompatActivity implements RDServiceEve
 
 /**
  * RSA-encrypt an Aadhaar number for the `aadhar` request param: UTF-8 →
- * RSA/PKCS#1 v1.5 with Eko's Base64 X.509 (SPKI) public key → Base64.
- * Shown on `/docs/aadhaar-number-encryption`; `code-snippet-sets.test.ts`
+ * RSA/PKCS#1 v1.5 with Fingpay's Base64 X.509 (SPKI) public key → Base64.
+ * Shown on `/docs/fingpay-aeps-aadhaar-encryption`; `code-snippet-sets.test.ts`
  * executes the Node.js variant against a throwaway key pair.
  */
 const ENCRYPT_AADHAAR: CodeSnippet[] = [

@@ -45,7 +45,7 @@ const GUIDE_ICONS: Record<string, IconComponent> = {
 	[docsHref("how-auth-works")]: KeyRound,
 	[docsHref("error-codes")]: TriangleAlert,
 	[docsHref("aadhaar-biometric-rdservice")]: Fingerprint,
-	[docsHref("aadhaar-number-encryption")]: LockKeyhole,
+	[docsHref("fingpay-aeps-aadhaar-encryption")]: LockKeyhole,
 	[docsHref("faqs")]: CircleHelp,
 	[sdkGuideHref()]: Package,
 	[recipeHref()]: Workflow,

@@ -51,6 +51,19 @@
   status = 301
   force = true
 
+# Aadhaar encryption guide scoped to Fingpay AePS — slug renamed.
+[[redirects]]
+  from = "/docs/aadhaar-number-encryption"
+  to = "/docs/fingpay-aeps-aadhaar-encryption"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/aadhaar-number-encryption.md"
+  to = "/docs/fingpay-aeps-aadhaar-encryption.md"
+  status = 301
+  force = true
+
 # Quickstart guide folded into the /docs overview (now the quickstart itself).
 [[redirects]]
   from = "/docs/quickstart"

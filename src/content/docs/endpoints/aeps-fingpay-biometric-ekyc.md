@@ -2,12 +2,12 @@ The final step in the one-time AePS Fingpay eKYC flow, called after OTP verifica
 
 > [!WARNING]
 > **Encrypt the Aadhaar number** before passing it in the `aadhar` parameter —
-> never send it as plain text. Encrypt it with Eko's RSA public key using
+> never send it as plain text. Encrypt it with Fingpay's RSA public key using
 > PKCS#1 v1.5 padding, then Base64-encode the result. The same encrypted
 > Aadhaar + PID XML format is used by all AePS transaction APIs.
 >
-> The [Aadhaar Number Encryption guide](/docs/aadhaar-number-encryption) has
-> the RSA public key, step-by-step instructions and code samples in Node.js,
+> The [Aadhaar Encryption (Fingpay AePS) guide](/docs/fingpay-aeps-aadhaar-encryption)
+> explains how to get the RSA public key, with step-by-step instructions and code samples in Node.js,
 > Python, PHP, Java and C#.
 
 ## E-KYC steps

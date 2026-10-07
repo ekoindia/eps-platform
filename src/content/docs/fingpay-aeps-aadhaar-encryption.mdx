@@ -1,8 +1,9 @@
-# Aadhaar Number Encryption
+# Aadhaar Encryption (Fingpay AePS)
 
-APIs that accept an Aadhaar number in the `aadhar` parameter expect it
+The **Fingpay AePS** APIs accept the Aadhaar number in the `aadhar` parameter
 **encrypted**, never as plain text. You encrypt it on your backend with an
-**RSA public key** provided by Eko, then Base64-encode the result.
+**RSA public key** provided by Fingpay, then Base64-encode the result. This
+applies only to the Fingpay AePS APIs listed below.
 
 ```text
 Aadhaar number → UTF-8 bytes → RSA encryption (PKCS#1 v1.5) → Base64 → aadhar
@@ -25,19 +26,10 @@ Aadhaar number → UTF-8 bytes → RSA encryption (PKCS#1 v1.5) → Base64 → a
 
 **Format:** Base64-encoded X.509 RSA public key (`SubjectPublicKeyInfo`, DER).
 
-### UAT
-
-```text
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCaFyrzeDhMaFLx+LZUNOOO14Pj9aPfr+1WOanDgDHxo9NekENYcWUftM9Y17ul2pXr3bqw0GCh4uxNoTQ5cTH4buI42LI8ibMaf7Kppq9MzdzI9/7pOffgdSn+P8J64CJAk3VrVswVgfy8lABt7fL8R6XReI9x8ewwKHhCRTwBgQIDAQAB
-```
-
-### Production
-
-<Callout type="warning">
-	UAT and production use **different** RSA public keys. The production key is
-	in [Console → Credentials](/console/credentials) once your account is
-	active. A value encrypted with the UAT key is rejected in production, and
-	vice versa — keep the key in per-environment configuration, not in code.
+<Callout type="note">
+	Fingpay doesn't offer a UAT environment, so there is **no UAT key**. The
+	production key is in [Console → Credentials](/console/credentials) once
+	your account is active. Keep it in configuration, not in code.
 </Callout>
 
 ## Encryption steps
@@ -57,7 +49,7 @@ Plain Aadhaar
        ↓
 UTF-8 bytes
        ↓
-RSA encryption with Eko's RSA public key
+RSA encryption with Fingpay's RSA public key
 (PKCS#1 v1.5 padding)
        ↓
 Encrypted bytes
@@ -74,12 +66,12 @@ produces different values**. This is expected — don't cache or compare the
 encrypted strings.
 
 The public key can only **encrypt**. Only the receiving system holds the matching
-private key that decrypts it, so the plain Aadhaar is never exposed in transit
-or in your request logs.
+private key that decrypts it. Encrypt as early as possible and never log the
+plain Aadhaar number.
 
 ## Code samples
 
-Each sample takes the Aadhaar number and the environment's RSA public key, and
+Each sample takes the Aadhaar number and the RSA public key, and
 returns the Base64 string to send as `aadhar`. Run this on your **backend**.
 
 <CodeSnippets id="encrypt-aadhaar" />
@@ -92,8 +84,8 @@ URL-encode it first (an unescaped `+` turns into a space).
 
 If the API rejects the Aadhaar as incorrectly encrypted, check:
 
-- **Wrong environment key** — the UAT key used against production, or the
-  reverse.
+- **Wrong key** — a key other than the production key from Console →
+  Credentials.
 - **Wrong padding** — OAEP or "no padding" instead of PKCS#1 v1.5. Some
   libraries default to OAEP; set PKCS#1 v1.5 explicitly.
 - **Formatted input** — spaces, hyphens or a masked number encrypted instead of

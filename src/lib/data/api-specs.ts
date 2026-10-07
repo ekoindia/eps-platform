@@ -23,18 +23,18 @@ import type { ApiParam, ApiSpec, RelatedLink } from "./api-specs-common";
 import { enabledSpecs } from "./api-specs-common";
 
 /** Docs slug of the shared guide explaining Aadhaar RSA encryption. */
-const AADHAAR_ENCRYPTION_SLUG = "aadhaar-number-encryption";
+const AADHAAR_ENCRYPTION_SLUG = "fingpay-aeps-aadhaar-encryption";
 
 /** Brief encryption summary appended to the description of every spec that
  * takes {@link encryptedAadhaarParam}; the guide holds the key + code. */
-const AADHAAR_ENCRYPTION_NOTE = `\n\nThe \`aadhar\` parameter must be encrypted with Eko's RSA public key (PKCS#1 v1.5 padding) and Base64-encoded — never sent as plain text. See [Aadhaar Number Encryption](/docs/${AADHAAR_ENCRYPTION_SLUG}) for the public key and code samples.`;
+const AADHAAR_ENCRYPTION_NOTE = `\n\nThe \`aadhar\` parameter must be encrypted with Fingpay's RSA public key (PKCS#1 v1.5 padding) and Base64-encoded — never sent as plain text. See [Aadhaar Encryption (Fingpay AePS)](/docs/${AADHAAR_ENCRYPTION_SLUG}) for how to get the production key and code samples.`;
 
 /** Related-link to the encryption guide, for every spec using {@link encryptedAadhaarParam}. */
 const AADHAAR_ENCRYPTION_LINK: RelatedLink = {
-	label: "Aadhaar Number Encryption guide",
+	label: "Aadhaar Encryption (Fingpay AePS) guide",
 	slug: AADHAAR_ENCRYPTION_SLUG,
 	description:
-		"RSA public key, encryption steps and code samples for the `aadhar` parameter.",
+		"Where to get the RSA public key, encryption steps and code samples for the `aadhar` parameter.",
 };
 
 /** The RSA-encrypted `aadhar` request param shared by the AePS Fingpay APIs. */
@@ -42,7 +42,7 @@ const encryptedAadhaarParam = (whose: string): ApiParam => ({
 	name: "aadhar",
 	type: "string",
 	required: true,
-	description: `RSA-encrypted (PKCS#1 v1.5), Base64-encoded Aadhaar number of the ${whose}. See the Aadhaar Number Encryption guide for the public key and code samples.`,
+	description: `RSA-encrypted (PKCS#1 v1.5), Base64-encoded Aadhaar number of the ${whose}. See the Aadhaar Encryption (Fingpay AePS) guide for the key and code samples.`,
 	example: "BASE64_ENCRYPTED_AADHAAR",
 });
 

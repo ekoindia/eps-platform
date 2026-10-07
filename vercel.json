@@ -31,6 +31,16 @@
 			"permanent": true
 		},
 		{
+			"source": "/docs/aadhaar-number-encryption",
+			"destination": "/docs/fingpay-aeps-aadhaar-encryption",
+			"permanent": true
+		},
+		{
+			"source": "/docs/aadhaar-number-encryption.md",
+			"destination": "/docs/fingpay-aeps-aadhaar-encryption.md",
+			"permanent": true
+		},
+		{
 			"source": "/docs/quickstart",
 			"destination": "/docs",
 			"permanent": true
