@@ -4499,14 +4499,16 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "utility_acc_no",
 				type: "string",
 				required: true,
-				description: "Bill / account number for the biller.",
+				description:
+					"Bill/account number. For a prepaid recharge, the customer's mobile number.",
 				example: "3287820071",
 			},
 			{
 				name: "confirmation_mobile_no",
 				type: "string",
 				required: true,
-				description: "Customer mobile number linked with the bill.",
+				description:
+					"Customer's alternate mobile number. This is only used for sending the confirmation SMS. It may be same as the `utility_acc_no` for prepaid recharges.",
 				example: "9903457748",
 			},
 			{
@@ -4721,14 +4723,15 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Bill / account number. For a prepaid recharge, the customer's mobile number.",
+					"Bill/account number. For a prepaid recharge, the customer's mobile number.",
 				example: "3287820071",
 			},
 			{
 				name: "confirmation_mobile_no",
 				type: "string",
 				required: true,
-				description: "Customer mobile number.",
+				description:
+					"Customer's alternate mobile number. This is only used for sending the confirmation SMS. It may be same as the `utility_acc_no` for prepaid recharges.",
 				example: "9903457748",
 			},
 			{
