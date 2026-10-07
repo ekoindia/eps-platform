@@ -39,7 +39,9 @@ const SignupPage = () => {
 	const isWizard = state.status === "authed" && state.role === "signup";
 
 	return (
-		<div className="min-h-screen bg-background">
+		// Faint parchment wash (a paler cut of the docs pane's #f4efe6) so the
+		// wizard's white cards lift off the page instead of merging into it.
+		<div className="min-h-screen bg-[#faf7f1]">
 			<Helmet>
 				<title>Create your account | Eko</title>
 				<meta

@@ -19,8 +19,32 @@
  * response shapes for JavaScript-rendered or rate-limited portal pages were
  * seeded from curated samples and should be reconciled against live API calls.
  */
-import type { ApiSpec } from "./api-specs-common";
+import type { ApiParam, ApiSpec, RelatedLink } from "./api-specs-common";
 import { enabledSpecs } from "./api-specs-common";
+
+/** Docs slug of the shared guide explaining Aadhaar RSA encryption. */
+const AADHAAR_ENCRYPTION_SLUG = "aadhaar-number-encryption";
+
+/** Brief encryption summary appended to the description of every spec that
+ * takes {@link encryptedAadhaarParam}; the guide holds the key + code. */
+const AADHAAR_ENCRYPTION_NOTE = `\n\nThe \`aadhar\` parameter must be encrypted with Eko's RSA public key (PKCS#1 v1.5 padding) and Base64-encoded — never sent as plain text. See [Aadhaar Number Encryption](/docs/${AADHAAR_ENCRYPTION_SLUG}) for the public key and code samples.`;
+
+/** Related-link to the encryption guide, for every spec using {@link encryptedAadhaarParam}. */
+const AADHAAR_ENCRYPTION_LINK: RelatedLink = {
+	label: "Aadhaar Number Encryption guide",
+	slug: AADHAAR_ENCRYPTION_SLUG,
+	description:
+		"RSA public key, encryption steps and code samples for the `aadhar` parameter.",
+};
+
+/** The RSA-encrypted `aadhar` request param shared by the AePS Fingpay APIs. */
+const encryptedAadhaarParam = (whose: string): ApiParam => ({
+	name: "aadhar",
+	type: "string",
+	required: true,
+	description: `RSA-encrypted (PKCS#1 v1.5), Base64-encoded Aadhaar number of the ${whose}. See the Aadhaar Number Encryption guide for the public key and code samples.`,
+	example: "BASE64_ENCRYPTED_AADHAAR",
+});
 
 /**
  * The raw spec literal, INCLUDING entries flagged `disabled`. Deliberately
@@ -1686,7 +1710,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Initiate AePS Fingpay eKYC by sending an OTP to the agent's registered Aadhaar-linked mobile number.",
 		description:
-			"First-time KYC follows three steps in order: `Send OTP` → `Verify OTP` → `Biometric`. On subsequent days, use the Daily KYC (biometric-only) endpoint.\n\nThis is the first step in the one-time AePS Fingpay eKYC flow. The OTP is delivered to the number passed in `customer_id`. The eKYC flow — Send OTP → Verify OTP → Biometric — must be completed once per agent before they can perform any AePS transactions. This step is a prerequisite; do not confuse it with the Daily KYC which is required on each calendar day.",
+			"First-time KYC follows three steps in order: `Send OTP` → `Verify OTP` → `Biometric`. On subsequent days, use the Daily KYC (biometric-only) endpoint.\n\nThis is the first step in the one-time AePS Fingpay eKYC flow. The OTP is delivered to the number passed in `customer_id`. The eKYC flow — Send OTP → Verify OTP → Biometric — must be completed once per agent before they can perform any AePS transactions. This step is a prerequisite; do not confuse it with the Daily KYC which is required on each calendar day." +
+			AADHAAR_ENCRYPTION_NOTE,
+		relatedLinks: [AADHAAR_ENCRYPTION_LINK],
 		relevance: "M",
 		bestFor:
 			"Initial one-time KYC setup for newly activated AePS Fingpay agents",
@@ -1702,14 +1728,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
 				example: "20810200",
 			},
-			{
-				name: "aadhar",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the agent undergoing eKYC.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
+			encryptedAadhaarParam("agent undergoing eKYC"),
 			{
 				name: "customer_id",
 				type: "string",
@@ -1799,7 +1818,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Verify the eKYC OTP sent to the agent's Aadhaar-linked mobile number to advance the one-time AePS Fingpay eKYC.",
 		description:
-			"The second step of the one-time AePS Fingpay eKYC flow (Send OTP → Verify OTP → Biometric). Submits the OTP the agent received, together with the `otp_ref_id` and `reference_tid` returned by the Send OTP API, to validate the agent's identity before biometric capture. Aadhaar must be RSA-encrypted and Base64-encoded.",
+			"The second step of the one-time AePS Fingpay eKYC flow (Send OTP → Verify OTP → Biometric). Submits the OTP the agent received, together with the `otp_ref_id` and `reference_tid` returned by the Send OTP API, to validate the agent's identity before biometric capture." +
+			AADHAAR_ENCRYPTION_NOTE,
+		relatedLinks: [AADHAAR_ENCRYPTION_LINK],
 		relevance: "M",
 		bestFor: "Completing OTP validation during initial one-time agent eKYC",
 		method: "PUT",
@@ -1822,14 +1843,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Registered mobile number of the agent/merchant undergoing eKYC.",
 				example: "9123456789",
 			},
-			{
-				name: "aadhar",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the agent undergoing eKYC.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
+			encryptedAadhaarParam("agent undergoing eKYC"),
 			{
 				name: "otp",
 				type: "string",
@@ -1928,7 +1942,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		// Short text for the .md twin / OpenAPI / agent bundle; the docs page
 		// renders the richer `descriptionFile` (callouts, Aadhaar-encryption code).
 		description:
-			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.\n\nIf you generate the PID block with your own code rather than the RD service default, set `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=` alongside `fCount`, `fType` and the other attributes.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.\n\nIf you generate the PID block with your own code rather than the RD service default, set `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=` alongside `fCount`, `fType` and the other attributes.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice)." +
+			AADHAAR_ENCRYPTION_NOTE,
 		descriptionFile: "aeps-fingpay-biometric-ekyc.md",
 		relatedLinks: [
 			{
@@ -1937,6 +1952,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description:
 					"How to capture the PID block from a fingerprint scanner on Web or Android.",
 			},
+			AADHAAR_ENCRYPTION_LINK,
 		],
 		relevance: "M",
 		bestFor:
@@ -1953,14 +1969,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
 				example: "20810200",
 			},
-			{
-				name: "aadhar",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the agent.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
+			encryptedAadhaarParam("agent"),
 			{
 				name: "customer_id",
 				type: "string",
@@ -2063,7 +2072,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Perform the mandatory daily biometric re-verification that authorises an agent to carry out AePS transactions for the current calendar day.",
 		description:
-			"Biometric-only re-verification for the days after the one-time eKYC — no OTP step is required. AePS Fingpay requires every agent to re-authenticate themselves biometrically at the start of each working day, before their first transaction of the day.\n\nIf this fails with reason `Please complete bank eKYC to process the transaction.`, re-run the full first-time eKYC sequence — Send OTP → Verify OTP → Biometric — before retrying.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+			"Biometric-only re-verification for the days after the one-time eKYC — no OTP step is required. AePS Fingpay requires every agent to re-authenticate themselves biometrically at the start of each working day, before their first transaction of the day.\n\nIf this fails with reason `Please complete bank eKYC to process the transaction.`, re-run the full first-time eKYC sequence — Send OTP → Verify OTP → Biometric — before retrying.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice)." +
+			AADHAAR_ENCRYPTION_NOTE,
 		relatedLinks: [
 			{
 				label: "Aadhaar Biometric Authentication (RDService) guide",
@@ -2071,6 +2081,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description:
 					"How to capture the PID block from a fingerprint scanner on Web or Android.",
 			},
+			AADHAAR_ENCRYPTION_LINK,
 		],
 		relevance: "H",
 		bestFor:
@@ -2087,14 +2098,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
 				example: "20810200",
 			},
-			{
-				name: "aadhar",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the agent performing daily KYC.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
+			encryptedAadhaarParam("agent performing Daily KYC"),
 			{
 				name: "customer_id",
 				type: "string",
@@ -2211,7 +2215,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Generate the transaction OTP required before an AePS cash withdrawal above ₹5,000.",
 		description:
-			"Fingpay requires a fresh, transaction-scoped OTP for every cash withdrawal above **₹5,000**. Call this before Cash Withdrawal only when `amount` is greater than ₹5,000 — for ₹5,000 or less, skip it and call Cash Withdrawal directly.\n\nOn success the customer receives a 6-digit OTP by SMS on their Aadhaar-linked mobile, and the response returns `data.fp_transaction_id`. Send that id to Cash Withdrawal as `txn_otp_request_id`, and put the SMS OTP in the `otp` attribute of the PidOptions used to capture the customer's fingerprint. They are two different values, and Cash Withdrawal needs both. The id belongs to this one withdrawal attempt: generate a new one for every attempt and never reuse it.\n\nNo biometric capture happens in this call — it takes no `piddata`.",
+			"Fingpay requires a fresh, transaction-scoped OTP for every cash withdrawal above **₹5,000**. Call this before Cash Withdrawal only when `amount` is greater than ₹5,000 — for ₹5,000 or less, skip it and call Cash Withdrawal directly.\n\nOn success the customer receives a 6-digit OTP by SMS on their Aadhaar-linked mobile, and the response returns `data.fp_transaction_id`. Send that id to Cash Withdrawal as `txn_otp_request_id`, and put the SMS OTP in the `otp` attribute of the PidOptions used to capture the customer's fingerprint. They are two different values, and Cash Withdrawal needs both. The id belongs to this one withdrawal attempt: generate a new one for every attempt and never reuse it.\n\nNo biometric capture happens in this call — it takes no `piddata`." +
+			AADHAAR_ENCRYPTION_NOTE,
 		relatedLinks: [
 			{
 				label: "Aadhaar Biometric Authentication (RDService) guide",
@@ -2219,6 +2224,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description:
 					"How to set the `otp` attribute in PidOptions and capture the PID block.",
 			},
+			AADHAAR_ENCRYPTION_LINK,
 		],
 		relevance: "H",
 		bestFor:
@@ -2250,14 +2256,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Short bank code identifying the customer's Aadhaar-linked bank (e.g. `HDFC`, `SBIN`). Obtain from the bank list API. Recommended — send the same value you will use for the withdrawal.",
 				example: "HDFC",
 			},
-			{
-				name: "aadhar",
-				type: "string",
-				required: true,
-				description:
-					'RSA-encrypted, Base64-encoded Aadhaar number of the customer — the same value you send to Cash Withdrawal. Encrypt the 12-digit Aadhaar with the Eko RSA public key using PKCS#1 v1.5 padding (Java\'s default `Cipher.getInstance("RSA")`), then Base64-encode the ciphertext.',
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
+			encryptedAadhaarParam(
+				"customer — the same value you send to Cash Withdrawal",
+			),
 			{
 				name: "latlong",
 				type: "string",
@@ -2324,7 +2325,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.\n\n**Above ₹5,000 a transaction OTP is required.** First call Cash Withdrawal OTP, then send its `fp_transaction_id` here as `txn_otp_request_id`, and put the customer's 6-digit SMS OTP in the `otp` attribute of the PidOptions used for the fingerprint capture. For ₹5,000 or less, no OTP step is needed.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.\n\n**Above ₹5,000 a transaction OTP is required.** First call Cash Withdrawal OTP, then send its `fp_transaction_id` here as `txn_otp_request_id`, and put the customer's 6-digit SMS OTP in the `otp` attribute of the PidOptions used for the fingerprint capture. For ₹5,000 or less, no OTP step is needed.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice)." +
+			AADHAAR_ENCRYPTION_NOTE,
 		descriptionFile: "aeps-fingpay-cash-withdrawal.md",
 		relatedLinks: [
 			{
@@ -2333,6 +2335,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description:
 					"How to capture the PID block from a fingerprint scanner on Web or Android.",
 			},
+			AADHAAR_ENCRYPTION_LINK,
 		],
 		relevance: "H",
 		bestFor:
@@ -2365,14 +2368,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Short bank code identifying the customer's Aadhaar-linked bank (e.g. `HDFC`, `SBIN`). Obtain from the bank list API.",
 				example: "HDFC",
 			},
-			{
-				name: "aadhar",
-				type: "string",
-				required: true,
-				description:
-					'RSA-encrypted, Base64-encoded Aadhaar number. Encrypt the 12-digit Aadhaar with the Eko RSA public key using PKCS#1 v1.5 padding (Java\'s default `Cipher.getInstance("RSA")`), then Base64-encode the ciphertext.',
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
+			encryptedAadhaarParam("customer"),
 			{
 				name: "latlong",
 				type: "string",
@@ -2751,7 +2747,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
 		description:
-			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint — the request shape matches Cash Withdrawal without the `amount` field. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint — the request shape matches Cash Withdrawal without the `amount` field. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice)." +
+			AADHAAR_ENCRYPTION_NOTE,
 		relatedLinks: [
 			{
 				label: "Aadhaar Biometric Authentication (RDService) guide",
@@ -2759,6 +2756,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description:
 					"How to capture the PID block from a fingerprint scanner on Web or Android.",
 			},
+			AADHAAR_ENCRYPTION_LINK,
 		],
 		relevance: "L",
 		bestFor:
@@ -2791,14 +2789,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Short bank code identifying the customer's Aadhaar-linked bank (e.g. `HDFC`, `SBIN`). Obtain from the bank list API.",
 				example: "HDFC",
 			},
-			{
-				name: "aadhar",
-				type: "string",
-				required: true,
-				description:
-					'RSA-encrypted, Base64-encoded Aadhaar number. Encrypt the 12-digit Aadhaar with the Eko RSA public key using PKCS#1 v1.5 padding (Java\'s default `Cipher.getInstance("RSA")`), then Base64-encode the ciphertext.',
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
+			encryptedAadhaarParam("customer"),
 			{
 				name: "latlong",
 				type: "string",
@@ -3013,7 +3004,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",
 		description:
-			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint — the request shape matches Balance Enquiry (no `amount`). No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint — the request shape matches Balance Enquiry (no `amount`). No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice)." +
+			AADHAAR_ENCRYPTION_NOTE,
 		relatedLinks: [
 			{
 				label: "Aadhaar Biometric Authentication (RDService) guide",
@@ -3021,6 +3013,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description:
 					"How to capture the PID block from a fingerprint scanner on Web or Android.",
 			},
+			AADHAAR_ENCRYPTION_LINK,
 		],
 		relevance: "L",
 		bestFor:
@@ -3053,14 +3046,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Short bank code identifying the customer's Aadhaar-linked bank (e.g. `HDFC`, `SBIN`). Obtain from the bank list API.",
 				example: "HDFC",
 			},
-			{
-				name: "aadhar",
-				type: "string",
-				required: true,
-				description:
-					'RSA-encrypted, Base64-encoded Aadhaar number. Encrypt the 12-digit Aadhaar with the Eko RSA public key using PKCS#1 v1.5 padding (Java\'s default `Cipher.getInstance("RSA")`), then Base64-encode the ciphertext.',
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
+			encryptedAadhaarParam("customer"),
 			{
 				name: "latlong",
 				type: "string",
@@ -4513,14 +4499,16 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "utility_acc_no",
 				type: "string",
 				required: true,
-				description: "Bill / account number for the biller.",
+				description:
+					"Bill/account number. For a prepaid recharge, the customer's mobile number.",
 				example: "3287820071",
 			},
 			{
 				name: "confirmation_mobile_no",
 				type: "string",
 				required: true,
-				description: "Customer mobile number linked with the bill.",
+				description:
+					"Customer's alternate mobile number. This is only used for sending the confirmation SMS. It may be same as the `utility_acc_no` for prepaid recharges.",
 				example: "9903457748",
 			},
 			{
@@ -4735,14 +4723,15 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Bill / account number. For a prepaid recharge, the customer's mobile number.",
+					"Bill/account number. For a prepaid recharge, the customer's mobile number.",
 				example: "3287820071",
 			},
 			{
 				name: "confirmation_mobile_no",
 				type: "string",
 				required: true,
-				description: "Customer mobile number.",
+				description:
+					"Customer's alternate mobile number. This is only used for sending the confirmation SMS. It may be same as the `utility_acc_no` for prepaid recharges.",
 				example: "9903457748",
 			},
 			{

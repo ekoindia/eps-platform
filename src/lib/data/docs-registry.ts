@@ -41,9 +41,9 @@ export const CATEGORY_ORDER: DocCategory[] = [
 ];
 
 export const CATEGORY_TITLES: Record<DocCategory, string> = {
-	bc: "Banking & Cash",
-	payment: "Payments",
-	verification: "Verification",
+	bc: "Banking & Cash APIs",
+	payment: "Payments APIs",
+	verification: "Verification APIs",
 	util: "Utility & Helper APIs",
 };
 

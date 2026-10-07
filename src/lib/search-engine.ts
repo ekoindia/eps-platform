@@ -70,6 +70,9 @@ const PHRASE_ALIASES: [RegExp, string][] = [
 	[/\bmoney[\s-]?transfer\b/g, "dmt"],
 	[/\bbill[\s-]?payment(s)?\b/g, "bbps"],
 	[/\bpan[\s-]?card\b/g, "pan"],
+	// The corpus says "mobile"; left as-is, the generic "number" matches the
+	// Aadhaar-encryption guide's slug at slug boost and buries the OTP product.
+	[/\bphone\s+numbers?\b/g, "mobile"],
 	// "documentation" stems to "document", which DigiLocker's document
 	// endpoints own by label and slug; "docs" is the Developer Docs label.
 	[/\bapi\s+doc(?:s|umentation)\b/g, "docs"],

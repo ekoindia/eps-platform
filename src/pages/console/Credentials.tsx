@@ -1,6 +1,10 @@
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
-import { UatCredentialsBlock } from "@/components/console/UatCredentials";
-import type { Lifecycle } from "@/lib/auth/client";
+import {
+	CredentialRow,
+	UatCredentialsBlock,
+} from "@/components/console/UatCredentials";
+import { ApiError, authClient, type Lifecycle } from "@/lib/auth/client";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 /** Copy shown to any account that hasn't reached "active" yet. */
@@ -44,6 +48,63 @@ const PRODUCTION_COPY: Record<
 	},
 };
 
+type AadhaarKeyState =
+	| { status: "loading" }
+	| { status: "ok"; key: string }
+	| { status: "hidden" }
+	| { status: "error" };
+
+/**
+ * Production RSA public key for Aadhaar encryption. Mounted only for `active`
+ * accounts, so a state change unmounts it and the cleanup drops a late answer.
+ * The backend re-checks the state itself; this gate only avoids a pointless
+ * request. 403/404 are deliberate "not for you / not configured" answers and
+ * render nothing; anything else is transient and says so.
+ */
+function AadhaarProductionKey() {
+	const [state, setState] = useState<AadhaarKeyState>({ status: "loading" });
+	useEffect(() => {
+		let current = true;
+		authClient
+			.aadhaarKey()
+			.then(({ key }) => current && setState({ status: "ok", key }))
+			.catch((error: unknown) => {
+				if (!current) return;
+				const deliberate =
+					error instanceof ApiError &&
+					(error.httpStatus === 403 || error.httpStatus === 404);
+				setState({ status: deliberate ? "hidden" : "error" });
+			});
+		return () => {
+			current = false;
+		};
+	}, []);
+
+	if (state.status === "hidden" || state.status === "loading") return null;
+	return (
+		<div className="flex flex-col gap-2 border-t pt-3">
+			<p className="text-sm text-muted-foreground">
+				RSA public key for{" "}
+				<Link
+					to="/docs/aadhaar-number-encryption"
+					className="font-medium text-eko-navy underline underline-offset-4 hover:no-underline"
+				>
+					Aadhaar number encryption
+				</Link>{" "}
+				in production.
+			</p>
+			{state.status === "ok" ? (
+				<CredentialRow label="aadhaar_rsa_key" value={state.key} />
+			) : (
+				<p className="text-sm text-destructive">
+					Couldn&apos;t load the production Aadhaar key. Reload the page to try
+					again.
+				</p>
+			)}
+		</div>
+	);
+}
+
 /**
  * Production keypair block — deliberately an empty state with no request
  * button: no credential-issuance API exists yet, and a button that cannot
@@ -67,6 +128,7 @@ function ProductionCredentials() {
 					{copy.cta.label}
 				</Link>
 			) : null}
+			{me.state === "active" ? <AadhaarProductionKey /> : null}
 		</div>
 	);
 }

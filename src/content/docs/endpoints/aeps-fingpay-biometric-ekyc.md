@@ -1,37 +1,14 @@
 The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's Aadhaar and live biometric PID data to UIDAI for identity verification. On success the agent's eKYC is marked complete and they can start performing AePS transactions (subject to completing daily 2FA each day).
 
 > [!WARNING]
-> You need to **encrypt the Aadhaar number** before passing it as a parameter. The same RSA-encrypted Aadhaar + PID XML format is used by all AePS transaction APIs.
-
-## Aadhaar encryption
-
-1. Decode the public key using Base64 (the public keys for UAT and production are different).
-2. Compute the RSA-encrypted signature using the decoded key and the Aadhaar message.
-3. Base64-encode the encrypted signature before sending it on the API.
-
-### Public key for Aadhaar encryption (UAT)
-
-```text
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCaFyrzeDhMaFLx+LZUNOOO14Pj9aPfr+1WOanDgDHxo9NekENYcWUftM9Y17ul2pXr3bqw0GCh4uxNoTQ5cTH4buI42LI8ibMaf7Kppq9MzdzI9/7pOffgdSn+P8J64CJAk3VrVswVgfy8lABt7fL8R6XReI9x8ewwKHhCRTwBgQIDAQAB
-```
-
-```java
-public static String calculateRSA(String salt) throws InvalidKeyException, Exception {
-	Cipher encryptCipher = Cipher.getInstance("RSA");
-	encryptCipher.init(Cipher.ENCRYPT_MODE, getPublicKey());
-	byte[] secretMessageBytes = salt.getBytes("UTF-8");
-	byte[] encryptedMessageBytes = encryptCipher.doFinal(secretMessageBytes);
-	return Base64.encodeBase64String(encryptedMessageBytes);
-}
-
-public static PublicKey getPublicKey() throws Exception {
-	String rawPublicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCXa63O/UXt5S0Vi8DM/PWF4yugx2OcTVbc...";
-	byte[] keyBytes = Base64.decodeBase64(rawPublicKey);
-	X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-	KeyFactory kf = KeyFactory.getInstance("RSA");
-	return kf.generatePublic(spec);
-}
-```
+> **Encrypt the Aadhaar number** before passing it in the `aadhar` parameter —
+> never send it as plain text. Encrypt it with Eko's RSA public key using
+> PKCS#1 v1.5 padding, then Base64-encode the result. The same encrypted
+> Aadhaar + PID XML format is used by all AePS transaction APIs.
+>
+> The [Aadhaar Number Encryption guide](/docs/aadhaar-number-encryption) has
+> the RSA public key, step-by-step instructions and code samples in Node.js,
+> Python, PHP, Java and C#.
 
 ## E-KYC steps
 

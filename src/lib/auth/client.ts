@@ -115,6 +115,11 @@ export interface WalletBalanceView {
 	balance: number;
 }
 
+/** Production RSA public key for Aadhaar encryption (Base64 DER SPKI). */
+export interface AadhaarKeyView {
+	key: string;
+}
+
 export interface AdminView {
 	role: "admin";
 	login: string | null;
@@ -706,6 +711,14 @@ export const authClient = {
 	/** The signed-in developer's E-value wallet balance, in rupees. */
 	walletBalance: (): Promise<WalletBalanceView> =>
 		request("/wallet/balance", { method: "GET" }) as Promise<WalletBalanceView>,
+	/**
+	 * Production RSA public key for Aadhaar encryption. Active developers only:
+	 * 403 `NOT_ACTIVE` otherwise, 404 `NOT_CONFIGURED` when the env has none.
+	 */
+	aadhaarKey: (): Promise<AadhaarKeyView> =>
+		request("/credentials/aadhaar-key", {
+			method: "GET",
+		}) as Promise<AadhaarKeyView>,
 	/**
 	 * The developer's notifications, already filtered to NORMAL items,
 	 * normalized, deduped and capped by the backend.
