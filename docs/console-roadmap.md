@@ -158,7 +158,7 @@ Two failure modes are deliberately distinct: an ineligible account answers **403
 | `/console` | `pages/console/ConsoleHome.tsx` | Lifecycle overview card (`STATE_COPY`) |
 | `/console/profile` | `pages/console/Profile.tsx` | My Profile — identity, onboarding progress, personal details |
 | `/console/documents` | `pages/console/Documents.tsx` | Upload Documents — KYC pack, see [`features/kyc-documents.md`](./features/kyc-documents.md) |
-| `/console/credentials` | `pages/console/Credentials.tsx` | Shared UAT keypair + production-key status |
+| `/console/credentials` | `pages/console/Credentials.tsx` | Shared UAT keypair + production-key status + prod Aadhaar RSA key (active only) |
 | `/console/transactions` | `pages/console/Transactions.tsx` | Transaction history — see [`features/transaction-history.md`](./features/transaction-history.md) |
 
 Every route is registered in `App.tsx` (lazy) and `AppServer.tsx` (eager), and
@@ -174,6 +174,14 @@ The production block on the Credentials page is an empty state with **no request
 button**: no credential-issuance API exists yet, so its copy points at the
 account manager or at onboarding depending on `me.state`. When the issuance
 endpoint lands (see "API keys management" below), the fetch goes there.
+
+For `active` accounts the block also shows the **production Aadhaar RSA public
+key**, fetched from eps-backend `GET /credentials/aadhaar-key`. The key lives in
+the backend env (`EPS_AADHAAR_RSA_PUBLIC_KEY_PROD`), never in the repo or the
+site bundle, and the route re-derives `active` from the session's own profile.
+403/404 hide the row; any other failure shows a reload hint. The public docs
+page (`/docs/aadhaar-number-encryption`) carries only the UAT key and points
+here for production.
 
 Self-serve signup now exists at `/signup` (OTP → partial account → PAN → PIN),
 feeding new users into this same lifecycle gate. See

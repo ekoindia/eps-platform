@@ -1,8 +1,8 @@
-import type { MeView } from "@/lib/auth/client";
+import { ApiError, authClient, type MeView } from "@/lib/auth/client";
 import Credentials from "@/pages/console/Credentials";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 function renderCredentials(me: MeView) {
 	return render(
@@ -24,7 +24,49 @@ const ACTIVE: MeView = {
 };
 
 describe("Credentials", () => {
-	afterEach(() => vi.unstubAllEnvs());
+	// Default: no production Aadhaar key configured, so the row stays hidden.
+	beforeEach(() => {
+		vi.spyOn(authClient, "aadhaarKey").mockRejectedValue(
+			new ApiError("NOT_CONFIGURED", "n/a", 404),
+		);
+	});
+	afterEach(() => {
+		vi.unstubAllEnvs();
+		vi.restoreAllMocks();
+	});
+
+	it("shows the production Aadhaar key to an active account", async () => {
+		vi.mocked(authClient.aadhaarKey).mockResolvedValue({ key: "PROD-RSA-KEY" });
+		renderCredentials(ACTIVE);
+		expect(await screen.findByText("PROD-RSA-KEY")).toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: /aadhaar number encryption/i }),
+		).toHaveAttribute("href", "/docs/aadhaar-number-encryption");
+	});
+
+	it("hides the Aadhaar key row when the backend has none", async () => {
+		renderCredentials(ACTIVE);
+		await vi.waitFor(() => expect(authClient.aadhaarKey).toHaveBeenCalled());
+		expect(screen.queryByText(/rsa public key for/i)).toBeNull();
+	});
+
+	it("says so when the Aadhaar key fails to load", async () => {
+		vi.mocked(authClient.aadhaarKey).mockRejectedValue(
+			new ApiError("UPSTREAM_ERROR", "down", 502),
+		);
+		renderCredentials(ACTIVE);
+		expect(
+			await screen.findByText(/couldn't load the production aadhaar key/i),
+		).toBeInTheDocument();
+	});
+
+	it.each(["kyc-pending", "kyc-rejected", "lead", "inactive"] as const)(
+		"never requests the Aadhaar key for a %s account",
+		(state) => {
+			renderCredentials({ ...ACTIVE, state });
+			expect(authClient.aadhaarKey).not.toHaveBeenCalled();
+		},
+	);
 
 	it("shows the UAT keypair", () => {
 		vi.stubEnv("VITE_EPS_UAT_DEVELOPER_KEY", "dev-key-123");

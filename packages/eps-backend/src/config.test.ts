@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { describe, it, expect } from "vitest";
 import { loadConfig } from "./config";
 
@@ -494,5 +494,38 @@ describe("loadConfig — Zoho CRM record links", () => {
 		});
 		expect(cfg.zoho.baseUrl).toBe("https://www.zohoapis.in");
 		expect(cfg.zoho.crmRecordBaseUrl).toBe(url);
+	});
+});
+
+describe("EPS_AADHAAR_RSA_PUBLIC_KEY_PROD", () => {
+	const rsaDer = generateKeyPairSync("rsa", { modulusLength: 1024 })
+		.publicKey.export({ format: "der", type: "spki" })
+		.toString("base64");
+
+	it("is unset when absent or blank", () => {
+		expect(loadConfig(base).aadhaarRsaPublicKeyProd).toBeUndefined();
+		expect(
+			loadConfig({ ...base, EPS_AADHAAR_RSA_PUBLIC_KEY_PROD: "  " })
+				.aadhaarRsaPublicKeyProd,
+		).toBeUndefined();
+	});
+
+	it("accepts a Base64 DER RSA key, stripping whitespace", () => {
+		const wrapped = rsaDer.replace(/(.{64})/g, "$1\n");
+		expect(
+			loadConfig({ ...base, EPS_AADHAAR_RSA_PUBLIC_KEY_PROD: wrapped })
+				.aadhaarRsaPublicKeyProd,
+		).toBe(rsaDer);
+	});
+
+	it("fails boot on a malformed or non-RSA key without echoing it", () => {
+		const ecDer = generateKeyPairSync("ec", { namedCurve: "P-256" })
+			.publicKey.export({ format: "der", type: "spki" })
+			.toString("base64");
+		for (const bad of ["not-a-key", ecDer]) {
+			expect(() =>
+				loadConfig({ ...base, EPS_AADHAAR_RSA_PUBLIC_KEY_PROD: bad }),
+			).toThrowError(/^EPS_AADHAAR_RSA_PUBLIC_KEY_PROD must be a Base64 DER/);
+		}
 	});
 });

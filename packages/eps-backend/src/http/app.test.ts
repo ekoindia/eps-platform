@@ -8,7 +8,7 @@ import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
 import type { GitHubClient } from "../clients/github";
 import { createSecretBox } from "../store/secretbox";
-import { randomBytes } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import {
 	createSecurityLogger,
 	type SecurityRecord,
@@ -1677,6 +1677,164 @@ describe("wallet/balance", () => {
 		const cookie = await login(app);
 		const res = await app.request("/wallet/balance", { headers: { cookie } });
 		expect(res.status).toBe(502);
+	});
+});
+
+describe("credentials/aadhaar-key", () => {
+	const prodKey = generateKeyPairSync("rsa", { modulusLength: 1024 })
+		.publicKey.export({ format: "der", type: "spki" })
+		.toString("base64");
+	const keyCfg = loadConfig({
+		JWT_SECRET: "x".repeat(32),
+		SIMPLIBANK_API_HOST: "h",
+		SIMPLIBANK_API_PORT: "1",
+		SIMPLIBANK_API_PATH: "/p",
+		EKO_DEVELOPER_KEY: "k",
+		GITHUB_CLIENT_ID: "g",
+		GITHUB_CLIENT_SECRET: "s",
+		GITHUB_CALLBACK_URL: "https://x/cb",
+		GITHUB_REPO: "o/r",
+		COOKIE_SECURE: "false",
+		EPS_AADHAAR_RSA_PUBLIC_KEY_PROD: prodKey,
+	});
+
+	/** Logs in as a developer and returns the session cookie. */
+	async function login(app: Hono<AppEnv>): Promise<string> {
+		const verify = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(verify.status).toBe(200);
+		return cookieFrom(verify);
+	}
+
+	/** A found profile with the given `account_state_id`. */
+	const found = (id: number | null) => ({
+		kind: "found" as const,
+		responseTypeId: 369,
+		profile: {
+			name: "Dev",
+			email: "d@e.in",
+			mobile: "9990000001",
+			code: 1,
+			userType: "23",
+			ekoUserId: "EKO1",
+			roleList: ["1"],
+			orgId: 1,
+			onboarding: 0,
+			zohoId: "ZCRM_9",
+			onboardingSteps: [],
+			accounts: [],
+			evalueAccountId: null,
+			detailBlocks: {},
+			accountStateId: id,
+			userDetail: {},
+		},
+	});
+
+	/** `getProfile` that answers login with a live account, then `later`. */
+	const profileThen = (later: unknown) =>
+		vi.fn().mockResolvedValueOnce(found(16)).mockResolvedValue(later);
+
+	it("returns the key, uncached, to an active developer", async () => {
+		const { app } = deps({}, { cfg: keyCfg });
+		const cookie = await login(app);
+		const res = await app.request("/credentials/aadhaar-key", {
+			headers: { cookie },
+		});
+		expect(res.status).toBe(200);
+		expect(res.headers.get("cache-control")).toBe("no-store");
+		expect(await body<{ key: string }>(res)).toEqual({ key: prodKey });
+	});
+
+	it("rejects an anonymous or bad-cookie request", async () => {
+		const { app } = deps({}, { cfg: keyCfg });
+		expect((await app.request("/credentials/aadhaar-key")).status).toBe(401);
+		const res = await app.request("/credentials/aadhaar-key", {
+			headers: { cookie: "eps_at=garbage" },
+		});
+		expect(res.status).toBe(401);
+	});
+
+	it.each([
+		["kyc-pending", 48],
+		["kyc-rejected", 47],
+	])("403s a %s account", async (_label, stateId) => {
+		const { app } = deps(
+			{ getProfile: profileThen(found(stateId)) },
+			{ cfg: keyCfg },
+		);
+		const cookie = await login(app);
+		const res = await app.request("/credentials/aadhaar-key", {
+			headers: { cookie },
+		});
+		expect(res.status).toBe(403);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"NOT_ACTIVE",
+		);
+	});
+
+	it("403s an inactive account", async () => {
+		const { app } = deps(
+			{
+				getProfile: profileThen({
+					kind: "inactive" as const,
+					responseTypeId: 1,
+				}),
+			},
+			{ cfg: keyCfg },
+		);
+		const cookie = await login(app);
+		const res = await app.request("/credentials/aadhaar-key", {
+			headers: { cookie },
+		});
+		expect(res.status).toBe(403);
+	});
+
+	it("502s (not 403) when the profile lookup fails", async () => {
+		const { app } = deps(
+			{
+				getProfile: profileThen({
+					kind: "error" as const,
+					responseTypeId: 9999,
+				}),
+			},
+			{ cfg: keyCfg },
+		);
+		const cookie = await login(app);
+		const res = await app.request("/credentials/aadhaar-key", {
+			headers: { cookie },
+		});
+		expect(res.status).toBe(502);
+	});
+
+	it("404s NOT_CONFIGURED when the env has no key", async () => {
+		const { app } = deps();
+		const cookie = await login(app);
+		const res = await app.request("/credentials/aadhaar-key", {
+			headers: { cookie },
+		});
+		expect(res.status).toBe(404);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"NOT_CONFIGURED",
+		);
+	});
+
+	it("rate-limits per session before calling upstream", async () => {
+		const { app, eko } = deps({}, { cfg: keyCfg });
+		const cookie = await login(app);
+		const callsAfterLogin = vi.mocked(eko.getProfile).mock.calls.length;
+		for (let i = 0; i < 30; i++) {
+			await app.request("/credentials/aadhaar-key", { headers: { cookie } });
+		}
+		const res = await app.request("/credentials/aadhaar-key", {
+			headers: { cookie },
+		});
+		expect(res.status).toBe(429);
+		expect(vi.mocked(eko.getProfile).mock.calls.length - callsAfterLogin).toBe(
+			30,
+		);
 	});
 });
 

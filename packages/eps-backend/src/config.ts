@@ -1,3 +1,4 @@
+import { createPublicKey } from "node:crypto";
 import { type EkoLogLevel, parseEkoLogLevel } from "./audit/ekoLog";
 
 export interface Config {
@@ -173,6 +174,36 @@ export interface Config {
 		 */
 		crmRecordBaseUrl?: string;
 	};
+	/**
+	 * Production RSA public key partners use to encrypt Aadhaar numbers — Base64
+	 * DER `SubjectPublicKeyInfo`, whitespace stripped. Served only to `active`
+	 * developers via `GET /credentials/aadhaar-key`; kept out of the repo and the
+	 * public site bundle. Absent → that route answers 404 `NOT_CONFIGURED`.
+	 */
+	aadhaarRsaPublicKeyProd?: string;
+}
+
+/**
+ * Reads and validates `EPS_AADHAAR_RSA_PUBLIC_KEY_PROD`. A malformed key would
+ * be served happily and break every partner's encryption, so it fails boot
+ * instead. The error never echoes the value.
+ */
+function aadhaarRsaPublicKey(raw: string | undefined): string | undefined {
+	const key = raw?.replace(/\s+/g, "");
+	if (!key) return undefined;
+	try {
+		const parsed = createPublicKey({
+			key: Buffer.from(key, "base64"),
+			format: "der",
+			type: "spki",
+		});
+		if (parsed.asymmetricKeyType === "rsa") return key;
+	} catch {
+		// Falls through to the shared error below.
+	}
+	throw new Error(
+		"EPS_AADHAAR_RSA_PUBLIC_KEY_PROD must be a Base64 DER SubjectPublicKeyInfo RSA public key",
+	);
 }
 
 const REQUIRED = [
@@ -556,5 +587,8 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			prodBase: env.GITHUB_PROD_BASE ?? "main",
 		},
 		zoho: zohoConfig(env, crmRecordBaseUrl),
+		aadhaarRsaPublicKeyProd: aadhaarRsaPublicKey(
+			env.EPS_AADHAAR_RSA_PUBLIC_KEY_PROD,
+		),
 	};
 }

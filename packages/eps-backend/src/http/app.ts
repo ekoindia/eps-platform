@@ -15,7 +15,7 @@ import type { GitHubClient } from "../clients/github";
 import type { ZohoClient } from "../clients/zoho";
 import type { Config } from "../config";
 import { openPaletteStore, type PaletteStore } from "../analytics/paletteStore";
-import { buildMeView } from "../identity/me";
+import { buildMeView, deriveStateFromProfile } from "../identity/me";
 import type { SignupView } from "../identity/me";
 import { createSignupService, type SignupService } from "../signup/service";
 import type { KV } from "../store/kv";
@@ -101,6 +101,10 @@ const OTP_WINDOW_SEC = 600;
 /** Wallet reads per session per `RL_WINDOW_SEC`. The console's own 30s refresh
  * cooldown caps a well-behaved client at 20, so this only bites a scripted one. */
 const WALLET_BALANCE_LIMIT = 30;
+
+/** Aadhaar-key reads per session per `RL_WINDOW_SEC`. The console fetches once
+ * per page view, so this only bites a scripted client. */
+const AADHAAR_KEY_LIMIT = 30;
 
 const STATE_COOKIE = "eps_oauth_state";
 const STATE_TTL_SEC = 600;
@@ -649,6 +653,54 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			);
 		}
 		return c.json({ balance });
+	});
+
+	/**
+	 * GET /credentials/aadhaar-key → { key }
+	 *
+	 * The production RSA public key for Aadhaar encryption, for `active`
+	 * developers only. The state is re-derived from the session's own profile on
+	 * every call — the same `deriveStateFromProfile` that `/me` uses, so the
+	 * console's "active" and this gate cannot disagree.
+	 */
+	app.get("/credentials/aadhaar-key", async (c) => {
+		const token = getCookie(c, ACCESS_COOKIE);
+		const claim = token ? await sessions.verifyAccess(token) : null;
+		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
+		if (claim.role !== "developer") {
+			throw new AppError(403, "NOT_ACTIVE", "This session has no account.");
+		}
+		// Before the upstream lookup, so a scripted client cannot fan out 151s.
+		await enforceRateLimit(
+			kv,
+			`rl:aadhaarkey:mob:${claim.sub}`,
+			AADHAAR_KEY_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		const profile = await eko.getProfile({
+			mobile: claim.sub,
+			xRealIp: c.req.header("x-real-ip"),
+		});
+		// An unclassified upstream failure stays retryable — never a 403.
+		if (profile.kind === "error") {
+			throw new AppError(
+				502,
+				"UPSTREAM_ERROR",
+				"Couldn't reach your account right now.",
+			);
+		}
+		if (deriveStateFromProfile(profile) !== "active") {
+			throw new AppError(403, "NOT_ACTIVE", "Your account is not active yet.");
+		}
+		if (!cfg.aadhaarRsaPublicKeyProd) {
+			throw new AppError(
+				404,
+				"NOT_CONFIGURED",
+				"The production key is not available yet.",
+			);
+		}
+		c.header("Cache-Control", "no-store");
+		return c.json({ key: cfg.aadhaarRsaPublicKeyProd });
 	});
 
 	// One bundle manager, two consumers: the anonymous MCP server below and the
