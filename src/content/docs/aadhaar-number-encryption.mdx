@@ -1,0 +1,103 @@
+# Aadhaar Number Encryption
+
+APIs that accept an Aadhaar number in the `aadhar` parameter expect it
+**encrypted**, never as plain text. You encrypt it on your backend with an
+**RSA public key** provided by Eko, then Base64-encode the result.
+
+```text
+Aadhaar number → UTF-8 bytes → RSA encryption (PKCS#1 v1.5) → Base64 → aadhar
+```
+
+## APIs that need an encrypted Aadhaar
+
+| API                                                           | Whose Aadhaar |
+| ------------------------------------------------------------- | ------------- |
+| [Send OTP (eKYC)](/docs/aeps-fingpay-send-otp-kyc)            | Agent         |
+| [Verify OTP (eKYC)](/docs/aeps-fingpay-verify-otp-kyc)        | Agent         |
+| [Biometric eKYC](/docs/aeps-fingpay-biometric-ekyc)           | Agent         |
+| [Daily KYC](/docs/aeps-fingpay-daily-auth)                    | Agent         |
+| [Cash Withdrawal OTP](/docs/aeps-fingpay-cash-withdrawal-otp) | Customer      |
+| [AePS Cash Withdrawal](/docs/aeps-fingpay-cash-withdrawal)    | Customer      |
+| [AePS Balance Enquiry](/docs/aeps-fingpay-balance-enquiry)    | Customer      |
+| [AePS Mini Statement](/docs/aeps-fingpay-mini-statement)      | Customer      |
+
+## RSA Public Key
+
+**Format:** Base64-encoded X.509 RSA public key (`SubjectPublicKeyInfo`, DER).
+
+### UAT
+
+```text
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCaFyrzeDhMaFLx+LZUNOOO14Pj9aPfr+1WOanDgDHxo9NekENYcWUftM9Y17ul2pXr3bqw0GCh4uxNoTQ5cTH4buI42LI8ibMaf7Kppq9MzdzI9/7pOffgdSn+P8J64CJAk3VrVswVgfy8lABt7fL8R6XReI9x8ewwKHhCRTwBgQIDAQAB
+```
+
+### Production
+
+<Callout type="warning">
+	UAT and production use **different** RSA public keys. The production key is
+	shared with you at go-live. A value encrypted with the UAT key is rejected in
+	production, and vice versa — keep the key in per-environment configuration,
+	not in code.
+</Callout>
+
+## Encryption steps
+
+1. Base64-decode the RSA public key.
+2. Load the decoded bytes as an X.509 RSA public key.
+3. Convert the 12-digit Aadhaar number to UTF-8 bytes — digits only, no spaces
+   or hyphens.
+4. Encrypt the bytes with the public key using **RSA with PKCS#1 v1.5 padding**
+   (`RSA/ECB/PKCS1Padding` in Java).
+5. Base64-encode the encrypted bytes (the ciphertext).
+6. Send the resulting string as the `aadhar` parameter.
+
+```text
+Plain Aadhaar
+123412341234
+       ↓
+UTF-8 bytes
+       ↓
+RSA encryption with Eko's RSA public key
+(PKCS#1 v1.5 padding)
+       ↓
+Encrypted bytes
+       ↓
+Base64 encoding
+       ↓
+nJ8k2...xP4=
+       ↓
+Send as the `aadhar` parameter
+```
+
+PKCS#1 v1.5 padding is randomised, so encrypting the **same Aadhaar number twice
+produces different values**. This is expected — don't cache or compare the
+encrypted strings.
+
+The public key can only **encrypt**. Only the receiving system holds the matching
+private key that decrypts it, so the plain Aadhaar is never exposed in transit
+or in your request logs.
+
+## Code samples
+
+Each sample takes the Aadhaar number and the environment's RSA public key, and
+returns the Base64 string to send as `aadhar`. Run this on your **backend**.
+
+<CodeSnippets id="encrypt-aadhaar" />
+
+The encrypted value is standard Base64 and may contain `+`, `/` and `=`. Send
+it as a normal JSON string; if you ever place it in a URL or form body,
+URL-encode it first (an unescaped `+` turns into a space).
+
+## Troubleshooting
+
+If the API rejects the Aadhaar as incorrectly encrypted, check:
+
+- **Wrong environment key** — the UAT key used against production, or the
+  reverse.
+- **Wrong padding** — OAEP or "no padding" instead of PKCS#1 v1.5. Some
+  libraries default to OAEP; set PKCS#1 v1.5 explicitly.
+- **Formatted input** — spaces, hyphens or a masked number encrypted instead of
+  the plain 12 digits.
+- **Double encoding** — Base64-encoding the Aadhaar before encrypting, or
+  encoding the ciphertext twice.
+- **Damaged key** — line breaks or whitespace copied into the Base64 key string.

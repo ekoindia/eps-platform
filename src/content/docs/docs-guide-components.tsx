@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import AadhaarBiometricRdservice from "./aadhaar-biometric-rdservice.mdx";
+import AadhaarNumberEncryption from "./aadhaar-number-encryption.mdx";
 import ErrorCodes from "./error-codes.mdx";
 import Faqs from "./faqs.mdx";
 import HowAuthWorks from "./how-auth-works.mdx";
@@ -19,5 +20,6 @@ export const GUIDE_COMPONENTS: Record<
 	"how-auth-works": HowAuthWorks,
 	"error-codes": ErrorCodes,
 	"aadhaar-biometric-rdservice": AadhaarBiometricRdservice,
+	"aadhaar-number-encryption": AadhaarNumberEncryption,
 	faqs: Faqs,
 };

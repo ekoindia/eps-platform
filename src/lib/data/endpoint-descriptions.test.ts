@@ -29,7 +29,7 @@ describe("resolveDescription (rich — docs page)", () => {
 
 	it("uses the file when only a file is set", () => {
 		expect(resolveDescription(spec({ descriptionFile: FILE }))).toContain(
-			"```java",
+			"## E-KYC steps",
 		);
 	});
 

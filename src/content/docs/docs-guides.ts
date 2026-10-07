@@ -50,9 +50,16 @@ export const GUIDES: GuideMeta[] = [
 			"UIDAI registered-device fingerprint/iris capture on Web and Android, with an interactive in-browser device tester.",
 	},
 	{
+		slug: "aadhaar-number-encryption",
+		title: "Aadhaar Number Encryption",
+		order: 4,
+		summary:
+			"Encrypt the Aadhaar number with Eko's RSA public key (PKCS#1 v1.5) before sending it, with code in five languages.",
+	},
+	{
 		slug: "faqs",
 		title: "Integration FAQs",
-		order: 4,
+		order: 5,
 		summary:
 			"Common integration questions — credentials, request signing, environments, error handling and support.",
 	},

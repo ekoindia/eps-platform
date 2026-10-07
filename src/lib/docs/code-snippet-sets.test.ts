@@ -63,3 +63,60 @@ describe("sign-request snippet set", () => {
 		}
 	});
 });
+
+describe("encrypt-aadhaar snippet set", () => {
+	const set = CODE_SNIPPET_SETS["encrypt-aadhaar"];
+
+	it("covers the five documented languages, Node.js first", () => {
+		expect(set.map((s) => s.language)).toEqual([
+			"javascript",
+			"python",
+			"php",
+			"java",
+			"csharp",
+		]);
+	});
+
+	it("every snippet names PKCS#1 v1.5 padding explicitly", () => {
+		for (const snippet of set) {
+			expect(snippet.code).toMatch(/PKCS1/i);
+		}
+	});
+
+	it("the published Node.js snippet round-trips with a throwaway key pair", async () => {
+		const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
+			modulusLength: 1024,
+		});
+		const publicKeyBase64 = publicKey
+			.export({ type: "spki", format: "der" })
+			.toString("base64");
+		// Execute the exact copy-paste code, not a re-implementation of it.
+		const moduleUrl = `data:text/javascript,${encodeURIComponent(set[0].code)}`;
+		const { encryptAadhaar } = await import(/* @vite-ignore */ moduleUrl);
+
+		const first = encryptAadhaar("123412341234", publicKeyBase64);
+		const plain = crypto.privateDecrypt(
+			{ key: privateKey, padding: crypto.constants.RSA_PKCS1_PADDING },
+			Buffer.from(first, "base64"),
+		);
+		expect(plain.toString("utf8")).toBe("123412341234");
+		// Randomized padding: same input, different ciphertext each call.
+		expect(encryptAadhaar("123412341234", publicKeyBase64)).not.toBe(first);
+		expect(() => encryptAadhaar("1234 1234 1234", publicKeyBase64)).toThrow();
+	});
+});
+
+describe("aadhaar-number-encryption guide", () => {
+	it("publishes a UAT key that parses as an RSA SPKI public key", async () => {
+		const { default: mdx } =
+			await import("../../content/docs/aadhaar-number-encryption.mdx?raw");
+		const uatKey = mdx.match(/### UAT\s+```text\s+(\S+)\s+```/)?.[1];
+		expect(uatKey).toBeDefined();
+		const key = crypto.createPublicKey({
+			key: Buffer.from(uatKey as string, "base64"),
+			format: "der",
+			type: "spki",
+		});
+		expect(key.asymmetricKeyType).toBe("rsa");
+	});
+});

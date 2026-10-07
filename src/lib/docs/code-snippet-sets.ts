@@ -180,10 +180,124 @@ public class BiometricActivity extends AppCompatActivity implements RDServiceEve
 	},
 ];
 
+/**
+ * RSA-encrypt an Aadhaar number for the `aadhar` request param: UTF-8 →
+ * RSA/PKCS#1 v1.5 with Eko's Base64 X.509 (SPKI) public key → Base64.
+ * Shown on `/docs/aadhaar-number-encryption`; `code-snippet-sets.test.ts`
+ * executes the Node.js variant against a throwaway key pair.
+ */
+const ENCRYPT_AADHAAR: CodeSnippet[] = [
+	{
+		language: "javascript",
+		label: "Node.js",
+		code: `import crypto from "node:crypto";
+
+/** RSA-encrypt (PKCS#1 v1.5) a 12-digit Aadhaar number; returns Base64 ciphertext. */
+export function encryptAadhaar(aadhaarNumber, rsaPublicKeyBase64) {
+	if (!/^\\d{12}$/.test(aadhaarNumber)) throw new Error("Aadhaar must be exactly 12 digits");
+	const encrypted = crypto.publicEncrypt(
+		{
+			key: Buffer.from(rsaPublicKeyBase64, "base64"), // Base64-encoded X.509 public key
+			format: "der",
+			type: "spki",
+			padding: crypto.constants.RSA_PKCS1_PADDING,
+		},
+		Buffer.from(aadhaarNumber, "utf8"),
+	);
+	return encrypted.toString("base64"); // send as the \`aadhar\` param
+}`,
+	},
+	{
+		language: "python",
+		label: "Python",
+		code: `# pip install cryptography
+import base64, re
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.serialization import load_der_public_key
+
+def encrypt_aadhaar(aadhaar_number: str, rsa_public_key_base64: str) -> str:
+    """RSA-encrypt (PKCS#1 v1.5) a 12-digit Aadhaar number; returns Base64 ciphertext."""
+    if not re.fullmatch(r"\\d{12}", aadhaar_number):
+        raise ValueError("Aadhaar must be exactly 12 digits")
+    # Base64-encoded X.509 public key
+    public_key = load_der_public_key(base64.b64decode(rsa_public_key_base64))
+    encrypted = public_key.encrypt(aadhaar_number.encode("utf-8"), padding.PKCS1v15())
+    return base64.b64encode(encrypted).decode("ascii")  # send as the \`aadhar\` param`,
+	},
+	{
+		language: "php",
+		label: "PHP",
+		code: `<?php
+/** RSA-encrypt (PKCS#1 v1.5) a 12-digit Aadhaar number; returns Base64 ciphertext. */
+function encryptAadhaar(string $aadhaarNumber, string $rsaPublicKeyBase64): string
+{
+	if (!preg_match('/^\\d{12}$/', $aadhaarNumber)) {
+		throw new InvalidArgumentException('Aadhaar must be exactly 12 digits');
+	}
+	// Wrap the Base64-encoded X.509 public key as PEM for OpenSSL
+	$pem = "-----BEGIN PUBLIC KEY-----\\n"
+		. chunk_split($rsaPublicKeyBase64, 64, "\\n")
+		. "-----END PUBLIC KEY-----\\n";
+	if (!openssl_public_encrypt($aadhaarNumber, $encrypted, $pem, OPENSSL_PKCS1_PADDING)) {
+		throw new RuntimeException('Aadhaar encryption failed: ' . openssl_error_string());
+	}
+	return base64_encode($encrypted); // send as the \`aadhar\` param
+}`,
+	},
+	{
+		language: "java",
+		label: "Java",
+		code: `import javax.crypto.Cipher;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
+
+/** RSA-encrypt (PKCS#1 v1.5) a 12-digit Aadhaar number; returns Base64 ciphertext. */
+public static String encryptAadhaar(String aadhaarNumber, String rsaPublicKeyBase64) throws Exception {
+	if (!aadhaarNumber.matches("\\\\d{12}")) {
+		throw new IllegalArgumentException("Aadhaar must be exactly 12 digits");
+	}
+	// Base64-encoded X.509 public key
+	byte[] publicKeyBytes = Base64.getDecoder().decode(rsaPublicKeyBase64);
+	PublicKey publicKey = KeyFactory.getInstance("RSA")
+		.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+
+	// Name the padding explicitly — don't rely on the provider default for "RSA"
+	Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+	cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+	byte[] encryptedBytes = cipher.doFinal(aadhaarNumber.getBytes(StandardCharsets.UTF_8));
+
+	return Base64.getEncoder().encodeToString(encryptedBytes); // send as the \`aadhar\` param
+}`,
+	},
+	{
+		language: "csharp",
+		label: "C#",
+		code: `using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+
+/// <summary>RSA-encrypt (PKCS#1 v1.5) a 12-digit Aadhaar number; returns Base64 ciphertext.</summary>
+static string EncryptAadhaar(string aadhaarNumber, string rsaPublicKeyBase64)
+{
+	if (!Regex.IsMatch(aadhaarNumber, @"^\\d{12}$"))
+		throw new ArgumentException("Aadhaar must be exactly 12 digits");
+	using var rsa = RSA.Create();
+	// Base64-encoded X.509 (SubjectPublicKeyInfo) public key
+	rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(rsaPublicKeyBase64), out _);
+	byte[] encrypted = rsa.Encrypt(Encoding.UTF8.GetBytes(aadhaarNumber), RSAEncryptionPadding.Pkcs1);
+	return Convert.ToBase64String(encrypted); // send as the \`aadhar\` param
+}`,
+	},
+];
+
 /** Named snippet sets addressable by `<CodeSnippets id="…" />`. */
 export const CODE_SNIPPET_SETS: Record<string, CodeSnippet[]> = {
 	"sign-request": SIGN_REQUEST,
 	"rdservice-android": RDSERVICE_ANDROID,
+	"encrypt-aadhaar": ENCRYPT_AADHAAR,
 };
 
 /** The snippets for a set, or `undefined` for an unknown id. */

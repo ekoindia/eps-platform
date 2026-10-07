@@ -1,8 +1,9 @@
 # MDX Guides
 
 Alongside the spec-driven API references, the portal ships hand-written prose
-guides authored in MDX: **How Auth Works**, **Error Codes**, and **Aadhaar
-Biometric Auth (RDService)**. They live in the same `/docs/<slug>` namespace as
+guides authored in MDX: **How Auth Works**, **Error Codes**, **Aadhaar
+Biometric Auth (RDService)**, **Aadhaar Number Encryption** and **Integration
+FAQs**. They live in the same `/docs/<slug>` namespace as
 endpoints and appear in the "Guides" group at the top of the left nav.
 
 ## Where the files live
@@ -10,6 +11,7 @@ endpoints and appear in the "Guides" group at the top of the left nav.
 - `src/content/docs/how-auth-works.mdx`
 - `src/content/docs/error-codes.mdx`
 - `src/content/docs/aadhaar-biometric-rdservice.mdx`
+- `src/content/docs/aadhaar-number-encryption.mdx`
 - `src/content/docs/faqs.mdx`
 
 The `.mdx` filename stem **must** equal the guide's `slug`.
@@ -75,7 +77,10 @@ sample rail).
 these tags with no import:
 
 - `<CodeSnippets id="…" />` — language-tabbed code block driven by
-  `CODE_SNIPPET_SETS` (`src/lib/docs/code-snippet-sets.ts`).
+  `CODE_SNIPPET_SETS` (`src/lib/docs/code-snippet-sets.ts`). Sets:
+  `sign-request`, `rdservice-android`, and `encrypt-aadhaar` (RSA/PKCS#1 v1.5
+  Aadhaar encryption; the Node.js variant is executed by
+  `code-snippet-sets.test.ts`, which also parses the guide's published UAT key).
 - `<RdServiceTester />` — interactive UIDAI RDService device tester
   (`src/components/docs/RdServiceTester.tsx`; protocol logic in
   `src/lib/docs/rdservice.ts`). Browser-only behaviour, but SSR-safe: the

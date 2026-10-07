@@ -3,6 +3,12 @@ fingerprint scan — no card or PIN. The agent's biometric device produces a PID
 XML blob that is forwarded verbatim, and the customer's Aadhaar number is
 RSA-encrypted before transmission.
 
+> [!NOTE]
+> Encrypt the customer's Aadhaar with Eko's RSA public key (PKCS#1 v1.5
+> padding) and Base64-encode it before sending it as `aadhar`. See the
+> [Aadhaar Number Encryption guide](/docs/aadhaar-number-encryption) for the
+> public key and code samples.
+
 ## Prerequisites
 
 The agent must have completed, in order:
