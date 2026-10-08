@@ -14,23 +14,24 @@ UI display hint only — never use it for business logic.
 | `200` | OK — response returned by our system.                                                                                                                                                        |
 | `403` | Forbidden — incorrect `secret-key` or timestamp. See [how authentication works](/docs/how-auth-works) or [test your generated secret-key](/docs/how-auth-works#try-it-secret-key-playground) |
 | `404` | Not Found — wrong request URL.                                                                                                                                                               |
+| `405` | Method Not Allowed — incorrect HTTP method.                                                                                                                                                  |
 | `415` | Unsupported Media Type — wrong `Content-Type` header.                                                                                                                                        |
 | `500` | Internal Server Error — connectivity or URL misconfiguration.                                                                                                                                |
 
 ## The Response Structure
 
-| Field                | Type   | Meaning                                                                                               |
-| -------------------- | ------ | ----------------------------------------------------------------------------------------------------- |
-| `status`             | number | Primary success indicator (`0` = success).                                                            |
-| `response_status_id` | number | UI display status — not for business logic. [See below](#frontend-display-status-response_status_id). |
-| `response_type_id`   | number | Response type id for non-financial requests.                                                          |
-| `tx_status`          | number | Financial Transactions status code (`0` = success)                                                    |
-| `message`            | string | Human-readable result or error message.                                                               |
-| `data`               | object | Rest of the response parameters specific to that transaction                                          |
+| Field                | Type   | Meaning                                                                                                   |
+| -------------------- | ------ | --------------------------------------------------------------------------------------------------------- |
+| `status`             | number | Primary success indicator (`0` = success).                                                                |
+| `response_status_id` | number | UI display status — not for business logic. [See below](#frontend-display-status-response_status_id).     |
+| `response_type_id`   | number | Response type id for non-financial requests.                                                              |
+| `tx_status`          | string | Financial transaction state (`"0"` = success); see [below](#financial-transaction-status-codes-tx_status) |
+| `message`            | string | Human-readable result or error message.                                                                   |
+| `data`               | object | Rest of the response parameters specific to that transaction                                              |
 
 ## Input Validation Errors
 
-In case of input parameter validation errors, you will receive and error (non-zero) `status` code, `response_status_id = 1`, `response_type_id = -1`, and the response will contain `invalid_parameters` object with each invalid parameter name and its error message. This can be used to show proper error response in the user-input form itself.
+In case of input parameter validation errors, you will receive and error (non-zero) `status` code, `response_status_id = 1`, `response_type_id = -1`, and the response will contain an `invalid_params` object with each invalid parameter name and its error message. This can be used to show proper error response in the user-input form itself.
 
 For example:
 
@@ -41,24 +42,25 @@ For example:
 	"response_type_id": -1,
 	"invalid_params": {
 		"name": "Name too long",
-		"dob": "Must be over 18 years",
-	},
-	...
+		"dob": "Must be over 18 years"
+	}
 }
 ```
 
 ## Financial Transaction Status Codes (`tx_status`)
 
-Financial (money-debit) responses additionally carry `tx_status` and `txstatus_desc`. When `tx_status` is `2` (Initiated), or `6` (Response Awaited), poll the relevant status endpoint rather than retrying the debit.
+Financial (money-debit) responses additionally carry `tx_status` and `txstatus_desc`. When `tx_status` is `2` (Initiated), or `6` (Response Awaited), poll [Transaction Inquiry](/docs/transaction-inquiry) rather than retrying the debit.
 
-| tx_status | Meaning                                         |
-| --------- | ----------------------------------------------- |
-| `0`       | Success                                         |
-| `1`       | Failed                                          |
-| `2`       | Initiated (In case of NEFT Money Transfer)      |
-| `3`       | Refund Pending                                  |
-| `4`       | Refunded                                        |
-| `6`       | Response Awaited (Transaction Inquiry Required) |
+{/* Keep in sync with TX_STATUS_CODES in src/lib/data/api-error-codes.ts (single source for every generated surface). */}
+
+| tx_status | Meaning                                                        |
+| --------- | -------------------------------------------------------------- |
+| `0`       | Success                                                        |
+| `1`       | Failed                                                         |
+| `2`       | Initiated / Response Awaited (NEFT) — poll Transaction Inquiry |
+| `3`       | Refund Pending                                                 |
+| `4`       | Refunded                                                       |
+| `6`       | Response Awaited — Transaction Inquiry required                |
 
 ## Common Transaction Status Codes (`status`)
 

@@ -39,6 +39,16 @@ describe("buildAgentBundle", () => {
 		expect(json).not.toMatch(/"access_key"\s*:/);
 	});
 
+	it("tells agents where the public UAT keypair lives, without inlining it", () => {
+		const sandbox = bundle.meta.environments.find((e) => e.id === "sandbox");
+		expect(sandbox?.note).toContain("/llms.txt");
+		expect(sandbox?.note).not.toContain("Login to Console");
+		const production = bundle.meta.environments.find(
+			(e) => e.id === "production",
+		);
+		expect(production?.note).toContain("KYC");
+	});
+
 	it("meta carries org + a content-hash bundleVersion", () => {
 		expect(bundle.meta.org).toBe("ekoindia");
 		expect(bundle.meta.bundleVersion).toMatch(/^[0-9a-f]{8}$/);

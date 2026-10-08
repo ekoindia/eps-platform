@@ -140,7 +140,12 @@ export const createEpsServer = (
 		"get_api",
 		{
 			title: "Get API detail",
-			description: "Full detail for one endpoint by slug.",
+			description:
+				"Full detail for one endpoint by slug: method, path, summary/description, " +
+				"headers, requestParams (name/type/required/format/example), sampleRequest, " +
+				"responseFields, sampleSuccessResponse, errorScenarios, responseTypes " +
+				"({id, meaning, next}: which endpoint to call for each response_type_id) " +
+				"and financial (true = money-moving; never retry blind, inquire by client_ref_id).",
 			inputSchema: { slug: z.string() },
 			annotations: READ_ONLY,
 		},
@@ -181,7 +186,11 @@ export const createEpsServer = (
 		"get_recipe",
 		{
 			title: "Get recipe",
-			description: "One multi-step recipe (steps + branches) by id.",
+			description:
+				"One multi-step recipe by id: ordered steps (specSlug, purpose, appliesWhen) " +
+				"with branches — each has onResponseTypeId (match response_type_id) OR " +
+				"onStatus (match envelope status; 0 = success) → goto next step slug or 'done'. " +
+				"Never branch on response_status_id (UI hint only).",
 			inputSchema: { id: z.string() },
 			annotations: READ_ONLY,
 		},

@@ -10,6 +10,7 @@
  * The data here is rich enough to render a developer API reference portal.
  */
 import { AUTH_HEADERS } from "./api-auth";
+import { txStatusSummary } from "./api-error-codes";
 import { API_PARAM_FORMATS, assertFormatRegistry } from "./api-formats";
 import type {
 	ApiProductCategory,
@@ -291,7 +292,8 @@ export const COMMON_RESPONSE_ENVELOPE: ResponseField[] = [
 	{
 		name: "response_status_id",
 		type: "number",
-		description: "Granular status id; see the shared error-codes table.",
+		description:
+			"UI display hint only (-1/0 success, 1 failure, 2 initiated, 3 refund initiated, 4 refunded). Never branch on it — use `status` (and `tx_status` for financial APIs), or `response_type_id` where documented.",
 		example: 0,
 	},
 	{
@@ -309,8 +311,7 @@ export const FINANCIAL_RESPONSE_ENVELOPE: ResponseField[] = [
 	{
 		name: "tx_status",
 		type: "string",
-		description:
-			"Transaction state: 0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold.",
+		description: `Transaction state: ${txStatusSummary()}.`,
 		example: "0",
 	},
 	{

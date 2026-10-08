@@ -31,6 +31,11 @@ const REST_DESCRIPTIONS: Record<string, string> = {
 		"Everything needed to integrate one EPS SDK: install, config, every " +
 		"public method/type, error contract and a worked call() example. Signing " +
 		"is built in, so never hand-roll the HMAC secret-key when an SDK exists.",
+	get_api:
+		"Full detail for one endpoint by slug: params, headers, sample request, " +
+		"response fields + sample, errorScenarios, responseTypes ({id, meaning, " +
+		"next} = which endpoint to call per response_type_id) and financial " +
+		"(money-moving: never retry blind; inquire by client_ref_id).",
 	// Fits, but the MCP text tells the user to re-run via npx — wrong over REST.
 	get_meta:
 		"Bundle org/version, data source and this server's package version, " +

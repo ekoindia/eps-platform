@@ -17,7 +17,11 @@ import type {
 	AgentTopics,
 } from "@/lib/agent/agent-bundle-types";
 import { API_DEFAULT_VERSION, SITE_URL } from "@/lib/config/site";
-import { API_AUTH_INFO, API_ENVIRONMENTS } from "@/lib/data/api-auth";
+import {
+	AGENT_SANDBOX_NOTE,
+	API_AUTH_INFO,
+	API_ENVIRONMENTS,
+} from "@/lib/data/api-auth";
 import { ALL_ERROR_CODES } from "@/lib/data/api-error-codes";
 import { PRICING_FAQS } from "@/lib/data/api-pricing";
 import { GLOBAL_FAQS, type FAQ } from "@/lib/data/common-faqs";
@@ -46,7 +50,9 @@ const BACKEND_ONLY_WARNING =
 	"secret-key in a browser/frontend.";
 
 const ENVIRONMENTS: AgentEnvironment[] = [
-	{ id: "sandbox", ...API_ENVIRONMENTS.sandbox },
+	// Agents get the zero-signup story (public UAT keypair in llms.txt); the
+	// human-facing note on the site tells people to read keys off the Console.
+	{ id: "sandbox", ...API_ENVIRONMENTS.sandbox, note: AGENT_SANDBOX_NOTE },
 	{ id: "production", ...API_ENVIRONMENTS.production },
 ];
 

@@ -18,6 +18,45 @@ export interface ApiErrorCode {
 	meaning: string;
 }
 
+/**
+ * One `tx_status` value of the financial response envelope.
+ *
+ * Kept separate from {@link ApiErrorCode} on purpose: `tx_status` is a
+ * transaction *state*, not an error code, and the agent bundle's `errors` topic
+ * (consumed by both MCP packages with a closed `scope` union) must not pick it
+ * up by accident. Flows into every envelope / endpoint description via
+ * {@link txStatusSummary} so the enum is written exactly once.
+ */
+export interface TxStatusCode {
+	code: number;
+	meaning: string;
+}
+
+/**
+ * `tx_status` values.
+ */
+export const TX_STATUS_CODES: TxStatusCode[] = [
+	{ code: 0, meaning: "Success" },
+	{ code: 1, meaning: "Fail" },
+	{
+		code: 2,
+		meaning: "Initiated / Response Awaited (NEFT) — poll Transaction Inquiry",
+	},
+	{ code: 3, meaning: "Refund Pending" },
+	{ code: 4, meaning: "Refunded" },
+	{
+		code: 6,
+		meaning: "Response Awaited — Transaction Inquiry required",
+	},
+];
+
+/**
+ * One-line `tx_status` legend for field descriptions, e.g.
+ * `0=Success, 1=Fail, …, 6=Response Awaited — Transaction Inquiry required`.
+ */
+export const txStatusSummary = (): string =>
+	TX_STATUS_CODES.map((c) => `${c.code}=${c.meaning}`).join(", ");
+
 /** Transport-level HTTP status codes. */
 export const HTTP_STATUS_CODES: ApiErrorCode[] = [
 	{
@@ -48,12 +87,26 @@ export const HTTP_STATUS_CODES: ApiErrorCode[] = [
 	},
 ];
 
-/** Transaction-level `response_status_id` codes. */
+/**
+ * Business-level `status` codes (the envelope's primary outcome field; `0` =
+ * success). NOT `response_status_id` — that field is a UI display hint only
+ * (see /docs/error-codes). The export name predates that clarification.
+ */
 export const RESPONSE_STATUS_CODES: ApiErrorCode[] = [
 	{ code: 0, scope: "transaction", meaning: "Success." },
 	{ code: 17, scope: "transaction", meaning: "User wallet already exists." },
+	{
+		code: 132,
+		scope: "transaction",
+		meaning: "Sender name should only contain letters.",
+	},
 	{ code: 302, scope: "transaction", meaning: "Wrong OTP." },
 	{ code: 303, scope: "transaction", meaning: "OTP expired." },
+	{
+		code: 319,
+		scope: "transaction",
+		meaning: "Invalid initiator_id — user does not exist in our system.",
+	},
 	{
 		code: 327,
 		scope: "transaction",
@@ -63,6 +116,11 @@ export const RESPONSE_STATUS_CODES: ApiErrorCode[] = [
 		code: 342,
 		scope: "transaction",
 		meaning: "Recipient already registered.",
+	},
+	{
+		code: 346,
+		scope: "transaction",
+		meaning: "User/agent not onboarded, or wrong user_code.",
 	},
 	{ code: 347, scope: "transaction", meaning: "Insufficient balance." },
 	{ code: 463, scope: "transaction", meaning: "User not found." },
@@ -76,6 +134,7 @@ export const RESPONSE_STATUS_CODES: ApiErrorCode[] = [
 		scope: "transaction",
 		meaning: "Sender/beneficiary monthly limit exhausted.",
 	},
+	{ code: 1297, scope: "transaction", meaning: "User/agent not onboarded." },
 ];
 
 /** All known codes, for convenient lookup/rendering. */

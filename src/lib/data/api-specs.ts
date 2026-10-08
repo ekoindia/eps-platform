@@ -21,6 +21,7 @@
  */
 import type { ApiParam, ApiSpec, RelatedLink } from "./api-specs-common";
 import { enabledSpecs } from "./api-specs-common";
+import { txStatusSummary } from "./api-error-codes";
 
 /** Docs slug of the shared guide explaining Aadhaar RSA encryption. */
 const AADHAAR_ENCRYPTION_SLUG = "fingpay-aeps-aadhaar-encryption";
@@ -1046,7 +1047,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		slug: "dmt-initiate-transfer",
 		summary: "Execute a DMT-Fino money transfer after OTP verification.",
 		description:
-			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account after OTP validation. Requires the otp and otp_ref_id from Send Transaction OTP plus a unique client_ref_id per attempt for idempotency and reconciliation. The response returns tid (Eko transaction ID) and bank_ref_num (the IMPS RRN/UTR). Use a fresh otp_ref_id and OTP for each attempt — a consumed OTP is rejected — and always persist tid, bank_ref_num, and your client_ref_id to reconcile before retrying.",
+			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account after OTP validation. Requires the otp and otp_ref_id from Send Transaction OTP plus a unique client_ref_id per attempt for reconciliation (it is NOT an idempotency key — on a timeout, look the attempt up via Transaction Inquiry with `client_ref_id:<ref>` before retrying). The response returns tid (Eko transaction ID) and bank_ref_num (the IMPS RRN/UTR). Use a fresh otp_ref_id and OTP for each attempt — a consumed OTP is rejected — and always persist tid, bank_ref_num, and your client_ref_id to reconcile before retrying.",
 		relevance: "M",
 		bestFor:
 			"Executing the actual money transfer — the only money-debit step in the DMT flow.",
@@ -1098,7 +1099,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Unique partner reference for this transaction (idempotency & reconciliation). Use a fresh value per attempt.",
+					"Unique partner reference for this transaction, used for reconciliation and Transaction Inquiry lookup (`client_ref_id:<ref>`). Use a fresh value per attempt; it is not an idempotency key.",
 				example: "<unique_client_ref_id>",
 			},
 		],
@@ -1107,7 +1108,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "tx_status",
 				type: "string",
 				description:
-					"Transaction state within the data block: 0=Success, 1=Fail, 2=Awaited.",
+					`Transaction state within the data block: ${txStatusSummary()}.`,
 				imp: true,
 				example: "0",
 			},
@@ -5022,7 +5023,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				imp: true,
 				description:
-					"Transaction status (0 Success, 1 Fail, 2 Awaited, 3 Refund Pending, 4 Refunded, 5 Hold).",
+					`Transaction status (${txStatusSummary()}).`,
 				example: "0",
 			},
 			{
@@ -10766,7 +10767,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Get the status of any transaction by Eko TID or your client_ref_id.",
 		description:
-			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: 0 = Success, 1 = Fail, 2 = Awaited/Initiated (NEFT), 3 = Refund Pending, 4 = Refunded, 5 = Hold. A timeout should never be treated as an automatic failure — always inquire.",
+			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: " + txStatusSummary() + ". A timeout should never be treated as an automatic failure — always inquire.",
 		descriptionFile: "transaction-inquiry.md",
 		relevance: "H",
 		bestFor: "Reconciling a transaction whose response timed out.",
@@ -10789,7 +10790,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				imp: true,
 				description:
-					"Transaction status (0 Success, 1 Fail, 2 Awaited, 3 Refund Pending, 4 Refunded, 5 Hold).",
+					`Transaction status (${txStatusSummary()}).`,
 				example: "0",
 			},
 			{
