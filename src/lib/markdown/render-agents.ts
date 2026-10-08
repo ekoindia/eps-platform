@@ -102,7 +102,7 @@ export function renderAgentsMarkdown(): string {
 	lines.push("");
 	lines.push(
 		"It mirrors the real EPS paths — point your EPS base URL at " +
-			"`http://localhost:4010`, then append `?eps_scenario=<response_status_id>` " +
+			"`http://localhost:4010`, then append `?eps_scenario=<code>` (a documented example's envelope `status` or `response_type_id`) " +
 			"to force a documented error branch.",
 	);
 	lines.push("");

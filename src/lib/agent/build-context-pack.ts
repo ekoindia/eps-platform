@@ -168,12 +168,11 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 			"`http://localhost:4010` — no other code change needed. It does not " +
 			"require valid EPS credentials, but keep the same request shape and " +
 			"headers your integration sends. To exercise a documented error branch, " +
-			"append `?eps_scenario=<response_status_id>` to the request for " +
-			"endpoints whose fixture includes that code — e.g. calling the DMT " +
-			"sender lookup (`dmt-get-sender`) with `?eps_scenario=463` returns its " +
-			'documented "sender not found" example. Note the mock selects a scenario ' +
-			"by `response_status_id`, which is not the field you branch on: that same " +
-			"example carries `response_type_id` 308, and it is 308 the recipe routes on.",
+			"append `?eps_scenario=<code>` where code is the documented example's " +
+			"envelope `status` or `response_type_id` — e.g. calling the DMT sender " +
+			"lookup (`dmt-get-sender`) with `?eps_scenario=308` returns its " +
+			'documented "sender not enrolled" example, the one the recipe routes to ' +
+			"Onboard Sender on. `response_status_id` is a UI hint and never a selector.",
 	);
 	lines.push("");
 

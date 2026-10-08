@@ -6,7 +6,10 @@ export interface Fixture {
 	successResponse: Record<string, unknown>;
 	errors: {
 		scenario: string;
-		responseStatusId?: number;
+		/** Envelope `status` of the example; one of the two `eps_scenario` keys. */
+		status?: number;
+		/** Envelope `response_type_id` of the example — the id recipes branch on. */
+		responseTypeId?: number;
 		statusCode?: number;
 		example: Record<string, unknown>;
 	}[];
@@ -18,12 +21,14 @@ const pathToRegExp = (path: string): RegExp =>
 
 export interface MockResult {
 	statusCode: number;
-	body: Record<string, unknown> & { response_status_id?: number };
+	body: Record<string, unknown> & { status?: number };
 }
 
 /**
- * Resolve a mock response. `query.eps_scenario=<response_status_id>` forces a
- * documented error example (recipe-aware testing, e.g. 463 → onboard branch).
+ * Resolve a mock response. `query.eps_scenario=<code>` forces the documented
+ * example whose envelope `status` or `response_type_id` equals `code` —
+ * recipe-aware testing, e.g. `308` on the DMT sender lookup returns the
+ * "sender not enrolled" example the recipe routes to Onboard Sender on.
  */
 export const matchResponse = (
 	fixtures: Fixture[],
@@ -39,7 +44,8 @@ export const matchResponse = (
 	const forced = query.eps_scenario;
 	if (forced) {
 		const err = fixture.errors.find(
-			(e) => String(e.responseStatusId) === forced,
+			(e) =>
+				String(e.status) === forced || String(e.responseTypeId) === forced,
 		);
 		if (err) return { statusCode: err.statusCode ?? 200, body: err.example };
 	}

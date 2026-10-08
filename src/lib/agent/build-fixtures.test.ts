@@ -17,10 +17,17 @@ describe("buildFixtures", () => {
 		}
 	});
 
-	it("carries error scenarios keyed by response_status_id where present", () => {
+	it("keys error scenarios on status + response_type_id, never response_status_id", () => {
 		const dmt = fixtures.find((f) => f.slug === "dmt-get-sender");
 		expect(dmt).toBeTruthy();
-		// the 463 branch is documented for the DMT flow
-		expect(Array.isArray(dmt?.errors)).toBe(true);
+		// The documented "sender not enrolled" example (status 308 /
+		// response_type_id 308) is what the DMT recipe routes to Onboard Sender
+		// on, so `?eps_scenario=308` must select it. Its response_status_id is 1
+		// like every other error example — keying on that could never tell
+		// scenarios apart.
+		const notEnrolled = dmt?.errors.find((e) => e.responseTypeId === 308);
+		expect(notEnrolled).toBeTruthy();
+		expect(notEnrolled?.status).toBe(308);
+		expect(notEnrolled?.example.response_status_id).toBe(1);
 	});
 });
