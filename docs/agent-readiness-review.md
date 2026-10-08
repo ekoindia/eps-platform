@@ -54,7 +54,7 @@ Format per row: what works → gap (with code location) → fix → owner → pr
 - Context MCP at `https://mcp.eko.in/context/mcp` **plus** a REST + OpenAPI face (`/context/openapi.json`, `/context/tools/*`, commit a80a46c3) for ChatGPT Actions / Gemini.
 
 **Gaps**
-- Nothing under `/.well-known/`. Every probed path (`agent-card.json`, `openapi`, `api-catalog`, `mcp.json`) and `/ai-sitemap.xml` return **200 with the HTML SPA shell**. A scanner that parses that as JSON records a failure *and* "returns HTML" — two marks against us where a 404 would cost one.
+- ~~Nothing under `/.well-known/`~~ — fixed 2026-10-08 (5.1/5.5, §6.12): `api-catalog` added, everything else 404s. Was: every probed path (`agent-card.json`, `openapi`, `api-catalog`, `mcp.json`) and `/ai-sitemap.xml` return **200 with the HTML SPA shell**. A scanner that parses that as JSON records a failure *and* "returns HTML" — two marks against us where a 404 would cost one.
 - `/llms-full.txt` is a Vercel rewrite to `/index.md` (`vercel.json:57-60`), i.e. the link index, not full content; nginx has no rule at all.
 - HTML `<head>` carries only the markdown alternate — no `rel="service-desc"` to OpenAPI, no link to the bundle.
 - `llms.txt` has no endpoint-level entries; the 113 endpoint `.md` twins are only reachable via `/docs.md`.
@@ -192,6 +192,7 @@ Rule of thumb from the article applied here: **anything only a human can read (p
 | 6.5 | `client_ref_id` is no longer called an idempotency key; both DMT strings now say reconciliation + Transaction Inquiry lookup before any retry. | `api-specs.ts` |
 | 6.6 | "dicsover" typo in the `llms.txt` agent notice. | `markdown/shared.ts` |
 | 6.7 | Context MCP `get_api` / `get_recipe` descriptions enumerate returned fields and explain `responseTypes.next` and recipe `branches`; REST face gets a ≤300-char override for `get_api`. | `eps-context-mcp/src/server.ts`, `rest.ts` |
+| 6.12 | **Phase 5.1 + 5.5 done.** `public/.well-known/api-catalog` (RFC 9727) + 404 instead of SPA shell for unknown `/.well-known/*` and `/ai-sitemap.xml` in `vercel.json` (fallback regex excludes them), `netlify.toml` + `_redirects` (status 404 rules), `.htaccess`, `nginx.conf`; linkset content-type on each. `llms.txt` agent notice links the catalog and the context MCP's REST/OpenAPI face (`EPS_CONTEXT_MCP_OPENAPI_URL`). `src/lib/well-known.test.ts` pins the catalog shape. | deploy configs, `shared.ts`, `site.ts`, `docs/configuration.md` |
 | 6.10 | **Phase 2.1 + 2.2 done.** OpenAPI `paramSchema` emits `pattern` (format registry), `enum`, `minimum`/`maximum`, `maxLength`. Root `components.securitySchemes.ekoHmac` (apiKey on `developer_key`, description spells out the HMAC headers + test vector), top-level `security`, structured `x-eko-signing` {algorithm, key encoding, headers, steps, testVector, docsUrl, backendOnly}. Header comment at `build-openapi.ts:9-19` records why the 2026-06 "no scheme" decision was reversed. Codegen check: openapi-generator `typescript-fetch` writes `developer_key` from the param then from `configuration.apiKey` into the same header key — one header on the wire, no duplication. | `build-openapi.ts` + test |
 | 6.11 | **Phase 4.3 done.** Transact MCP: `Invalid param values` allow-listed as `VALIDATION`; `EpsHttpError` → `HTTP_<status>` with `status` + per-status hint (403 → run `debug_auth`; 429/5xx → outcome unknown), upstream body withheld; 2xx with `status≠0` → `isError` `BUSINESS_<status>` with `message`, `response_type_id`, documented `meaning`/`next`, full `envelope`; every tool declares the envelope `outputSchema` and returns `structuredContent`. `ToolDef` now carries `responseTypes`. | `eps-transact-mcp/src/{server,tools}.ts` + tests, README |
 | 6.9 | Sandbox credentials story split by audience: humans (`API_ENVIRONMENTS.sandbox.note`, site + SDK pages) are told to sign up and read keys off the Console; agents (`AGENT_SANDBOX_NOTE` → bundle `meta.environments`, MCP `environments` topic, context packs) are told the public UAT keypair lives in `llms.txt`, no signup. Key values stay out of the bundle. | `api-auth.ts`, `build-agent-bundle.ts` |
@@ -238,11 +239,11 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 
 | Step | What | Impact | Effort | Risk / notes |
 |---|---|---|---|---|
-| 5.1 | `public/.well-known/api-catalog` (RFC 9727 linkset → openapi, llms.txt, eps.json, both MCPs) + explicit **404** (not SPA shell) for unknown `/.well-known/*`; `agent-card.json` **only if** we commit to the A2A spec and validate against it | Scanner check passes; stops soft-404s | S | ⚠ don't invent an A2A card |
+| ✅ 5.1 | **Done 2026-10-08.** `public/.well-known/api-catalog` (RFC 9727 linkset → openapi, docs, llms.txt, eps.json, both MCPs + context REST face) served as `application/linkset+json`; unknown `/.well-known/*` is a real 404 on all four deploy targets. No `agent-card.json` (we do not implement A2A) | Scanner check passes; stops soft-404s | S | ⚠ don't invent an A2A card |
 | 5.2 | `<head>`: `<link rel="service-desc" href="/openapi.json" type="application/vnd.oai.openapi+json">`, `rel="alternate" type="application/json" href="/agent/eps.json"`, `type="text/plain" href="/llms.txt"` | Discovery from any page | XS | — |
 | 5.3 | Real `/llms-full.txt`: deterministic concat of docs `.md` twins (products → docs → recipes), size-capped or sectioned; nginx rule | One-fetch context for agents without MCP | S–M | build time; keep ordering stable |
 | 5.4 | `llms.txt`: per-product endpoint `.md` list; `/ai` and `llms.txt` link `mcp.eko.in/context/openapi.json` + `/tools/*` | Endpoint-level + REST-face discovery | S | sitemap stays HTML-only (no SEO value in JSON) |
-| 5.5 | `/ai-sitemap.xml` → 404 or a real machine-resource map; decide, don't soft-404 | Removes a false positive | XS | — |
+| ✅ 5.5 | **Done 2026-10-08.** `/ai-sitemap.xml` → real 404 (non-standard; `llms.txt` + api-catalog are the machine map). `llms.txt` now links the api-catalog and `mcp.eko.in/context/openapi.json` | Removes a false positive | XS | — |
 
 ### Phase 6 — Polish
 
