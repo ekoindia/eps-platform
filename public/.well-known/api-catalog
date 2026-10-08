@@ -1,0 +1,45 @@
+{
+	"linkset": [
+		{
+			"anchor": "https://eps.eko.in/",
+			"service-desc": [
+				{
+					"href": "https://eps.eko.in/openapi.json",
+					"type": "application/vnd.oai.openapi+json;version=3.1",
+					"title": "Eko Platform Services REST API (OpenAPI 3.1)"
+				}
+			],
+			"service-doc": [
+				{ "href": "https://eps.eko.in/docs", "type": "text/html", "title": "Developer docs" },
+				{ "href": "https://eps.eko.in/docs.md", "type": "text/markdown", "title": "Developer docs (Markdown)" },
+				{ "href": "https://eps.eko.in/ai", "type": "text/html", "title": "Build with AI: agent artifacts + install matrix" }
+			],
+			"service-meta": [
+				{ "href": "https://eps.eko.in/llms.txt", "type": "text/plain", "title": "LLM entry point (includes public sandbox credentials)" },
+				{ "href": "https://eps.eko.in/agent/eps.json", "type": "application/json", "title": "Agent bundle: every endpoint, topic, recipe" },
+				{ "href": "https://eps.eko.in/agent/index.json", "type": "application/json", "title": "Compact endpoint index" }
+			]
+		},
+		{
+			"anchor": "https://mcp.eko.in/context/mcp",
+			"service-desc": [
+				{
+					"href": "https://mcp.eko.in/context/openapi.json",
+					"type": "application/vnd.oai.openapi+json;version=3.1",
+					"title": "Context MCP tools as REST (ChatGPT Actions / Gemini function calling)"
+				}
+			],
+			"service-doc": [
+				{ "href": "https://eps.eko.in/ai.md", "type": "text/markdown", "title": "Context MCP: install + usage" }
+			],
+			"status": [{ "href": "https://mcp.eko.in/context/healthz" }]
+		},
+		{
+			"anchor": "https://mcp.eko.in/transact/mcp",
+			"service-doc": [
+				{ "href": "https://eps.eko.in/agents.md", "type": "text/markdown", "title": "Transactional MCP: pass-through credentials, verification tools" }
+			],
+			"status": [{ "href": "https://mcp.eko.in/transact/healthz" }]
+		}
+	]
+}

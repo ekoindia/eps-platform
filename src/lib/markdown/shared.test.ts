@@ -45,5 +45,7 @@ describe("aiGettingStartedNotice test credentials", () => {
 
 		expect(notice).toContain("/agent/eps.json");
 		expect(notice).toContain("/openapi.json");
+		expect(notice).toContain("/.well-known/api-catalog");
+		expect(notice).toContain("https://mcp.eko.in/context/openapi.json");
 	});
 });

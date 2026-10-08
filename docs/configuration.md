@@ -144,11 +144,12 @@ Per-platform redirect/header configs. Each platform reads only its own file; the
 
 | File | Platform | Configures |
 |------|----------|-----------|
-| [`vercel.json`](../vercel.json) | Vercel | Rewrites (`/llms-full.txt`→`/index.md`, SPA fallback), `.md`/`.txt` content-type headers, `X-Robots-Tag` on `/console` + `/admin` |
-| [`netlify.toml`](../netlify.toml) + [`public/_redirects`](../public/_redirects) | Netlify | Redirects / SPA fallback, `X-Robots-Tag` on `/console` + `/admin` |
-| [`.htaccess`](../.htaccess) | Apache | Rewrites / SPA fallback (no `X-Robots-Tag` — not a live target) |
-| [`nginx.conf`](../nginx.conf) | Nginx | `.md`/`.txt` MIME types, SPA fallback, `X-Robots-Tag` on `/console` + `/admin` |
+| [`vercel.json`](../vercel.json) | Vercel | Rewrites (`/llms-full.txt`→`/index.md`, SPA fallback that excludes `/assets/`, `/.well-known/`, `/ai-sitemap.xml` so misses 404), `.md`/`.txt`/linkset content-type headers, `X-Robots-Tag` on `/console` + `/admin` |
+| [`netlify.toml`](../netlify.toml) + [`public/_redirects`](../public/_redirects) | Netlify | Redirects / SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml`, linkset content-type, `X-Robots-Tag` on `/console` + `/admin` |
+| [`.htaccess`](../.htaccess) | Apache | Rewrites / SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml` (no `X-Robots-Tag` — not a live target) |
+| [`nginx.conf`](../nginx.conf) | Nginx | `.md`/`.txt`/linkset MIME types, SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml`, `X-Robots-Tag` on `/console` + `/admin` |
 | [`public/robots.txt`](../public/robots.txt) | All | Crawler directives |
+| [`public/.well-known/api-catalog`](../public/.well-known/api-catalog) | All | RFC 9727 linkset: OpenAPI, docs, llms.txt, agent bundle, both MCP servers. Hand-maintained; `src/lib/well-known.test.ts` checks its shape. No `agent-card.json` on purpose — we do not implement A2A. |
 
 Internal `/console` and `/admin` routes are blocked from indexing at three
 layers — see [static-page-generation.md](static-page-generation.md#sitemap-and-robotstxt).

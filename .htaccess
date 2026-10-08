@@ -2,7 +2,15 @@
   RewriteEngine On
   RewriteBase /
   RewriteRule ^index\.html$ - [L]
+  # Unknown /.well-known/* and /ai-sitemap.xml are real 404s, never the SPA shell.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^(\.well-known/|ai-sitemap\.xml$) - [R=404,L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
+</IfModule>
+<IfModule mod_headers.c>
+  <Files "api-catalog">
+    ForceType application/linkset+json
+  </Files>
 </IfModule>
