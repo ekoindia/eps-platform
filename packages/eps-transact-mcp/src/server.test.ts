@@ -169,6 +169,77 @@ describe("transact server", () => {
 		expect(payload.message).not.toContain("SECRET");
 	});
 
+	it("maps an upstream HTTP 403 to HTTP_403 with a debug_auth hint and no body", async () => {
+		const forbidden = (async () =>
+			new Response(JSON.stringify({ message: 'forbidden {"pan_number":"SECRET"}' }), {
+				status: 403,
+				headers: { "content-type": "application/json" },
+			})) as unknown as typeof fetch;
+		const { client } = await connect({ fetch: forbidden });
+		const res = await client.callTool({
+			name: "eps_pan_lite",
+			arguments: argsFor(panLite),
+		});
+		expect(res.isError).toBe(true);
+		const payload = JSON.parse((res.content as { text: string }[])[0].text) as {
+			code: string;
+			status: number;
+			message: string;
+		};
+		expect(payload.code).toBe("HTTP_403");
+		expect(payload.status).toBe(403);
+		expect(payload.message).toContain("debug_auth");
+		expect(JSON.stringify(payload)).not.toContain("SECRET");
+	});
+
+	it("reports a 2xx with non-zero status as a BUSINESS_<status> error, with next when documented", async () => {
+		// Pick a tool whose endpoint documents response types so `next` can resolve.
+		const routed = tools.find((t) => t.responseTypes.some((r) => r.next));
+		const target = routed ?? panLite;
+		const route = routed?.responseTypes.find((r) => r.next);
+		const failing = (async () =>
+			new Response(
+				JSON.stringify({
+					status: 463,
+					response_status_id: 1,
+					response_type_id: route?.id ?? -1,
+					message: "User not found",
+					data: {},
+				}),
+				{ status: 200, headers: { "content-type": "application/json" } },
+			)) as unknown as typeof fetch;
+		const { client } = await connect({ fetch: failing });
+		const res = await client.callTool({
+			name: target.name,
+			arguments: argsFor(target),
+		});
+		expect(res.isError).toBe(true);
+		const payload = JSON.parse((res.content as { text: string }[])[0].text) as {
+			code: string;
+			status: number;
+			message: string;
+			next?: string;
+			envelope: { status: number };
+		};
+		expect(payload.code).toBe("BUSINESS_463");
+		expect(payload.status).toBe(463);
+		expect(payload.message).toBe("User not found");
+		expect(payload.envelope.status).toBe(463);
+		if (route) expect(payload.next).toBe(route.next);
+	});
+
+	it("declares the envelope outputSchema and returns structuredContent on success", async () => {
+		const { client } = await connect();
+		const { tools: listed } = await client.listTools();
+		for (const t of listed) expect(t.outputSchema).toBeDefined();
+		const res = await client.callTool({
+			name: "eps_pan_lite",
+			arguments: argsFor(panLite),
+		});
+		expect(res.isError).toBeFalsy();
+		expect(res.structuredContent).toMatchObject({ data: { ok: true } });
+	});
+
 	it("rejects unknown tools", async () => {
 		const { client } = await connect();
 		const res = await client.callTool({ name: "eps_nope", arguments: {} });
@@ -230,6 +301,13 @@ describe("sanitizeError", () => {
 		const err = new Error("timed out");
 		err.name = "TimeoutError";
 		expect(sanitizeError(err).code).toBe("UPSTREAM_TIMEOUT");
+	});
+	it("relays value-constraint failures as VALIDATION (constraint text, not values)", () => {
+		const out = sanitizeError(
+			new Error('Invalid param values for "pan-lite": pan_number (expected format pan).'),
+		);
+		expect(out.code).toBe("VALIDATION");
+		expect(out.message).toContain("expected format pan");
 	});
 	it("passes through EpsClient validation messages verbatim", () => {
 		expect(

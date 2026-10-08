@@ -3,7 +3,12 @@
  * (the same single source of truth as docs, SDKs, and the context MCP). No
  * hand-written per-API tool code — the tool list can never drift from the specs.
  */
-import type { AgentApiDetail, AgentBundle, ApiParam } from "./bundle-types.js";
+import type {
+	AgentApiDetail,
+	AgentBundle,
+	ApiParam,
+	ApiResponseType,
+} from "./bundle-types.js";
 
 /** One generated transactional tool. `slug` is the EPS endpoint slug consumed
  * by `EpsClient.call`; `name` is the MCP-facing tool name. */
@@ -22,7 +27,41 @@ export interface ToolDef {
 		idempotentHint?: boolean;
 		openWorldHint: true;
 	};
+	/** Documented `response_type_id` values with the slug to call next; used to
+	 * put `next` on a business-failure result so the agent can route. */
+	responseTypes: ApiResponseType[];
 }
+
+/**
+ * Shared EPS response envelope, declared as every tool's `outputSchema` so hosts
+ * and agents know the shape before calling. `status` is the business outcome
+ * (0 = success); a non-zero `status` comes back as an MCP error result, not as
+ * success. `response_status_id` is a UI display hint — never branch on it.
+ * Loose on purpose: `data` differs per endpoint and some upstream envelopes
+ * omit fields.
+ */
+export const ENVELOPE_OUTPUT_SCHEMA = {
+	type: "object",
+	properties: {
+		status: {
+			type: "integer",
+			description:
+				"Business outcome: 0 = success. Any other value is a failure and the tool result carries isError.",
+		},
+		message: { type: "string", description: "Human-readable result/error." },
+		response_type_id: {
+			type: "integer",
+			description:
+				"Id of the response shape; documented values map to the next endpoint to call.",
+		},
+		response_status_id: {
+			type: "integer",
+			description: "UI display hint only. Never branch on it; use status.",
+		},
+		data: { description: "Endpoint-specific payload (object or array)." },
+	},
+	additionalProperties: true,
+} as const;
 
 /** Headers the executor (EpsClient) supplies itself: the HMAC auth trio plus
  * content-type. Any OTHER required header on a spec cannot be represented. */
@@ -209,6 +248,7 @@ export const buildToolDefs = (bundle: AgentBundle): ToolDef[] =>
 			title: api.name,
 			description,
 			inputSchema: { type: "object", properties, required },
+			responseTypes: api.responseTypes ?? [],
 			annotations: {
 				readOnlyHint: !sideEffect,
 				// Meaningful only when readOnlyHint is false (MCP spec); every
