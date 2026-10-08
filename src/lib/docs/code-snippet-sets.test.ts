@@ -37,9 +37,9 @@ describe("sign-request snippet set", () => {
 		expect(secretKey).toBe(GOLDEN.expected);
 	});
 
-	it("no snippet base64-DECODES the key before HMAC (the classic 403 bug)", () => {
+	it("no snippet base64-DECODES the key before HMAC (the classic 401 bug)", () => {
 		// Each pattern indicates keying HMAC with the DECODED bytes — the wrong
-		// convention that produces a different signature and a 403. Note the JS
+		// convention that produces a different signature and a 401. Note the JS
 		// pattern targets Buffer.from(x, "base64") specifically; the correct
 		// `.toString("base64")` / `.digest("base64")` encodings are fine.
 		const wrongConvention = [

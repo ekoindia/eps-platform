@@ -272,7 +272,7 @@ POST that omits `client_ref_id`. Every suite pins the exact request counts:
 | financial POST: 502, inquiry 200                            | 2        | indeterminate error; `status` 502; `statusCheck` = inquiry envelope; inquiry URL contains `client_ref_id:<ref>` and `initiator_id`; the inquiry is a GET |
 | financial POST: transport failure, supplied ref, inquiry 200 | 2       | indeterminate error; `status` null; `clientRefId` is the supplied value |
 | financial POST: 500, inquiry 503 every attempt              | 1 + 3    | indeterminate error; `statusCheck` null; `statusCheckError` is the 503; cause is the 500 |
-| financial POST: 403                                         | 1        | typed HTTP error, no inquiry                                    |
+| financial POST: 401                                         | 1        | typed HTTP error, no inquiry                                    |
 | `initiate-refund` (financial, no ref param): 500            | 1        | typed HTTP error, no inquiry                                    |
 | financial POST with auto inquire off: 500                   | 1        | typed HTTP error                                                |
 

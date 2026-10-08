@@ -150,7 +150,7 @@ runtime — no network call is needed to resolve a slug.
 ## Upgrading to 2.0
 
 `call()` used to return `json_decode($res, true) ?? []` whatever the HTTP status,
-so a `403` envelope looked like a result and a non-JSON body silently became an
+so a `401` envelope looked like a result and a non-JSON body silently became an
 empty array. It now throws.
 
 ```php

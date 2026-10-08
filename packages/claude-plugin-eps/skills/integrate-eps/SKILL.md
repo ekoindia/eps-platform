@@ -11,5 +11,5 @@ description: Use when integrating an Eko Platform Services (EPS) API — looks u
    and reports errors for you. Hand-write a signed request only when there is none.
 3. Read `get_topic('auth')` — signing is backend-only; never expose `access_key`.
 4. Use `get_signing_snippet(language)` for paste-ready signing code (languages with
-   no SDK, or when debugging a 403).
+   no SDK, or when debugging a 401).
 5. For multi-step flows, fetch `get_recipe(id)` (e.g. `dmt-fino-send-money`).

@@ -447,12 +447,12 @@ class EpsClientTest {
 			EpsClient.EpsHttpException e =
 					assertThrows(
 							EpsClient.EpsHttpException.class,
-							() -> EpsClient.handleResponse(403, URL, "{\"status\":403}"));
-			assertEquals(403, e.status);
+							() -> EpsClient.handleResponse(401, URL, "{\"status\":401}"));
+			assertEquals(401, e.status);
 			assertEquals(URL, e.url);
-			assertEquals(403.0, e.body.get("status"));
-			assertEquals("{\"status\":403}", e.raw);
-			assertEquals("EPS request to " + URL + " failed with HTTP 403.", e.getMessage());
+			assertEquals(401.0, e.body.get("status"));
+			assertEquals("{\"status\":401}", e.raw);
+			assertEquals("EPS request to " + URL + " failed with HTTP 401.", e.getMessage());
 		}
 
 		@Test
@@ -875,7 +875,7 @@ class EpsClientTest {
 
 		@Test
 		void financialPost4xxIsPlainHttpException() {
-			Scripted t = new Scripted(Step.http(403));
+			Scripted t = new Scripted(Step.http(401));
 			assertThrows(
 					EpsClient.EpsHttpException.class, () -> fast(t).call("dmt-initiate-transfer", TRANSFER));
 			assertEquals(1, t.sent.size());

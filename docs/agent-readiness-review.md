@@ -83,6 +83,7 @@ Format per row: what works → gap (with code location) → fix → owner → pr
 
 **Gaps**
 - 44 specs have no `errorScenarios`; only 25 show a 4xx. `statusCode` values used: 200 ×130, 403 ×19, 400 ×11, 404 ×2.
+  - _Correction 2026-10-08:_ the auth-failure status was documented as 403 at audit time; EPS actually answers **401**, and every spec, hint and doc now says 401. Dated lines below keep the 403 wording as observed.
 - Context MCP tool descriptions were one-liners (`get_api`: "Full detail for one endpoint by slug.") — fixed in this pass (§6.7).
 - `search` ranks by substring-hit count only (`packages/eps-context-mcp/src/bundle-access.ts:46-65`).
 
@@ -140,7 +141,7 @@ Format per row: what works → gap (with code location) → fix → owner → pr
 - `/docs/error-codes` explains "200 + non-zero `status` = business failure"; validation returns `invalid_params` per field — richer than the article's baseline.
 - `responseTypes {id, meaning, next}` on 26 specs; recipes branch on `response_type_id` / `status` with `goto`.
 - SDKs: `EpsHttpError`, `EpsIndeterminateError` (429 / 5xx / transport), GET-only retry with jitter, **financial non-GET with unknown outcome → automatic Transaction Inquiry by `client_ref_id`** (`packages/sdk-js/src/client.ts:410-463`). Same contract in Python, Go, Java, PHP (`docs/sdk-golden-vector.md`).
-- `debug_auth` turns a 403 into ranked causes with fixes.
+- `debug_auth` turns a 401 into ranked causes with fixes.
 
 **Gaps**
 - Catalogue `ApiErrorCode {code, scope, meaning}` (`src/lib/data/api-error-codes.ts`) has **no retryable / category / remediation**; bundle `errors` topic is a flat list not tied to endpoints.
@@ -209,7 +210,7 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 | ✅ 2.1 | **Done 2026-10-08.** `paramSchema` emits `pattern` (from `API_PARAM_FORMATS`), `enum`, `minimum`/`maximum`, `maxLength` | Generated clients and agents validate before calling; cheapest mode-5 win | S | snapshot churn only |
 | ✅ 2.2 | **Done 2026-10-08.** `securitySchemes.ekoHmac` + top-level `security` + `x-eko-signing`; header params kept; typescript-fetch codegen verified (same header key, no double-inject) | Scanners stop reporting "unauthenticated"; mode 3 | S | reverses the deliberate decision at `build-openapi.ts:9-13` — rewrite that comment with the new reasoning |
 | 2.3 | `components.schemas.{Envelope, FinancialEnvelope, ValidationError}` + `$ref`; `required` arrays for envelope fields **confirmed from live responses**; `tx_status` `enum` = 0/1/2/3/4/6; `status` as `x-eko-known-values` never `enum` | Smaller file (830 KB → est. <300 KB), typed codegen | M | do 2.3 before 2.4 |
-| 2.4 | Attach 403/404/405/415/500 from `HTTP_STATUS_CODES` to every op; add "business failure" + validation 200 examples; `$ref` schema on non-200; build **error** on missing `statusCode` | Agents see failure shapes without calling; mode 6 | S–M | depends 2.3 |
+| 2.4 | Attach 401/404/405/415/500 from `HTTP_STATUS_CODES` to every op; add "business failure" + validation 200 examples; `$ref` schema on non-200; build **error** on missing `statusCode` | Agents see failure shapes without calling; mode 6 | S–M | depends 2.3 |
 | 2.5 | `x-eko-response-types [{id, meaning, next}]` per op alongside the markdown block | Branch on data not prose | S | — |
 | 2.6 | Describe (not restructure) the multipart `form-data` JSON-string part with its field list in `description`; grouped variants keep own description/responses; `requestBody.required` only when body mandatory | 3 upload specs usable by codegen | M | wire format unchanged |
 
@@ -245,7 +246,7 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 
 ### Phase 6 — Polish
 
-6.1 `errorScenarios` backfill for the 44 specs (403 + validation each) — M · 6.2 `search` ranking weights — S · 6.3 log `EPS_BUNDLE_URL` fallback (`load-bundle.ts:21-23`) — XS · 6.4 `enum` backfill where params are truly constrained — M · 6.5 re-probe (§9) after each phase and append the result here.
+6.1 `errorScenarios` backfill for the 44 specs (401 + validation each) — M · 6.2 `search` ranking weights — S · 6.3 log `EPS_BUNDLE_URL` fallback (`load-bundle.ts:21-23`) — XS · 6.4 `enum` backfill where params are truly constrained — M · 6.5 re-probe (§9) after each phase and append the result here.
 
 **Suggested order if doing everything:** 2.1 → 2.2 → 2.3 → 2.4 → 4.3 → 3.1–3.3 → 4.1 → 5.1 → 5.2 → 5.4 → 5.5 → rest.
 

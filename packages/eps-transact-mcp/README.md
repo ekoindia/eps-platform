@@ -70,7 +70,7 @@ Every tool declares the shared EPS envelope as its `outputSchema` (`status`, `me
 Errors come back as MCP error results (`isError: true`) with a JSON `{ code, message, … }` body:
 
 - `VALIDATION` — names the missing / mistyped / out-of-constraint params (constraint text such as `expected format pan` or `longer than 20 bytes`; never the submitted values).
-- `HTTP_<status>` — EPS answered non-2xx. `status` is included; the upstream body is **not** (it can echo request data). `HTTP_403` tells the agent to run the context MCP's secret-free `debug_auth`; `HTTP_429` / `HTTP_5xx` say the outcome is unknown and how to retry safely.
+- `HTTP_<status>` — EPS answered non-2xx. `status` is included; the upstream body is **not** (it can echo request data). `HTTP_401` tells the agent to run the context MCP's secret-free `debug_auth`; `HTTP_429` / `HTTP_5xx` say the outcome is unknown and how to retry safely.
 - `BUSINESS_<status>` — EPS answered 2xx but the envelope `status` is non-zero (wrong OTP, user not found, limit exhausted…). Carries `status`, `message`, `response_type_id`, and — when the endpoint documents that id — `meaning` and `next` (the slug to call next), plus the full `envelope` (it is your verification result). A business failure is never returned as success.
 - `TOOL_NOT_ALLOWED`, `UNKNOWN_TOOL`, `MISSING_CREDENTIALS`, `UPSTREAM_TIMEOUT`, `UPSTREAM_ERROR` (network / non-JSON upstream).
 

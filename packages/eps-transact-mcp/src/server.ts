@@ -31,9 +31,9 @@ const SAFE_MESSAGE_PATTERNS = [
 /** What an agent should do with a non-2xx from EPS, by status. The upstream
  * body is deliberately NOT relayed: it can echo request data (PII). */
 const httpHint = (status: number): string => {
-	if (status === 403)
+	if (status === 401)
 		return (
-			"EPS rejected the request (HTTP 403): wrong or stale secret-key / " +
+			"EPS rejected the request (HTTP 401): wrong or stale secret-key / " +
 			"secret-key-timestamp, wrong developer_key, inactive key, or IP not " +
 			"allow-listed. Do not retry blindly — run the context MCP debug_auth " +
 			"tool (secret-free) to rank the likely causes."

@@ -23,7 +23,7 @@ export const MAX_DESCRIPTION = 300;
  */
 const REST_DESCRIPTIONS: Record<string, string> = {
 	debug_auth:
-		"Diagnose a 403 from an EPS API. Returns a known-answer HMAC test vector, " +
+		"Diagnose a 401 from an EPS API. Returns a known-answer HMAC test vector, " +
 		"ranked causes, and checks on an optional failing timestamp + secret_key. " +
 		"NEVER send an access_key: it is a server-side secret and there is no " +
 		"parameter for it.",

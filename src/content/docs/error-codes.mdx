@@ -12,7 +12,7 @@ UI display hint only — never use it for business logic.
 | Code  | Meaning                                                                                                                                                                                      |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `200` | OK — response returned by our system.                                                                                                                                                        |
-| `403` | Forbidden — incorrect `secret-key` or timestamp. See [how authentication works](/docs/how-auth-works) or [test your generated secret-key](/docs/how-auth-works#try-it-secret-key-playground) |
+| `401` | Unauthorized — incorrect `secret-key` or timestamp. See [how authentication works](/docs/how-auth-works) or [test your generated secret-key](/docs/how-auth-works#try-it-secret-key-playground) |
 | `404` | Not Found — wrong request URL.                                                                                                                                                               |
 | `405` | Method Not Allowed — incorrect HTTP method.                                                                                                                                                  |
 | `415` | Unsupported Media Type — wrong `Content-Type` header.                                                                                                                                        |

@@ -286,14 +286,14 @@ final class EpsClientTest extends TestCase
     public function testDecodeResponseThrowsEpsHttpExceptionOnNon2xx(): void
     {
         try {
-            EpsClient::decodeResponse(403, self::URL, '{"status":403,"message":"Forbidden"}');
+            EpsClient::decodeResponse(401, self::URL, '{"status":401,"message":"Unauthorized"}');
             $this->fail('expected EpsHttpException');
         } catch (EpsHttpException $e) {
-            $this->assertSame(403, $e->status);
+            $this->assertSame(401, $e->status);
             $this->assertSame(self::URL, $e->url);
-            $this->assertSame(['status' => 403, 'message' => 'Forbidden'], $e->body);
-            $this->assertSame('{"status":403,"message":"Forbidden"}', $e->raw);
-            $this->assertSame('EPS request to ' . self::URL . ' failed with HTTP 403.', $e->getMessage());
+            $this->assertSame(['status' => 401, 'message' => 'Unauthorized'], $e->body);
+            $this->assertSame('{"status":401,"message":"Unauthorized"}', $e->raw);
+            $this->assertSame('EPS request to ' . self::URL . ' failed with HTTP 401.', $e->getMessage());
         }
     }
 
@@ -571,7 +571,7 @@ final class EpsClientTest extends TestCase
 
     public function testFinancialPost4xxIsPlainHttpException(): void
     {
-        $t = self::transport([self::http(403)]);
+        $t = self::transport([self::http(401)]);
         $this->expectException(EpsHttpException::class);
         try { self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER); } finally { $this->assertCount(1, $t->requests); }
     }

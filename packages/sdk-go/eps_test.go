@@ -446,23 +446,23 @@ var panParams = map[string]any{
 
 func TestCallReturnsHTTPErrorOnNon2xx(t *testing.T) {
 	client := newTestClient(t, func(c *Config) {
-		c.HTTPClient = respondWith(403, `{"status":403,"message":"Forbidden"}`)
+		c.HTTPClient = respondWith(401, `{"status":401,"message":"Unauthorized"}`)
 	})
 	_, err := client.Call(context.Background(), "pan-lite", panParams)
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
 		t.Fatalf("Call error = %v, want *HTTPError", err)
 	}
-	if httpErr.StatusCode != 403 {
-		t.Errorf("StatusCode = %d, want 403", httpErr.StatusCode)
+	if httpErr.StatusCode != 401 {
+		t.Errorf("StatusCode = %d, want 401", httpErr.StatusCode)
 	}
 	if !strings.Contains(httpErr.URL, "/tools/kyc/pan-lite") {
 		t.Errorf("URL = %q, want the pan-lite path", httpErr.URL)
 	}
-	if httpErr.Body["message"] != "Forbidden" {
+	if httpErr.Body["message"] != "Unauthorized" {
 		t.Errorf("Body = %v, want the decoded envelope", httpErr.Body)
 	}
-	if string(httpErr.Raw) != `{"status":403,"message":"Forbidden"}` {
+	if string(httpErr.Raw) != `{"status":401,"message":"Unauthorized"}` {
 		t.Errorf("Raw = %q, want the raw payload", httpErr.Raw)
 	}
 }
@@ -814,7 +814,7 @@ func TestFailingInquiryLandsOnStatusCheckErr(t *testing.T) {
 }
 
 func TestFinancialPost4xxIsPlainHTTPError(t *testing.T) {
-	tr := &scripted{steps: []step{httpStep(403)}}
+	tr := &scripted{steps: []step{httpStep(401)}}
 	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
 	var ind *IndeterminateError
 	if errors.As(err, &ind) || len(tr.requests) != 1 {

@@ -65,9 +65,9 @@ export const HTTP_STATUS_CODES: ApiErrorCode[] = [
 		meaning: "OK — response returned by our system.",
 	},
 	{
-		code: 403,
+		code: 401,
 		scope: "http",
-		meaning: "Forbidden — incorrect secret-key or timestamp.",
+		meaning: "Unauthorized — incorrect secret-key or timestamp.",
 	},
 	{ code: 404, scope: "http", meaning: "Not Found — wrong request URL." },
 	{

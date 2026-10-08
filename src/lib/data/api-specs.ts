@@ -5241,10 +5241,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Invalid or inactive initiator_id / developer_key",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden — regenerate keys or check service activation",
+					message: "Unauthorized — regenerate keys or check service activation",
 				},
 			},
 		],
@@ -5430,10 +5430,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Invalid credentials or expired secret-key",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden — invalid developer_key or secret-key",
+					message: "Unauthorized — invalid developer_key or secret-key",
 				},
 			},
 		],
@@ -12541,11 +12541,11 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				scenario:
 					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					response_status_id: -1,
-					message: "Forbidden: invalid authentication credentials",
+					message: "Unauthorized: invalid authentication credentials",
 					data: {},
 				},
 			},
@@ -12676,11 +12676,11 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				scenario:
 					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					response_status_id: -1,
-					message: "Forbidden: invalid authentication credentials",
+					message: "Unauthorized: invalid authentication credentials",
 					data: {},
 				},
 			},
@@ -12813,7 +12813,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				scenario:
 					"Authentication failure — wrong secret-key or stale timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					response_status_id: -1,
@@ -13205,7 +13205,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					message: "Unauthorized: invalid secret-key or timestamp",
@@ -13868,10 +13868,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden: invalid secret-key or timestamp mismatch",
+					message: "Unauthorized: invalid secret-key or timestamp mismatch",
 				},
 			},
 			{
@@ -14439,10 +14439,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Invalid or unauthorized developer key",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden: invalid developer_key or secret-key",
+					message: "Unauthorized: invalid developer_key or secret-key",
 				},
 			},
 		],
@@ -14596,10 +14596,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden",
+					message: "Unauthorized",
 				},
 			},
 		],
@@ -14895,10 +14895,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden — incorrect secret-key or timestamp",
+					message: "Unauthorized — incorrect secret-key or timestamp",
 				},
 			},
 		],
@@ -15030,11 +15030,11 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				scenario:
 					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					response_status_id: -1,
-					message: "Forbidden: invalid authentication credentials",
+					message: "Unauthorized: invalid authentication credentials",
 					data: {},
 				},
 			},
@@ -15223,11 +15223,11 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — invalid secret-key or timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					response_status_id: -1,
-					message: "Forbidden: invalid or expired secret-key.",
+					message: "Unauthorized: invalid or expired secret-key.",
 					data: null,
 				},
 			},
@@ -15371,7 +15371,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					response_status_id: -1,
@@ -15487,10 +15487,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Invalid / missing developer_key — authentication failure",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden — incorrect developer_key or secret-key.",
+					message: "Unauthorized — incorrect developer_key or secret-key.",
 				},
 			},
 		],
@@ -15652,7 +15652,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				scenario:
 					"Authentication failure — wrong or expired secret-key or timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					message: "Unauthorized: invalid secret-key or timestamp",
@@ -15778,11 +15778,11 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — invalid secret-key or timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					response_status_id: -1,
-					message: "Forbidden: invalid or expired secret-key.",
+					message: "Unauthorized: invalid or expired secret-key.",
 					data: null,
 				},
 			},
@@ -16005,10 +16005,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden: invalid secret-key or timestamp mismatch",
+					message: "Unauthorized: invalid secret-key or timestamp mismatch",
 				},
 			},
 			{
@@ -16170,7 +16170,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				scenario:
 					"Authentication failure — wrong secret-key or stale timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
 					response_status_id: -1,
@@ -16309,10 +16309,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 403,
+				statusCode: 401,
 				example: {
 					status: 1,
-					message: "Forbidden: invalid authentication credentials",
+					message: "Unauthorized: invalid authentication credentials",
 				},
 			},
 			{

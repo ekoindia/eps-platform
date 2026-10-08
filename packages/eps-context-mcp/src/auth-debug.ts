@@ -1,5 +1,5 @@
 /**
- * Secret-free diagnostics for a failing EPS `403`.
+ * Secret-free diagnostics for a failing EPS `401`.
  *
  * Deliberately does NO signing and accepts NO `access_key`: this server is
  * reachable anonymously over HTTP, and a tool argument also lands in the
@@ -17,7 +17,7 @@ export interface AuthCheck {
 	detail: string;
 }
 
-/** A 403 cause, keyed so consumers can act on the id rather than the prose. */
+/** A 401 cause, keyed so consumers can act on the id rather than the prose. */
 export interface AuthCause {
 	id: string;
 	cause: string;
@@ -192,12 +192,12 @@ export const checkSignatureShape = (value: string | undefined): AuthCheck[] => {
 };
 
 /**
- * Ranked 403 causes, most likely first. Signing errors sit at the bottom on
+ * Ranked 401 causes, most likely first. Signing errors sit at the bottom on
  * purpose: the algorithm is confirmed against Eko's server and reproduced by
  * every published snippet, so once the test vector matches, the fault is almost
  * always provisioning or environment.
  */
-export const RANKED_403_CAUSES: AuthCause[] = [
+export const RANKED_401_CAUSES: AuthCause[] = [
 	{
 		id: "ip_not_allowlisted",
 		cause: "The calling server's public IP is not allowlisted for that key.",

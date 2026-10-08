@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { AuthCheck } from "./auth-debug.js";
 import {
 	DRIFT_WARN_MS,
-	RANKED_403_CAUSES,
+	RANKED_401_CAUSES,
 	checkSignatureShape,
 	checkTimestamp,
 } from "./auth-debug.js";
@@ -120,14 +120,14 @@ describe("both inputs together", () => {
 	});
 });
 
-describe("RANKED_403_CAUSES", () => {
+describe("RANKED_401_CAUSES", () => {
 	it("has stable unique ids", () => {
-		const ids = RANKED_403_CAUSES.map((c) => c.id);
+		const ids = RANKED_401_CAUSES.map((c) => c.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
 
 	it("ranks provisioning above signing math", () => {
-		const ids = RANKED_403_CAUSES.map((c) => c.id);
+		const ids = RANKED_401_CAUSES.map((c) => c.id);
 		expect(ids[0]).toBe("ip_not_allowlisted");
 		// The algorithm is confirmed; a signing bug is the least likely cause.
 		expect(ids.at(-1)).toBe("key_decoded_before_signing");

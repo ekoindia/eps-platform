@@ -11,7 +11,7 @@
  * advertised NO scheme (only required header params + prose), so that a
  * generated client would not look authenticated when it cannot sign. That
  * silence made every machine reader (scanners, importers, AI agents) classify
- * the API as unauthenticated and discover the 403 the hard way. The doc now
+ * the API as unauthenticated and discover the 401 the hard way. The doc now
  * declares an `apiKey` scheme on `developer_key` whose description states the
  * signing requirement explicitly, plus a structured `x-eko-signing` root
  * extension (algorithm, headers, test vector, docs). The header PARAMETERS are

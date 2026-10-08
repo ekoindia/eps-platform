@@ -35,7 +35,7 @@ for every call:
 4. Base64-encode the result — that's the `secret-key`.
 
 Send the same timestamp in `secret-key-timestamp`. A stale or mismatched
-timestamp returns `403 Forbidden`.
+timestamp returns `401 Unauthorized`.
 
 ```
 secret-key = base64( HMAC-SHA256( message = timestamp, key = base64(access_key) ) )
@@ -43,7 +43,7 @@ secret-key = base64( HMAC-SHA256( message = timestamp, key = base64(access_key) 
 
 > **Common mistake:** the HMAC key is the base64 **string** `base64(access_key)`,
 > used as-is. Do **not** base64-decode it back to raw bytes before signing — that
-> produces a different signature and a `403`.
+> produces a different signature and a `401`.
 
 ## Code examples
 
@@ -56,7 +56,7 @@ recipe in five languages:
 
 Paste an access key and a timestamp to see the exact `secret-key` those inputs
 produce — or paste a signature your own code generated and check it against
-ours to find out why a request is coming back `403`.
+ours to find out why a request is coming back `401`.
 
 <SecretKeyTester />
 

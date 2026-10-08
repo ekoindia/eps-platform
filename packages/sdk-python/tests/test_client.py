@@ -302,15 +302,15 @@ class ResponseContract(unittest.TestCase):
 
     def test_raises_eps_http_error_on_non_2xx(self):
         error = urllib.error.HTTPError(
-            "https://x/y", 403, "Forbidden", {}, io.BytesIO(b'{"status":403}')
+            "https://x/y", 401, "Unauthorized", {}, io.BytesIO(b'{"status":401}')
         )
         with mock.patch("eps_sdk.client.urllib.request.urlopen", side_effect=error):
             with self.assertRaises(EpsHttpError) as ctx:
                 client().call("pan-lite", self.PAN_PARAMS)
-        self.assertEqual(ctx.exception.status, 403)
+        self.assertEqual(ctx.exception.status, 401)
         self.assertIn("/tools/kyc/pan-lite", ctx.exception.url)
-        self.assertEqual(ctx.exception.body, {"status": 403})
-        self.assertEqual(ctx.exception.raw, b'{"status":403}')
+        self.assertEqual(ctx.exception.body, {"status": 401})
+        self.assertEqual(ctx.exception.raw, b'{"status":401}')
 
     def test_keeps_none_body_for_non_json_error_payload(self):
         error = urllib.error.HTTPError(
@@ -570,7 +570,7 @@ class RetryAndStatusCheck(unittest.TestCase):
         self.assertEqual(len(t.requests), 1 + 3)
 
     def test_financial_post_4xx_is_plain_http_error(self):
-        t = Transport(_http(403))
+        t = Transport(_http(401))
         with patched(t):
             with self.assertRaises(EpsHttpError):
                 fast().call("dmt-initiate-transfer", TRANSFER)

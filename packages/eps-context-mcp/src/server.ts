@@ -19,7 +19,7 @@ import {
 	searchApis,
 } from "./bundle-access.js";
 import {
-	RANKED_403_CAUSES,
+	RANKED_401_CAUSES,
 	checkSignatureShape,
 	checkTimestamp,
 } from "./auth-debug.js";
@@ -291,9 +291,9 @@ export const createEpsServer = (
 	server.registerTool(
 		"debug_auth",
 		{
-			title: "Debug auth / 403",
+			title: "Debug auth / 401",
 			description:
-				"Diagnose a 403 from an EPS API. Returns a known-answer TEST VECTOR: run " +
+				"Diagnose a 401 from an EPS API. Returns a known-answer TEST VECTOR: run " +
 				"your own signing code over test_vector.accessKey + test_vector.timestamp — " +
 				"if you reproduce test_vector.secretKey, your HMAC is correct, so stop " +
 				"debugging the algorithm and work through ranked_causes instead. Optionally " +
@@ -324,7 +324,7 @@ export const createEpsServer = (
 					...checkTimestamp(timestamp, Date.now()),
 					...checkSignatureShape(secret_key),
 				],
-				ranked_causes: RANKED_403_CAUSES,
+				ranked_causes: RANKED_401_CAUSES,
 				docs_url: bundle.topics.auth.docsUrl,
 			}),
 	);

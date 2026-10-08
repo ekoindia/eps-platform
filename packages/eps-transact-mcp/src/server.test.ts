@@ -169,10 +169,10 @@ describe("transact server", () => {
 		expect(payload.message).not.toContain("SECRET");
 	});
 
-	it("maps an upstream HTTP 403 to HTTP_403 with a debug_auth hint and no body", async () => {
+	it("maps an upstream HTTP 401 to HTTP_401 with a debug_auth hint and no body", async () => {
 		const forbidden = (async () =>
 			new Response(JSON.stringify({ message: 'forbidden {"pan_number":"SECRET"}' }), {
-				status: 403,
+				status: 401,
 				headers: { "content-type": "application/json" },
 			})) as unknown as typeof fetch;
 		const { client } = await connect({ fetch: forbidden });
@@ -186,8 +186,8 @@ describe("transact server", () => {
 			status: number;
 			message: string;
 		};
-		expect(payload.code).toBe("HTTP_403");
-		expect(payload.status).toBe(403);
+		expect(payload.code).toBe("HTTP_401");
+		expect(payload.status).toBe(401);
 		expect(payload.message).toContain("debug_auth");
 		expect(JSON.stringify(payload)).not.toContain("SECRET");
 	});

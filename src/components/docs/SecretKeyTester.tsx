@@ -33,7 +33,7 @@ import { useEffect, useState } from "react";
 /** A signable timestamp is a plain digit string — it is signed verbatim. */
 const DIGITS_ONLY = /^\d+$/;
 
-/** Epoch-seconds instead of milliseconds is a real, silent cause of `403`. */
+/** Epoch-seconds instead of milliseconds is a real, silent cause of `401`. */
 const SECONDS_LENGTH = 10;
 
 const fieldLabel =

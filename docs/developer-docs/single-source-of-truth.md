@@ -119,7 +119,7 @@ FINANCIAL_RESPONSE_ENVELOPE  // = common + tx_status, txstatus_desc
 
 A spec with `financial: true` inherits the financial envelope automatically.
 
-**Error codes** (`api-error-codes.ts`): `HTTP_STATUS_CODES` (200/403/404/405/415/500)
+**Error codes** (`api-error-codes.ts`): `HTTP_STATUS_CODES` (200/401/404/405/415/500)
 and `RESPONSE_STATUS_CODES` (business-level `status` codes despite the name: 0 =
 success, 302 = wrong OTP, 347 = insufficient balance, 463 = user not found, …;
 `response_status_id` itself is a UI display hint, never branch on it).

@@ -134,7 +134,7 @@ A standalone `signSecretKey(accessKey, timestamp)` helper is also exported if yo
 
 ## Upgrading to 2.0
 
-`call()` used to return the response body whatever the HTTP status, so a `403`
+`call()` used to return the response body whatever the HTTP status, so a `401`
 or `500` envelope arrived looking like a successful result. It now throws.
 
 ```js
