@@ -166,6 +166,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow.
 - [AI agent platform](docs/ai-agent-platform.md)
 - [Transactional MCP server](docs/eps-transact-mcp.md)
 - [API coverage roadmap](docs/api-coverage-roadmap.md)
+- [Agent-readiness review](docs/agent-readiness-review.md) — EPS vs the 7 ways agents fail APIs; phased fix plan
+- [AI-native gap analysis](docs/ai-native-gap-analysis.md)
 
 **API & data model**
 - [API technical specifications](docs/api-specs.md)
