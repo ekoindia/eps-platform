@@ -95,7 +95,7 @@ Format per row: what works → gap (with code location) → fix → owner → pr
 - No OAuth → the article's OAuth-discovery checks are N/A; the *clarity* check still applies.
 
 **Gaps**
-- `openapi.json` has **no `securitySchemes` and no top-level `security`** — a deliberate choice (`src/lib/openapi/build-openapi.ts:9-13`: "a securityScheme cannot express HMAC faithfully"). Consequence: every scanner/codegen tool classifies EPS as unauthenticated; the algorithm exists only as prose in `info.description`.
+- ~~`openapi.json` has **no `securitySchemes` and no top-level `security`**~~ — fixed 2026-10-08 (Phase 2.2, §6.10). Was a deliberate choice (`src/lib/openapi/build-openapi.ts:9-13`: "a securityScheme cannot express HMAC faithfully"). Consequence: every scanner/codegen tool classifies EPS as unauthenticated; the algorithm exists only as prose in `info.description`.
 - Clock-skew tolerance unpublished; `auth-debug.ts:36` warns at 5 min as a heuristic. **[core]**
 - `api-auth.ts:37` claimed "Self-serve credentials available immediately on signup" while reality is one shared public sandbox keypair — fixed (§6.4).
 - Production key issuance is manual (account manager after KYC); no API. Known, see ai-native-gap §7.
@@ -124,7 +124,7 @@ Format per row: what works → gap (with code location) → fix → owner → pr
 - Regex formats (`src/lib/data/api-formats.ts:28-39`: date, mobile, pan, aadhaar, ifsc, pincode, client-ref, lat-long) are build-validated and *do* reach the agent bundle and `sdk-surface.json`, where the SDKs validate before sending.
 
 **Gaps**
-- `paramSchema` (`build-openapi.ts:68-76`) emits only `type`/`description`/`example` → **`format`/`pattern`, `enum`, `minimum`/`maximum`, `maxLength` are all dropped** (even `client_ref_id`'s `maxLength: 20`; the live file confirms, §9).
+- ~~`paramSchema` emits only `type`/`description`/`example`~~ — fixed 2026-10-08 (Phase 2.1, §6.10): `pattern`/`enum`/`minimum`/`maximum`/`maxLength` now emitted. Was: **all constraints dropped** (even `client_ref_id`'s `maxLength: 20`; the live file confirms, §9).
 - Source data: 0 params with `enum`, 0 with `min`/`max`, 0 extra params with `maxLength`. `tx_status` enum was prose in 6 places with 3 different value sets — now one constant (§6.1).
 - `ResponseField` has no `required`/`nullable`/`enum`; no `required` arrays emitted.
 - No `components`/`$ref`: envelope repeated for every op; `openapi.json` is 830 KB.
@@ -147,7 +147,7 @@ Format per row: what works → gap (with code location) → fix → owner → pr
 - Docs contradicted each other (all fixed in this pass, §6): `tx_status` enum ×3 variants; `response_status_id` described as "granular status id" in the envelope while the docs page says UI-hint-only; `invalid_parameters` vs `invalid_params`; invalid JSON example; `405` missing from the page.
 - No `Retry-After` honoured by any SDK (429 retried with ≤2 s backoff); none sent by the BFF's own limiter (`packages/eps-backend/src/http/rateLimit.ts:43-50`). RFC 9457 absent **[core]**.
 - SDKs return a 2xx with `status ≠ 0` as success (`client.ts:584-591`); no typed business error, no `response_type_id → next` mapping.
-- Transact MCP (`packages/eps-transact-mcp/src/server.ts:21-52`): SDK value-validation errors ("Invalid param values…", `client.ts:529`) are not in `SAFE_MESSAGE_PATTERNS` → surface as `UPSTREAM_ERROR "network or non-JSON upstream response"`; any `EpsHttpError` (incl. 403) → same generic code, status dropped; business failure not `isError`; no `outputSchema`.
+- ~~Transact MCP error mapping~~ — fixed 2026-10-08 (Phase 4.3, §6.11). Was (`server.ts:21-52`): SDK value-validation errors ("Invalid param values…", `client.ts:529`) are not in `SAFE_MESSAGE_PATTERNS` → surface as `UPSTREAM_ERROR "network or non-JSON upstream response"`; any `EpsHttpError` (incl. 403) → same generic code, status dropped; business failure not `isError`; no `outputSchema`.
 
 **Fix** → Phase 4.1, 4.3, 4.4. ⚠ Codex: retry policy is per-operation, not per-code — "429 → inquire" is wrong for a read with no inquiry path. Hence `retryable` is a *default* that `semantics` (Phase 3) overrides; and MCP error bodies must be redacted/allow-listed, not raw upstream (PII).
 
@@ -191,6 +191,8 @@ Rule of thumb from the article applied here: **anything only a human can read (p
 | 6.5 | `client_ref_id` is no longer called an idempotency key; both DMT strings now say reconciliation + Transaction Inquiry lookup before any retry. | `api-specs.ts` |
 | 6.6 | "dicsover" typo in the `llms.txt` agent notice. | `markdown/shared.ts` |
 | 6.7 | Context MCP `get_api` / `get_recipe` descriptions enumerate returned fields and explain `responseTypes.next` and recipe `branches`; REST face gets a ≤300-char override for `get_api`. | `eps-context-mcp/src/server.ts`, `rest.ts` |
+| 6.10 | **Phase 2.1 + 2.2 done.** OpenAPI `paramSchema` emits `pattern` (format registry), `enum`, `minimum`/`maximum`, `maxLength`. Root `components.securitySchemes.ekoHmac` (apiKey on `developer_key`, description spells out the HMAC headers + test vector), top-level `security`, structured `x-eko-signing` {algorithm, key encoding, headers, steps, testVector, docsUrl, backendOnly}. Header comment at `build-openapi.ts:9-19` records why the 2026-06 "no scheme" decision was reversed. Codegen check: openapi-generator `typescript-fetch` writes `developer_key` from the param then from `configuration.apiKey` into the same header key — one header on the wire, no duplication. | `build-openapi.ts` + test |
+| 6.11 | **Phase 4.3 done.** Transact MCP: `Invalid param values` allow-listed as `VALIDATION`; `EpsHttpError` → `HTTP_<status>` with `status` + per-status hint (403 → run `debug_auth`; 429/5xx → outcome unknown), upstream body withheld; 2xx with `status≠0` → `isError` `BUSINESS_<status>` with `message`, `response_type_id`, documented `meaning`/`next`, full `envelope`; every tool declares the envelope `outputSchema` and returns `structuredContent`. `ToolDef` now carries `responseTypes`. | `eps-transact-mcp/src/{server,tools}.ts` + tests, README |
 | 6.9 | Sandbox credentials story split by audience: humans (`API_ENVIRONMENTS.sandbox.note`, site + SDK pages) are told to sign up and read keys off the Console; agents (`AGENT_SANDBOX_NOTE` → bundle `meta.environments`, MCP `environments` topic, context packs) are told the public UAT keypair lives in `llms.txt`, no signup. Key values stay out of the bundle. | `api-auth.ts`, `build-agent-bundle.ts` |
 | 6.8 | Developer docs synced (`single-source-of-truth.md`, `api-specs.md`); README index links this doc and the gap analysis. | `docs/`, `README.md` |
 
@@ -204,8 +206,8 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 
 | Step | What | Impact | Effort | Risk / notes |
 |---|---|---|---|---|
-| 2.1 | `paramSchema` emits `pattern` (from `API_PARAM_FORMATS`), `enum`, `minimum`/`maximum`, `maxLength` | Generated clients and agents validate before calling; cheapest mode-5 win | S | snapshot churn only |
-| 2.2 | `securitySchemes.ekoHmac` + top-level `security` + `x-eko-signing {algorithm, headers, testVector, docsUrl}`; keep header params; verify one generated client doesn't double-inject | Scanners stop reporting "unauthenticated"; mode 3 | S | reverses the deliberate decision at `build-openapi.ts:9-13` — rewrite that comment with the new reasoning |
+| ✅ 2.1 | **Done 2026-10-08.** `paramSchema` emits `pattern` (from `API_PARAM_FORMATS`), `enum`, `minimum`/`maximum`, `maxLength` | Generated clients and agents validate before calling; cheapest mode-5 win | S | snapshot churn only |
+| ✅ 2.2 | **Done 2026-10-08.** `securitySchemes.ekoHmac` + top-level `security` + `x-eko-signing`; header params kept; typescript-fetch codegen verified (same header key, no double-inject) | Scanners stop reporting "unauthenticated"; mode 3 | S | reverses the deliberate decision at `build-openapi.ts:9-13` — rewrite that comment with the new reasoning |
 | 2.3 | `components.schemas.{Envelope, FinancialEnvelope, ValidationError}` + `$ref`; `required` arrays for envelope fields **confirmed from live responses**; `tx_status` `enum` = 0/1/2/3/4/6; `status` as `x-eko-known-values` never `enum` | Smaller file (830 KB → est. <300 KB), typed codegen | M | do 2.3 before 2.4 |
 | 2.4 | Attach 403/404/405/415/500 from `HTTP_STATUS_CODES` to every op; add "business failure" + validation 200 examples; `$ref` schema on non-200; build **error** on missing `statusCode` | Agents see failure shapes without calling; mode 6 | S–M | depends 2.3 |
 | 2.5 | `x-eko-response-types [{id, meaning, next}]` per op alongside the markdown block | Branch on data not prose | S | — |
@@ -226,7 +228,7 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 |---|---|---|---|---|
 | 4.1 | `ApiErrorCode` + `retryable: "never"\|"backoff"\|"after-inquiry"`, `category`, `fix?`; emit `x-eko-error-codes`, bundle topic, mdx column | Machine-readable retry guidance; feeds ai-native-gap #2 | M | retry is a **default**, overridden per op by 3.1 |
 | 4.2 | `client_ref_id` contract page: uniqueness scope, 15/20 chars, lookup form; `required: true` for `financial` specs | Mode 7 ask #1 | S portal + **[core]** dedupe semantics | no `x-eko-idempotency` until core confirms |
-| 4.3 | Transact MCP: add "Invalid param values" pattern; `EpsHttpError → {code: "HTTP_<status>", status, hint}` with **redacted/allow-listed** body; 2xx `status≠0 → isError` + `{code: "BUSINESS_<status>", status, response_type_id, next?, message}`; `outputSchema` envelope | Agent self-corrects instead of guessing; biggest MCP win | S–M | isError on business failure changes host UX (intended) |
+| ✅ 4.3 | **Done 2026-10-08.** Transact MCP: add "Invalid param values" pattern; `EpsHttpError → {code: "HTTP_<status>", status, hint}` with **redacted/allow-listed** body; 2xx `status≠0 → isError` + `{code: "BUSINESS_<status>", status, response_type_id, next?, message}`; `outputSchema` envelope | Agent self-corrects instead of guessing; biggest MCP win | S–M | isError on business failure changes host UX (intended) |
 | 4.4 | SDKs: opt-in `throwOnBusinessError` → `EpsBusinessError`; honour `Retry-After` (seconds + HTTP-date, bounded, total deadline, never on financial) | Typed failure path for agent-written code | L (5 languages + golden vector) | depends 4.1 for `next` |
 | 4.5 | **[core]** publish per-env rate limits + whether 429/`Retry-After` exist → `environments` topic, `x-ratelimit`, mdx row. BFF limiter sends `Retry-After` (independent, S) | Mode 7 | S portal, blocked on core | — |
 | 4.6 | Design doc for financial tools in transact MCP: confirm/elicit step, dry-run, allow-list + amount caps, mandatory `client_ref_id` echo | Prevents "retry → double charge" before money tools exist | M (doc only) | — |
