@@ -21,20 +21,21 @@
  */
 import type { ApiParam, ApiSpec, RelatedLink } from "./api-specs-common";
 import { enabledSpecs } from "./api-specs-common";
+import { txStatusSummary } from "./api-error-codes";
 
 /** Docs slug of the shared guide explaining Aadhaar RSA encryption. */
-const AADHAAR_ENCRYPTION_SLUG = "aadhaar-number-encryption";
+const AADHAAR_ENCRYPTION_SLUG = "fingpay-aeps-aadhaar-encryption";
 
 /** Brief encryption summary appended to the description of every spec that
  * takes {@link encryptedAadhaarParam}; the guide holds the key + code. */
-const AADHAAR_ENCRYPTION_NOTE = `\n\nThe \`aadhar\` parameter must be encrypted with Eko's RSA public key (PKCS#1 v1.5 padding) and Base64-encoded — never sent as plain text. See [Aadhaar Number Encryption](/docs/${AADHAAR_ENCRYPTION_SLUG}) for the public key and code samples.`;
+const AADHAAR_ENCRYPTION_NOTE = `\n\nThe \`aadhar\` parameter must be encrypted with Fingpay's RSA public key (PKCS#1 v1.5 padding) and Base64-encoded — never sent as plain text. See [Aadhaar Encryption (Fingpay AePS)](/docs/${AADHAAR_ENCRYPTION_SLUG}) for how to get the production key and code samples.`;
 
 /** Related-link to the encryption guide, for every spec using {@link encryptedAadhaarParam}. */
 const AADHAAR_ENCRYPTION_LINK: RelatedLink = {
-	label: "Aadhaar Number Encryption guide",
+	label: "Aadhaar Encryption (Fingpay AePS) guide",
 	slug: AADHAAR_ENCRYPTION_SLUG,
 	description:
-		"RSA public key, encryption steps and code samples for the `aadhar` parameter.",
+		"Where to get the RSA public key, encryption steps and code samples for the `aadhar` parameter.",
 };
 
 /** The RSA-encrypted `aadhar` request param shared by the AePS Fingpay APIs. */
@@ -42,7 +43,7 @@ const encryptedAadhaarParam = (whose: string): ApiParam => ({
 	name: "aadhar",
 	type: "string",
 	required: true,
-	description: `RSA-encrypted (PKCS#1 v1.5), Base64-encoded Aadhaar number of the ${whose}. See the Aadhaar Number Encryption guide for the public key and code samples.`,
+	description: `RSA-encrypted (PKCS#1 v1.5), Base64-encoded Aadhaar number of the ${whose}. See the Aadhaar Encryption (Fingpay AePS) guide for the key and code samples.`,
 	example: "BASE64_ENCRYPTED_AADHAAR",
 });
 
@@ -1046,7 +1047,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		slug: "dmt-initiate-transfer",
 		summary: "Execute a DMT-Fino money transfer after OTP verification.",
 		description:
-			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account after OTP validation. Requires the otp and otp_ref_id from Send Transaction OTP plus a unique client_ref_id per attempt for idempotency and reconciliation. The response returns tid (Eko transaction ID) and bank_ref_num (the IMPS RRN/UTR). Use a fresh otp_ref_id and OTP for each attempt — a consumed OTP is rejected — and always persist tid, bank_ref_num, and your client_ref_id to reconcile before retrying.",
+			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account after OTP validation. Requires the otp and otp_ref_id from Send Transaction OTP plus a unique client_ref_id per attempt for reconciliation (it is NOT an idempotency key — on a timeout, look the attempt up via Transaction Inquiry with `client_ref_id:<ref>` before retrying). The response returns tid (Eko transaction ID) and bank_ref_num (the IMPS RRN/UTR). Use a fresh otp_ref_id and OTP for each attempt — a consumed OTP is rejected — and always persist tid, bank_ref_num, and your client_ref_id to reconcile before retrying.",
 		relevance: "M",
 		bestFor:
 			"Executing the actual money transfer — the only money-debit step in the DMT flow.",
@@ -1098,7 +1099,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Unique partner reference for this transaction (idempotency & reconciliation). Use a fresh value per attempt.",
+					"Unique partner reference for this transaction, used for reconciliation and Transaction Inquiry lookup (`client_ref_id:<ref>`). Use a fresh value per attempt; it is not an idempotency key.",
 				example: "<unique_client_ref_id>",
 			},
 		],
@@ -1107,7 +1108,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "tx_status",
 				type: "string",
 				description:
-					"Transaction state within the data block: 0=Success, 1=Fail, 2=Awaited.",
+					`Transaction state within the data block: ${txStatusSummary()}.`,
 				imp: true,
 				example: "0",
 			},
@@ -5022,7 +5023,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				imp: true,
 				description:
-					"Transaction status (0 Success, 1 Fail, 2 Awaited, 3 Refund Pending, 4 Refunded, 5 Hold).",
+					`Transaction status (${txStatusSummary()}).`,
 				example: "0",
 			},
 			{
@@ -5238,14 +5239,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: {},
 				},
 			},
-			{
-				scenario: "Invalid or inactive initiator_id / developer_key",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden — regenerate keys or check service activation",
-				},
-			},
 		],
 	},
 	{
@@ -5425,14 +5418,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					response_status_id: 347,
 					message: "Insufficient balance",
 					data: {},
-				},
-			},
-			{
-				scenario: "Invalid credentials or expired secret-key",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden — invalid developer_key or secret-key",
 				},
 			},
 		],
@@ -10766,7 +10751,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Get the status of any transaction by Eko TID or your client_ref_id.",
 		description:
-			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: 0 = Success, 1 = Fail, 2 = Awaited/Initiated (NEFT), 3 = Refund Pending, 4 = Refunded, 5 = Hold. A timeout should never be treated as an automatic failure — always inquire.",
+			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: " + txStatusSummary() + ". A timeout should never be treated as an automatic failure — always inquire.",
 		descriptionFile: "transaction-inquiry.md",
 		relevance: "H",
 		bestFor: "Reconciling a transaction whose response timed out.",
@@ -10789,7 +10774,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				imp: true,
 				description:
-					"Transaction status (0 Success, 1 Fail, 2 Awaited, 3 Refund Pending, 4 Refunded, 5 Hold).",
+					`Transaction status (${txStatusSummary()}).`,
 				example: "0",
 			},
 			{
@@ -12537,17 +12522,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: {},
 				},
 			},
-			{
-				scenario:
-					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Forbidden: invalid authentication credentials",
-					data: {},
-				},
-			},
 		],
 	},
 	{
@@ -12669,17 +12643,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					response_status_id: -1,
 					message: "Bad request: invalid PAN format",
 					response_type_id: 1388,
-					data: {},
-				},
-			},
-			{
-				scenario:
-					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Forbidden: invalid authentication credentials",
 					data: {},
 				},
 			},
@@ -12807,17 +12770,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 						mobile_number: null,
 						transaction_id: "3560508955",
 					},
-				},
-			},
-			{
-				scenario:
-					"Authentication failure — wrong secret-key or stale timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized — invalid secret-key or secret-key-timestamp.",
-					data: {},
 				},
 			},
 			{
@@ -13200,14 +13152,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					message: "Invalid driving license number format",
 					response_type_id: 1388,
 					data: {},
-				},
-			},
-			{
-				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Unauthorized: invalid secret-key or timestamp",
 				},
 			},
 			{
@@ -13866,14 +13810,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden: invalid secret-key or timestamp mismatch",
-				},
-			},
-			{
 				scenario: "VAHAN source temporarily unavailable",
 				statusCode: 200,
 				example: {
@@ -14436,14 +14372,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: null,
 				},
 			},
-			{
-				scenario: "Invalid or unauthorized developer key",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden: invalid developer_key or secret-key",
-				},
-			},
 		],
 	},
 	{
@@ -14591,14 +14519,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					message: "Required parameter missing",
 					response_type_id: 1388,
 					data: {},
-				},
-			},
-			{
-				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden",
 				},
 			},
 		],
@@ -14892,14 +14812,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: {},
 				},
 			},
-			{
-				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden — incorrect secret-key or timestamp",
-				},
-			},
 		],
 	},
 	{
@@ -15023,17 +14935,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					response_status_id: -1,
 					message: "Bad request: required parameter missing",
 					response_type_id: 1388,
-					data: {},
-				},
-			},
-			{
-				scenario:
-					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Forbidden: invalid authentication credentials",
 					data: {},
 				},
 			},
@@ -15221,16 +15122,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario: "Authentication failure — invalid secret-key or timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Forbidden: invalid or expired secret-key.",
-					data: null,
-				},
-			},
-			{
 				scenario: "Missing required body parameter (cin)",
 				statusCode: 200,
 				example: {
@@ -15368,15 +15259,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: {},
 				},
 			},
-			{
-				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized",
-				},
-			},
 		],
 	},
 	{
@@ -15482,14 +15364,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 						score: 0.05,
 						reason: "Names do not match",
 					},
-				},
-			},
-			{
-				scenario: "Invalid / missing developer_key — authentication failure",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden — incorrect developer_key or secret-key.",
 				},
 			},
 		],
@@ -15649,15 +15523,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario:
-					"Authentication failure — wrong or expired secret-key or timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Unauthorized: invalid secret-key or timestamp",
-				},
-			},
-			{
 				scenario: "Upstream ITR source temporarily unavailable",
 				statusCode: 200,
 				example: {
@@ -15772,16 +15637,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					response_status_id: -1,
 					message: "No records found for the provided DIN.",
 					response_type_id: 1388,
-					data: null,
-				},
-			},
-			{
-				scenario: "Authentication failure — invalid secret-key or timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Forbidden: invalid or expired secret-key.",
 					data: null,
 				},
 			},
@@ -16003,14 +15858,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden: invalid secret-key or timestamp mismatch",
-				},
-			},
-			{
 				scenario: "E-challan source (Parivahan) temporarily unavailable",
 				statusCode: 200,
 				example: {
@@ -16167,17 +16014,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario:
-					"Authentication failure — wrong secret-key or stale timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized — invalid secret-key or secret-key-timestamp.",
-					data: {},
-				},
-			},
-			{
 				scenario: "User (retailer) not found",
 				statusCode: 200,
 				example: {
@@ -16304,14 +16140,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					message: "Invalid FSSAI license number",
 					response_type_id: 1388,
 					data: {},
-				},
-			},
-			{
-				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					message: "Forbidden: invalid authentication credentials",
 				},
 			},
 			{

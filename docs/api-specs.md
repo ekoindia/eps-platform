@@ -35,7 +35,7 @@ one product (api-products.ts)  ──<  many APIs (api-specs.ts)
 | `src/lib/data/api-specs.ts`         | `API_SPECS: ApiSpec[]` (registry), `API_SPECS_MAP`, `getSpecsForProduct(productId)`                                                               |
 | `src/lib/data/api-specs-common.ts`  | Types (`ApiSpec`, `ResponseField`, `ApiParam`), `COMMON_REQUEST_PARAMS`, `COMMON_RESPONSE_ENVELOPE`, `FINANCIAL_RESPONSE_ENVELOPE`, and resolvers |
 | `src/lib/data/api-auth.ts`          | `AUTH_HEADERS`, `API_ENVIRONMENTS` (sandbox/production base URLs), `API_AUTH_INFO` (token-gen notes)                                              |
-| `src/lib/data/api-error-codes.ts`   | `HTTP_STATUS_CODES`, `RESPONSE_STATUS_CODES`, `getErrorCodeMeaning()`                                                                             |
+| `src/lib/data/api-error-codes.ts`   | `HTTP_STATUS_CODES`, `RESPONSE_STATUS_CODES` (business `status` codes), `AUTH_ERROR_CODES` (401 body codes 2483–2487), `TX_STATUS_CODES` + `txStatusSummary()`, `getErrorCodeMeaning()`        |
 | `src/lib/data/api-spec-previews.ts` | Adapters that turn specs into product-page previews + docs links                                                                                  |
 
 ## DRY: deltas + resolvers

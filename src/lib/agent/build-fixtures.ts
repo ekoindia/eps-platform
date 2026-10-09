@@ -13,11 +13,21 @@ export interface EndpointFixture {
 	successResponse: Record<string, unknown>;
 	errors: {
 		scenario: string;
-		responseStatusId?: number;
+		/** Envelope `status` of the example; one of the two `eps_scenario` keys. */
+		status?: number;
+		/** Envelope `response_type_id` of the example — the id recipes branch on. */
+		responseTypeId?: number;
 		statusCode?: number;
 		example: Record<string, unknown>;
 	}[];
 }
+
+/** Read a numeric envelope field from an example, else undefined. */
+const numberField = (
+	example: Record<string, unknown>,
+	key: string,
+): number | undefined =>
+	typeof example[key] === "number" ? (example[key] as number) : undefined;
 
 export const buildFixtures = (bundle: AgentBundle): EndpointFixture[] =>
 	bundle.apis.map((a) => ({
@@ -28,11 +38,11 @@ export const buildFixtures = (bundle: AgentBundle): EndpointFixture[] =>
 		successResponse: a.sampleSuccessResponse,
 		errors: a.errorScenarios.map((e) => ({
 			scenario: e.scenario,
-			responseStatusId:
-				typeof (e.example as { response_status_id?: number })
-					.response_status_id === "number"
-					? (e.example as { response_status_id: number }).response_status_id
-					: undefined,
+			// Scenario keys are the business `status` and the `response_type_id`
+			// (what recipes branch on) — never `response_status_id`, a UI display
+			// hint that is `1` for every error example and so cannot tell them apart.
+			status: numberField(e.example, "status"),
+			responseTypeId: numberField(e.example, "response_type_id"),
 			statusCode: e.statusCode,
 			example: e.example,
 		})),

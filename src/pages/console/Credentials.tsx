@@ -86,10 +86,10 @@ function AadhaarProductionKey() {
 			<p className="text-sm text-muted-foreground">
 				RSA public key for{" "}
 				<Link
-					to="/docs/aadhaar-number-encryption"
+					to="/docs/fingpay-aeps-aadhaar-encryption"
 					className="font-medium text-eko-navy underline underline-offset-4 hover:no-underline"
 				>
-					Aadhaar number encryption
+					Aadhaar encryption (Fingpay AePS)
 				</Link>{" "}
 				in production.
 			</p>

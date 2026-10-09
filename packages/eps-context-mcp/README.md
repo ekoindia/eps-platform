@@ -105,7 +105,7 @@ clients can see this programmatically.
 | `get_signing_snippet` | `language` (`php` \| `java` \| `csharp` \| `javascript` \| `python` \| `go`) | Paste-ready **backend** code to compute the request `secret-key`.                                                                                  |
 | `list_sdks`           | —                                                                            | The backend SDKs that wrap every endpoint: language, package, install command, minimum runtime, docs URL. Compact — no members or examples. |
 | `get_sdk`             | `language` (`javascript` \| `python` \| `php` \| `go` \| `java`; the guide slug such as `nodejs` also works) | One SDK in full: install + requirements, client config options with units, every public class/method/type, file-upload values, the error and timeout contract, and a worked `call()` example. |
-| `debug_auth`          | `timestamp?`, `secret_key?`                                                  | Diagnose a `403`: returns a known-answer test vector to check your signing against, mechanical checks on a supplied timestamp/signature, and ranked causes. **Never takes an `access_key`.** |
+| `debug_auth`          | `timestamp?`, `secret_key?`                                                  | Diagnose a `401`: returns a known-answer test vector to check your signing against, mechanical checks on a supplied timestamp/signature, and ranked causes. **Never takes an `access_key`.** |
 | `get_meta`            | —                                                                            | Bundle org/version, data source (`baked` or `remote`), this server's `packageVersion`, and `updateAvailable` (whether a newer npm release exists). |
 
 **Tiered usage:** start with `list_apis` / `search` (cheap, compact), then call
@@ -117,7 +117,7 @@ clients can see this programmatically.
 you install, client construction and the call pattern with signing, param
 validation and the error contract already handled — do not hand-roll the HMAC
 `secret-key`. `get_signing_snippet` is for the languages with no SDK (it covers
-`csharp` too) and for debugging a `403`.
+`csharp` too) and for debugging a `401`.
 
 **Errors are actionable:** an unknown `slug`/`id` returns an MCP error result
 (`isError: true`) with "did you mean" suggestions and a pointer to
@@ -274,7 +274,7 @@ languages. **This code is backend-only.**
   key. This MCP server holds **no credentials** and performs **no signing or API
   calls** itself; it only provides context and code.
 
-### Debugging a 403 without handing over a key
+### Debugging a 401 without handing over a key
 
 `debug_auth` is **secret-free by design** and there is no plan to add an
 `access_key` parameter. Two reasons, both structural:
@@ -287,9 +287,14 @@ languages. **This code is backend-only.**
 
 Instead the tool hands back a **known-answer test vector** — a dummy key, a
 fixed timestamp, and the signature they must produce. Reproduce it with your own
-code and the algorithm is proven; the 403 is then almost always provisioning
+code and the algorithm is proven; the 401 is then almost always provisioning
 (IP allowlist, inactive key, wrong environment), which `ranked_causes` walks in
-likelihood order. If you want a server that signs with real credentials, that is
+likelihood order. Causes EPS reports with a known `401` body `status` carry it in
+`statuses` (2483 wrong `developer_key`, 2484 bad signature, 2485 timestamp more
+than 2 minutes off or reused, 2486 timestamp not in ms, 2487 missing headers), so
+match the failing response's `status` first; a cause without `statuses` is
+unconfirmed, not ruled out. The clock-drift check uses that same 2-minute window
+but measures against this server's clock at diagnosis time, so it is advisory. If you want a server that signs with real credentials, that is
 `@ekoindia/eps-transact-mcp`, which takes them from the environment or per-request
 headers — never as tool arguments.
 

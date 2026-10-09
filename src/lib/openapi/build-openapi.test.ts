@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 import { API_ENVIRONMENTS } from "@/lib/data/api-auth";
+import { AUTH_ERROR_CODES } from "@/lib/data/api-error-codes";
 import { getDocumentedSpecs } from "@/lib/data/docs-registry";
 import {
 	buildOpenApiDocument,
@@ -217,14 +218,98 @@ describe("buildOpenApiDocument", () => {
 		);
 	});
 
-	it("the public doc carries no auth security schemes (signing is documented as headers)", () => {
-		// Guards the pristine /openapi.json artifact: no security
-		// schemes and per-operation security must never leak into the public doc.
-		expect(
-			(doc.components as Record<string, unknown> | undefined)?.securitySchemes,
-		).toBeUndefined();
+	it("advertises auth machine-readably without implying a key alone is enough", () => {
+		// Root-level scheme + security so scanners/importers/agents see an
+		// authenticated API; the description must spell out the HMAC headers a
+		// plain apiKey scheme cannot express. No per-operation overrides.
+		const schemes = (
+			doc.components as {
+				securitySchemes?: Record<string, Record<string, unknown>>;
+			}
+		).securitySchemes;
+		expect(schemes?.ekoHmac).toMatchObject({
+			type: "apiKey",
+			in: "header",
+			name: "developer_key",
+		});
+		expect(String(schemes?.ekoHmac.description)).toContain("secret-key");
+		expect(String(schemes?.ekoHmac.description)).toContain(
+			"secret-key-timestamp",
+		);
+		expect(doc.security).toEqual([{ ekoHmac: [] }]);
 		for (const { op } of allOperations())
 			expect((op as Record<string, unknown>).security).toBeUndefined();
+		// The structured recipe carries the published known-answer vector.
+		const signing = (doc as Record<string, unknown>)["x-eko-signing"] as {
+			algorithm: string;
+			headers: string[];
+			testVector: { secretKey: string };
+		};
+		expect(signing.algorithm).toBe("HMAC-SHA256");
+		expect(signing.headers).toEqual([
+			"developer_key",
+			"secret-key",
+			"secret-key-timestamp",
+		]);
+		expect(signing.testVector.secretKey).toBe(
+			"88lqTf9ew69XbVbeczjxVL8/B4vibfp1MvTi1mIj2Xo=",
+		);
+	});
+
+	it("every operation shares one 401 response carrying the real auth body codes", () => {
+		for (const { op } of allOperations())
+			expect(op.responses?.["401"]).toEqual({
+				$ref: "#/components/responses/Unauthorized",
+			});
+		const unauthorized = (
+			doc.components as {
+				responses?: Record<string, OpenAPIV3_1.ResponseObject>;
+			}
+		).responses?.Unauthorized;
+		const examples = unauthorized?.content?.["application/json"]
+			?.examples as Record<string, { value: Record<string, unknown> }>;
+		expect(Object.keys(examples)).toEqual(
+			AUTH_ERROR_CODES.map((c) => `status_${c.status}`),
+		);
+		for (const c of AUTH_ERROR_CODES)
+			expect(examples[`status_${c.status}`].value).toEqual({
+				status: c.status,
+				response_type_id: c.status,
+				response_status_id: 1,
+				message: c.message,
+			});
+	});
+
+	it("emits param constraints (pattern, maxLength, enum, min/max) into schemas", () => {
+		// client_ref_id is a common body param with a format regex + maxLength.
+		const post = allOperations().find(
+			({ op }) => (op as OpenAPIV3_1.OperationObject).requestBody,
+		);
+		if (!post) throw new Error("no POST operation found");
+		const body = (post.op as OpenAPIV3_1.OperationObject)
+			.requestBody as OpenAPIV3_1.RequestBodyObject;
+		const schema = body.content["application/json"]?.schema as {
+			properties: Record<string, Record<string, unknown>>;
+		};
+		expect(schema.properties.client_ref_id).toMatchObject({
+			type: "string",
+			pattern: "^[A-Za-z0-9_-]{1,20}$",
+			maxLength: 20,
+		});
+		// Every param that declares a format carries that format's pattern.
+		for (const { op } of allOperations()) {
+			const o = op as OpenAPIV3_1.OperationObject;
+			const props =
+				(
+					(o.requestBody as OpenAPIV3_1.RequestBodyObject | undefined)?.content[
+						"application/json"
+					]?.schema as
+						| { properties?: Record<string, Record<string, unknown>> }
+						| undefined
+				)?.properties ?? {};
+			for (const p of Object.values(props))
+				if (p.pattern) expect(String(p.pattern).startsWith("^")).toBe(true);
+		}
 	});
 });
 

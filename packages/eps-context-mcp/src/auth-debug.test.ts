@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { AuthCheck } from "./auth-debug.js";
 import {
 	DRIFT_WARN_MS,
-	RANKED_403_CAUSES,
+	RANKED_401_CAUSES,
 	checkSignatureShape,
 	checkTimestamp,
 } from "./auth-debug.js";
@@ -52,6 +52,18 @@ describe("checkTimestamp", () => {
 		const future = checkTimestamp(String(NOW + DRIFT_WARN_MS + 1000), NOW);
 		expect(byName(future, "clock_drift")?.ok).toBe(false);
 		expect(byName(future, "clock_drift")?.detail).toMatch(/in the future/);
+	});
+
+	it("uses EPS's documented 2-minute window, inclusive, both directions", () => {
+		expect(DRIFT_WARN_MS).toBe(120_000);
+		for (const drift of [-120_000, 120_000])
+			expect(
+				byName(checkTimestamp(String(NOW + drift), NOW), "clock_drift")?.ok,
+			).toBe(true);
+		for (const drift of [-120_001, 120_001])
+			expect(
+				byName(checkTimestamp(String(NOW + drift), NOW), "clock_drift")?.ok,
+			).toBe(false);
 	});
 
 	it("reports 'nothing supplied' for undefined and for an empty string alike", () => {
@@ -120,14 +132,31 @@ describe("both inputs together", () => {
 	});
 });
 
-describe("RANKED_403_CAUSES", () => {
+describe("RANKED_401_CAUSES", () => {
 	it("has stable unique ids", () => {
-		const ids = RANKED_403_CAUSES.map((c) => c.id);
+		const ids = RANKED_401_CAUSES.map((c) => c.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
 
+	it("maps causes to EPS 401 body statuses; unconfirmed causes stay unmapped", () => {
+		const statusesById = Object.fromEntries(
+			RANKED_401_CAUSES.map((c) => [c.id, c.statuses]),
+		);
+		expect(statusesById).toEqual({
+			ip_not_allowlisted: undefined,
+			key_inactive: undefined,
+			environment_mismatch: undefined,
+			developer_key_wrong: [2483],
+			header_name_typo: [2483, 2487],
+			timestamp_mismatch: [2484],
+			timestamp_not_milliseconds: [2486],
+			timestamp_expired_or_reused: [2485],
+			key_decoded_before_signing: [2484],
+		});
+	});
+
 	it("ranks provisioning above signing math", () => {
-		const ids = RANKED_403_CAUSES.map((c) => c.id);
+		const ids = RANKED_401_CAUSES.map((c) => c.id);
 		expect(ids[0]).toBe("ip_not_allowlisted");
 		// The algorithm is confirmed; a signing bug is the least likely cause.
 		expect(ids.at(-1)).toBe("key_decoded_before_signing");

@@ -16,10 +16,12 @@ const fixtures = [
 		errors: [
 			{
 				scenario: "Sender not found",
-				responseStatusId: 463,
+				status: 463,
+				responseTypeId: 308,
 				example: {
-					status: 1,
-					response_status_id: 463,
+					status: 463,
+					response_status_id: 1,
+					response_type_id: 308,
 					message: "User not found",
 				},
 			},
@@ -35,17 +37,27 @@ describe("matchResponse", () => {
 			"/customer/profile/9123456789/dmt-fino",
 			{},
 		);
-		expect(res?.body.response_status_id).toBe(0);
+		expect(res?.body.status).toBe(0);
 	});
 
-	it("returns the error example when eps_scenario forces a status id", () => {
+	it("returns the error example when eps_scenario forces a status code", () => {
 		const res = matchResponse(
 			fixtures,
 			"GET",
 			"/customer/profile/9123456789/dmt-fino",
 			{ eps_scenario: "463" },
 		);
-		expect(res?.body.response_status_id).toBe(463);
+		expect(res?.body.status).toBe(463);
+	});
+
+	it("also selects a scenario by its response_type_id (what recipes branch on)", () => {
+		const res = matchResponse(
+			fixtures,
+			"GET",
+			"/customer/profile/9123456789/dmt-fino",
+			{ eps_scenario: "308" },
+		);
+		expect(res?.body.response_type_id).toBe(308);
 	});
 
 	it("returns null for an unknown route", () => {

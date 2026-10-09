@@ -31,6 +31,16 @@
 			"permanent": true
 		},
 		{
+			"source": "/docs/aadhaar-number-encryption",
+			"destination": "/docs/fingpay-aeps-aadhaar-encryption",
+			"permanent": true
+		},
+		{
+			"source": "/docs/aadhaar-number-encryption.md",
+			"destination": "/docs/fingpay-aeps-aadhaar-encryption.md",
+			"permanent": true
+		},
+		{
 			"source": "/docs/quickstart",
 			"destination": "/docs",
 			"permanent": true
@@ -59,7 +69,7 @@
 			"destination": "/index.md"
 		},
 		{
-			"source": "/((?!assets/).*)",
+			"source": "/((?!assets/|\\.well-known/|ai-sitemap\\.xml$).*)",
 			"destination": "/__spa-fallback.html"
 		}
 	],
@@ -80,6 +90,16 @@
 				{
 					"key": "Cache-Control",
 					"value": "public, max-age=300, must-revalidate"
+				}
+			]
+		},
+		{
+			"source": "/.well-known/api-catalog",
+			"headers": [
+				{ "key": "Content-Type", "value": "application/linkset+json" },
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=3600, must-revalidate"
 				}
 			]
 		},

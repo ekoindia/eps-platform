@@ -19,7 +19,7 @@ import {
 	searchApis,
 } from "./bundle-access.js";
 import {
-	RANKED_403_CAUSES,
+	RANKED_401_CAUSES,
 	checkSignatureShape,
 	checkTimestamp,
 } from "./auth-debug.js";
@@ -140,7 +140,12 @@ export const createEpsServer = (
 		"get_api",
 		{
 			title: "Get API detail",
-			description: "Full detail for one endpoint by slug.",
+			description:
+				"Full detail for one endpoint by slug: method, path, summary/description, " +
+				"headers, requestParams (name/type/required/format/example), sampleRequest, " +
+				"responseFields, sampleSuccessResponse, errorScenarios, responseTypes " +
+				"({id, meaning, next}: which endpoint to call for each response_type_id) " +
+				"and financial (true = money-moving; never retry blind, inquire by client_ref_id).",
 			inputSchema: { slug: z.string() },
 			annotations: READ_ONLY,
 		},
@@ -181,7 +186,11 @@ export const createEpsServer = (
 		"get_recipe",
 		{
 			title: "Get recipe",
-			description: "One multi-step recipe (steps + branches) by id.",
+			description:
+				"One multi-step recipe by id: ordered steps (specSlug, purpose, appliesWhen) " +
+				"with branches — each has onResponseTypeId (match response_type_id) OR " +
+				"onStatus (match envelope status; 0 = success) → goto next step slug or 'done'. " +
+				"Never branch on response_status_id (UI hint only).",
 			inputSchema: { id: z.string() },
 			annotations: READ_ONLY,
 		},
@@ -282,12 +291,14 @@ export const createEpsServer = (
 	server.registerTool(
 		"debug_auth",
 		{
-			title: "Debug auth / 403",
+			title: "Debug auth / 401",
 			description:
-				"Diagnose a 403 from an EPS API. Returns a known-answer TEST VECTOR: run " +
+				"Diagnose a 401 from an EPS API. Returns a known-answer TEST VECTOR: run " +
 				"your own signing code over test_vector.accessKey + test_vector.timestamp — " +
 				"if you reproduce test_vector.secretKey, your HMAC is correct, so stop " +
-				"debugging the algorithm and work through ranked_causes instead. Optionally " +
+				"debugging the algorithm and work through ranked_causes instead. If the failing " +
+				"response body has a status of 2483–2487, start with the causes whose " +
+				"statuses include it (causes without statuses are unconfirmed, not ruled out). Optionally " +
 				"pass the timestamp and secret-key from the failing request and they are " +
 				"checked for the mechanical faults (seconds instead of milliseconds, clock " +
 				"drift, wrong digest length, stray newline). SECRET-FREE BY DESIGN: there is " +
@@ -315,7 +326,7 @@ export const createEpsServer = (
 					...checkTimestamp(timestamp, Date.now()),
 					...checkSignatureShape(secret_key),
 				],
-				ranked_causes: RANKED_403_CAUSES,
+				ranked_causes: RANKED_401_CAUSES,
 				docs_url: bundle.topics.auth.docsUrl,
 			}),
 	);

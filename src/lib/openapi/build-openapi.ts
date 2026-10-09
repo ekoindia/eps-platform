@@ -6,11 +6,17 @@
  * renders from the richer `api-specs.ts` resolvers directly, while this doc
  * exists for external tooling and to feed an (optional) embedded API client.
  *
- * Auth note: Eko signs requests with a per-request HMAC `secret-key`, which an
- * OpenAPI `securityScheme` cannot express faithfully. We therefore model the
- * auth headers as explicit required header PARAMETERS plus a prose description,
- * and intentionally do NOT advertise a security scheme that would imply a
- * generated client can authenticate on its own.
+ * Auth note: Eko signs requests with a per-request HMAC `secret-key`, which no
+ * OpenAPI `securityScheme` type can express. Until 2026-10 the doc therefore
+ * advertised NO scheme (only required header params + prose), so that a
+ * generated client would not look authenticated when it cannot sign. That
+ * silence made every machine reader (scanners, importers, AI agents) classify
+ * the API as unauthenticated and discover the 401 the hard way. The doc now
+ * declares an `apiKey` scheme on `developer_key` whose description states the
+ * signing requirement explicitly, plus a structured `x-eko-signing` root
+ * extension (algorithm, headers, test vector, docs). The header PARAMETERS are
+ * kept too — they carry the per-header descriptions. Honesty moved from
+ * omission into the description, where tools actually surface it.
  *
  * Pure + deterministic (no I/O, no Date) so it unit-tests cleanly and produces
  * byte-stable output for a given spec set.
@@ -26,7 +32,17 @@ import {
 	SITE_ORG_NAME,
 	SITE_URL,
 } from "@/lib/config/site";
-import { API_AUTH_DOCS_URL, API_ENVIRONMENTS } from "@/lib/data/api-auth";
+import {
+	API_AUTH_DOCS_URL,
+	API_AUTH_INFO,
+	API_ENVIRONMENTS,
+	AUTH_HEADERS,
+} from "@/lib/data/api-auth";
+import {
+	API_ERROR_CODES_DOCS_URL,
+	AUTH_ERROR_CODES,
+} from "@/lib/data/api-error-codes";
+import { API_PARAM_FORMATS } from "@/lib/data/api-formats";
 import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 import type {
@@ -64,7 +80,10 @@ const X_DOCS_SLUG = "x-docs-slug";
 const SCALAR_TYPES = new Set(["string", "number", "integer", "boolean"]);
 
 /** Map a freeform `ApiParam.type` onto a JSON-Schema scalar type.
- * `"file"` (binary upload) → `type: string, format: binary`. */
+ * `"file"` (binary upload) → `type: string, format: binary`. Carries every
+ * constraint the spec knows (`pattern` from the format registry, `enum`,
+ * `minimum`/`maximum`, `maxLength`) so generated clients and agents can
+ * validate before calling, exactly as the SDKs do. */
 const paramSchema = (param: ApiParam): Json => {
 	const t = param.type.toLowerCase();
 	const schema: Json = { type: SCALAR_TYPES.has(t) ? t : "string" };
@@ -72,6 +91,14 @@ const paramSchema = (param: ApiParam): Json => {
 	if (param.description) schema.description = param.description;
 	if (param.example !== undefined && t !== "file")
 		schema.example = param.example;
+	// `format` names are validated against the registry at build time
+	// (assertParamFormats), so a missing entry here would already have failed.
+	const format = param.format ? API_PARAM_FORMATS[param.format] : undefined;
+	if (format) schema.pattern = format.pattern;
+	if (param.enum?.length) schema.enum = param.enum;
+	if (param.min !== undefined) schema.minimum = param.min;
+	if (param.max !== undefined) schema.maximum = param.max;
+	if (param.maxLength !== undefined) schema.maxLength = param.maxLength;
 	return schema;
 };
 
@@ -317,8 +344,39 @@ const buildResponses = (spec: ApiSpec): Json => {
 		}
 	}
 
+	// Every operation shares the auth failure body; a spec-specific 401 wins.
+	responses["401"] ??= { $ref: "#/components/responses/Unauthorized" };
 	return responses;
 };
+
+/**
+ * Shared HTTP 401 response, one named example per known body `status`
+ * (2483–2487) from {@link AUTH_ERROR_CODES}. Referenced by every operation.
+ */
+const unauthorizedResponse = (): Json => ({
+	description:
+		"Authentication failed. For known causes the body `status` (also in " +
+		"`response_type_id`) names the check that failed; see " +
+		`${SITE_URL}${API_ERROR_CODES_DOCS_URL}#authentication-errors-http-401.`,
+	content: {
+		"application/json": {
+			examples: Object.fromEntries(
+				AUTH_ERROR_CODES.map((c) => [
+					`status_${c.status}`,
+					{
+						summary: `${c.status} — ${c.cause}`,
+						value: {
+							status: c.status,
+							response_type_id: c.status,
+							response_status_id: 1,
+							message: c.message,
+						},
+					},
+				]),
+			),
+		},
+	},
+});
 
 export interface BuildOpenApiOptions {
 	/** Override the document version (defaults to the site API version). */
@@ -420,10 +478,52 @@ export const buildOpenApiDocument = (
 				"",
 				"**Authentication.** Every request carries `developer_key`, a per-request",
 				"`secret-key` (an HMAC-SHA256 signature), and `secret-key-timestamp`",
-				"headers. These",
-				"are modeled as required header parameters, not a security scheme — a",
-				`generated client cannot sign requests on its own. See ${API_AUTH_DOCS_URL}.`,
+				"headers. The `ekoHmac` security scheme identifies the partner key; the",
+				"two signing headers are modeled as required header parameters because",
+				"no OpenAPI security scheme type can express a per-request HMAC. A",
+				"generated client therefore cannot sign on its own — use an EPS SDK or",
+				"the `x-eko-signing` recipe at the root of this document. See",
+				`${API_AUTH_DOCS_URL}.`,
 			].join("\n"),
+		},
+		// Machine-readable auth. Without a scheme, scanners/importers/agents read
+		// the API as unauthenticated (see the header comment). `developer_key` is
+		// the only header a plain apiKey scheme can model; the description makes
+		// the HMAC requirement explicit so the scheme never implies "key = done".
+		components: {
+			responses: { Unauthorized: unauthorizedResponse() },
+			securitySchemes: {
+				ekoHmac: {
+					type: "apiKey",
+					in: "header",
+					name: "developer_key",
+					description:
+						"Identifies the partner. NOT sufficient on its own: every request must " +
+						"also carry `secret-key` = base64(HMAC-SHA256(secret-key-timestamp, " +
+						"base64(access_key))) and `secret-key-timestamp` (ms since epoch), " +
+						"both sent as headers. Generated clients cannot compute this — use an " +
+						"EPS SDK or follow `x-eko-signing`. Known-answer test vector: " +
+						`timestamp ${API_AUTH_INFO.testVector.timestamp} with access_key ` +
+						`${API_AUTH_INFO.testVector.accessKey} → secret-key ` +
+						`${API_AUTH_INFO.testVector.secretKey}. Docs: ${SITE_URL}${API_AUTH_DOCS_URL}`,
+				},
+			},
+		},
+		security: [{ ekoHmac: [] }],
+		"x-eko-signing": {
+			algorithm: "HMAC-SHA256",
+			key: "base64(access_key), used as the literal string bytes (do not decode)",
+			message:
+				"secret-key-timestamp (current time in ms since epoch, as a string)",
+			output: "base64(signature) → `secret-key` header",
+			headers: AUTH_HEADERS.filter((h) => h.name !== "content-type").map(
+				(h) => h.name,
+			),
+			steps: [...API_AUTH_INFO.secretKeyGeneration],
+			testVector: { ...API_AUTH_INFO.testVector },
+			docsUrl: `${SITE_URL}${API_AUTH_DOCS_URL}`,
+			backendOnly:
+				"access_key is a server-side secret; never sign in a browser or ship it to a client.",
 		},
 		servers: [
 			{

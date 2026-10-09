@@ -2,7 +2,7 @@
 
 Alongside the spec-driven API references, the portal ships hand-written prose
 guides authored in MDX: **How Auth Works**, **Error Codes**, **Aadhaar
-Biometric Auth (RDService)**, **Aadhaar Number Encryption** and **Integration
+Biometric Auth (RDService)**, **Aadhaar Encryption (Fingpay AePS)** and **Integration
 FAQs**. They live in the same `/docs/<slug>` namespace as
 endpoints and appear in the "Guides" group at the top of the left nav.
 
@@ -11,7 +11,7 @@ endpoints and appear in the "Guides" group at the top of the left nav.
 - `src/content/docs/how-auth-works.mdx`
 - `src/content/docs/error-codes.mdx`
 - `src/content/docs/aadhaar-biometric-rdservice.mdx`
-- `src/content/docs/aadhaar-number-encryption.mdx`
+- `src/content/docs/fingpay-aeps-aadhaar-encryption.mdx`
 - `src/content/docs/faqs.mdx`
 
 The `.mdx` filename stem **must** equal the guide's `slug`.

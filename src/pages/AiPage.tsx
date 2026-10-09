@@ -201,7 +201,7 @@ const SAMPLE_PROMPTS: SamplePrompt[] = [
 	},
 	{
 		label: "Fix a bug",
-		text: "My EPS money transfer call fails with error 403. Find the cause and fix it.",
+		text: "My EPS money transfer call fails with error 401. Find the cause and fix it.",
 	},
 ];
 

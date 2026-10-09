@@ -47,7 +47,7 @@ rules.
 You never compute a signature yourself. On every request the client derives
 `secret-key = base64(HMAC-SHA256(timestamp, base64(accessKey)))` and sends it
 with `secret-key-timestamp` and `developer_key`. `EpsClient.sign` is public only
-so you can reproduce a signature while debugging a `403`.
+so you can reproduce a signature while debugging a `401`.
 
 ## File uploads
 

@@ -50,11 +50,11 @@ export const GUIDES: GuideMeta[] = [
 			"UIDAI registered-device fingerprint/iris capture on Web and Android, with an interactive in-browser device tester.",
 	},
 	{
-		slug: "aadhaar-number-encryption",
-		title: "Aadhaar Number Encryption",
+		slug: "fingpay-aeps-aadhaar-encryption",
+		title: "Aadhaar Encryption (Fingpay AePS)",
 		order: 4,
 		summary:
-			"Encrypt the Aadhaar number with Eko's RSA public key (PKCS#1 v1.5) before sending it, with code in five languages.",
+			"Encrypt the Aadhaar number for Fingpay AePS APIs with Fingpay's RSA public key (PKCS#1 v1.5), with code in five languages.",
 	},
 	{
 		slug: "faqs",

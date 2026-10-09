@@ -9,28 +9,58 @@ UI display hint only — never use it for business logic.
 
 ## HTTP Status Codes
 
-| Code  | Meaning                                                                                                                                                                                      |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `200` | OK — response returned by our system.                                                                                                                                                        |
-| `403` | Forbidden — incorrect `secret-key` or timestamp. See [how authentication works](/docs/how-auth-works) or [test your generated secret-key](/docs/how-auth-works#try-it-secret-key-playground) |
-| `404` | Not Found — wrong request URL.                                                                                                                                                               |
-| `415` | Unsupported Media Type — wrong `Content-Type` header.                                                                                                                                        |
-| `500` | Internal Server Error — connectivity or URL misconfiguration.                                                                                                                                |
+| Code  | Meaning                                                                                                                                         |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200` | OK — response returned by our system.                                                                                                           |
+| `401` | Unauthorized — authentication failed. Known causes are named by the body `status`: see [Authentication errors](#authentication-errors-http-401) |
+| `404` | Not Found — wrong request URL.                                                                                                                  |
+| `405` | Method Not Allowed — incorrect HTTP method.                                                                                                     |
+| `415` | Unsupported Media Type — wrong `Content-Type` header.                                                                                           |
+| `500` | Internal Server Error — connectivity or URL misconfiguration.                                                                                   |
+
+## Authentication errors (HTTP 401)
+
+When authentication fails, the API returns HTTP `401` and a response body
+whose `status` (and `response_type_id`, which carries the same value) tells you
+which check failed:
+
+```json
+{
+	"status": 2485,
+	"response_type_id": 2485,
+	"response_status_id": 1,
+	"message": "Expired security headers (secret-key-timestamp older than 2 minutes)"
+}
+```
+
+{/* Keep in sync with AUTH_ERROR_CODES in src/lib/data/api-error-codes.ts (api-error-codes.test.ts checks the status + message columns). */}
+
+| status | message                                                                   | Cause                                                                                                                     | Fix                                                                                                                                                                           |
+| ------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `2483` | Unauthorized                                                              | `developer_key` is wrong                                                                                                  | Send the `developer_key` for the environment you are calling                                                                                                                  |
+| `2484` | Invalid secret-key or timestamp                                           | `secret-key` (signature) is wrong                                                                                         | Sign the exact timestamp you send, keyed by `base64(access_key)` used as a string. Check it in the [secret-key playground](/docs/how-auth-works#try-it-secret-key-playground) |
+| `2485` | Expired security headers (secret-key-timestamp older than 2 minutes)      | `secret-key-timestamp` is more than 2 minutes older or newer than our server clock, or was reused from an earlier request | Generate a new timestamp and `secret-key` for every request; keep your server clock synced (NTP)                                                                              |
+| `2486` | Invalid secret-key-timestamp (expected milliseconds since the UNIX epoch) | `secret-key-timestamp` is not in milliseconds (13 digits) — often seconds (10 digits)                                     | Send milliseconds since the UNIX epoch                                                                                                                                        |
+| `2487` | Missing security headers                                                  | `secret-key` or `secret-key-timestamp` header is missing                                                                  | Send both headers, spelled exactly `secret-key` and `secret-key-timestamp`                                                                                                    |
+
+These are the known codes. A `401` can also come from calling production with
+UAT keys, or (in production) calling from an IP that isn't whitelisted — see
+[Troubleshooting a 401](/docs/how-auth-works#troubleshooting-a-401).
 
 ## The Response Structure
 
-| Field                | Type   | Meaning                                                                                               |
-| -------------------- | ------ | ----------------------------------------------------------------------------------------------------- |
-| `status`             | number | Primary success indicator (`0` = success).                                                            |
-| `response_status_id` | number | UI display status — not for business logic. [See below](#frontend-display-status-response_status_id). |
-| `response_type_id`   | number | Response type id for non-financial requests.                                                          |
-| `tx_status`          | number | Financial Transactions status code (`0` = success)                                                    |
-| `message`            | string | Human-readable result or error message.                                                               |
-| `data`               | object | Rest of the response parameters specific to that transaction                                          |
+| Field                | Type   | Meaning                                                                                                   |
+| -------------------- | ------ | --------------------------------------------------------------------------------------------------------- |
+| `status`             | number | Primary success indicator (`0` = success).                                                                |
+| `response_status_id` | number | UI display status — not for business logic. [See below](#frontend-display-status-response_status_id).     |
+| `response_type_id`   | number | Response type id for non-financial requests.                                                              |
+| `tx_status`          | string | Financial transaction state (`"0"` = success); see [below](#financial-transaction-status-codes-tx_status) |
+| `message`            | string | Human-readable result or error message.                                                                   |
+| `data`               | object | Rest of the response parameters specific to that transaction                                              |
 
 ## Input Validation Errors
 
-In case of input parameter validation errors, you will receive and error (non-zero) `status` code, `response_status_id = 1`, `response_type_id = -1`, and the response will contain `invalid_parameters` object with each invalid parameter name and its error message. This can be used to show proper error response in the user-input form itself.
+In case of input parameter validation errors, you will receive and error (non-zero) `status` code, `response_status_id = 1`, `response_type_id = -1`, and the response will contain an `invalid_params` object with each invalid parameter name and its error message. This can be used to show proper error response in the user-input form itself.
 
 For example:
 
@@ -41,30 +71,34 @@ For example:
 	"response_type_id": -1,
 	"invalid_params": {
 		"name": "Name too long",
-		"dob": "Must be over 18 years",
-	},
-	...
+		"dob": "Must be over 18 years"
+	}
 }
 ```
 
 ## Financial Transaction Status Codes (`tx_status`)
 
-Financial (money-debit) responses additionally carry `tx_status` and `txstatus_desc`. When `tx_status` is `2` (Initiated), or `6` (Response Awaited), poll the relevant status endpoint rather than retrying the debit.
+Financial (money-debit) responses additionally carry `tx_status` and `txstatus_desc`. When `tx_status` is `2` (Initiated), or `6` (Response Awaited), poll [Transaction Inquiry](/docs/transaction-inquiry) rather than retrying the debit.
 
-| tx_status | Meaning                                         |
-| --------- | ----------------------------------------------- |
-| `0`       | Success                                         |
-| `1`       | Failed                                          |
-| `2`       | Initiated (In case of NEFT Money Transfer)      |
-| `3`       | Refund Pending                                  |
-| `4`       | Refunded                                        |
-| `6`       | Response Awaited (Transaction Inquiry Required) |
+{/* Keep in sync with TX_STATUS_CODES in src/lib/data/api-error-codes.ts (single source for every generated surface). */}
+
+| tx_status | Meaning                                                        |
+| --------- | -------------------------------------------------------------- |
+| `0`       | Success                                                        |
+| `1`       | Failed                                                         |
+| `2`       | Initiated / Response Awaited (NEFT) — poll Transaction Inquiry |
+| `3`       | Refund Pending                                                 |
+| `4`       | Refunded                                                       |
+| `6`       | Response Awaited — Transaction Inquiry required                |
 
 ## Common Transaction Status Codes (`status`)
 
 For all financial transactions, **status = 0** should be treated as successful else failed. The current state of a financial transaction can be retrieved from **tx_status** and **txstatus_desc** parameters.
 
 For all non-financial requests, you may need to consider both status and response_type_id parameters.
+
+Authentication failures (`2483`–`2487`) come with HTTP `401`, not `200` — see
+[Authentication errors](#authentication-errors-http-401).
 
 Here are some of the common `status` codes:
 

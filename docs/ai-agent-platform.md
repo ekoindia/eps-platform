@@ -191,8 +191,10 @@ implementation 'com.github.ekoindia:eps-sdk-java:v1.0.2'  // + the JitPack repo
 
 Offline HTTP server (default port **4010**, override with `PORT`) that replays
 the baked `data/fixtures.json`. Recipe-aware: append
-`?eps_scenario=<response_status_id>` to force a documented error example (e.g.
-`?eps_scenario=463` to exercise the DMT "user not found → onboard" branch).
+`?eps_scenario=<code>` — a documented example's envelope `status` or
+`response_type_id` — to force that example (e.g. `?eps_scenario=308` on the DMT
+sender lookup exercises the "sender not enrolled → onboard" branch).
+`response_status_id` is a UI hint and never a selector.
 
 ```bash
 npx -y @ekoindia/eps-mock-server

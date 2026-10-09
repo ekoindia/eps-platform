@@ -38,7 +38,7 @@ export function renderAgentsMarkdown(): string {
 		'   - **Integrate an API:** "Integrate EPS PAN verification into my app, end to end, and test it in the sandbox."',
 	);
 	lines.push(
-		'   - **Fix a bug:** "My EPS money transfer call fails with error 403. Find the cause and fix it."',
+		'   - **Fix a bug:** "My EPS money transfer call fails with error 401. Find the cause and fix it."',
 	);
 	lines.push("");
 
@@ -102,7 +102,7 @@ export function renderAgentsMarkdown(): string {
 	lines.push("");
 	lines.push(
 		"It mirrors the real EPS paths — point your EPS base URL at " +
-			"`http://localhost:4010`, then append `?eps_scenario=<response_status_id>` " +
+			"`http://localhost:4010`, then append `?eps_scenario=<code>` (a documented example's envelope `status` or `response_type_id`) " +
 			"to force a documented error branch.",
 	);
 	lines.push("");

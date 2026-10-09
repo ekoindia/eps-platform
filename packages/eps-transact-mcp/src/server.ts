@@ -11,9 +11,9 @@ import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { EpsClient } from "@ekoindia/eps-sdk";
+import { EpsClient, EpsHttpError } from "@ekoindia/eps-sdk";
 
-import { IDENTITY_PARAMS, type ToolDef } from "./tools.js";
+import { ENVELOPE_OUTPUT_SCHEMA, IDENTITY_PARAMS, type ToolDef } from "./tools.js";
 import { hasCredentials, isAllowed, type TransactCtx } from "./ctx.js";
 
 /** Messages from EpsClient that are safe to relay verbatim: they name params
@@ -21,9 +21,29 @@ import { hasCredentials, isAllowed, type TransactCtx } from "./ctx.js";
 const SAFE_MESSAGE_PATTERNS = [
 	/^Missing required params for /,
 	/^Invalid param types for /,
+	// Reasons are "not one of: …", "expected format pan", "below min 1",
+	// "longer than 20 bytes" — constraint text, never the submitted value.
+	/^Invalid param values for /,
 	/^Unknown endpoint slug /,
 	/^Unknown environment /,
 ];
+
+/** What an agent should do with a non-2xx from EPS, by status. The upstream
+ * body is deliberately NOT relayed: it can echo request data (PII). */
+const httpHint = (status: number): string => {
+	if (status === 401)
+		return (
+			"EPS rejected the request (HTTP 401): wrong or stale secret-key / " +
+			"secret-key-timestamp, wrong developer_key, inactive key, or IP not " +
+			"allow-listed. Do not retry blindly — run the context MCP debug_auth " +
+			"tool (secret-free) to rank the likely causes."
+		);
+	if (status === 404 || status === 405 || status === 415)
+		return `EPS returned HTTP ${status}: wrong path, method or content-type for this endpoint. Check the API definition; do not retry unchanged.`;
+	if (status === 429 || status >= 500)
+		return `EPS returned HTTP ${status}: outcome unknown. For read-only lookups back off and retry; for anything billed or side-effecting, verify before retrying.`;
+	return `EPS returned HTTP ${status}.`;
+};
 
 /**
  * Reduce a thrown error to a sanitized MCP tool error payload. Upstream/network
@@ -34,10 +54,16 @@ const SAFE_MESSAGE_PATTERNS = [
  */
 export const sanitizeError = (
 	err: unknown,
-): { code: string; message: string } => {
+): { code: string; message: string; status?: number } => {
 	const message = err instanceof Error ? err.message : String(err);
 	if (SAFE_MESSAGE_PATTERNS.some((re) => re.test(message)))
 		return { code: "VALIDATION", message };
+	if (err instanceof EpsHttpError)
+		return {
+			code: `HTTP_${err.status}`,
+			status: err.status,
+			message: httpHint(err.status),
+		};
 	if (err instanceof Error && err.name === "TimeoutError")
 		return { code: "UPSTREAM_TIMEOUT", message: "Eko EPS request timed out." };
 	return {
@@ -46,10 +72,48 @@ export const sanitizeError = (
 	};
 };
 
-const errorResult = (payload: { code: string; message: string }) => ({
+const errorResult = (payload: Record<string, unknown>) => ({
 	isError: true,
 	content: [{ type: "text" as const, text: JSON.stringify(payload) }],
 });
+
+/** The EPS envelope fields a business-failure result is built from. */
+type Envelope = {
+	status?: unknown;
+	message?: unknown;
+	response_type_id?: unknown;
+};
+
+/**
+ * A 2xx whose envelope `status` is non-zero is a business failure (wrong OTP,
+ * user not found, limit exhausted…). It is reported as an MCP error so the
+ * agent never mistakes it for success, with the documented `next` step when
+ * the endpoint maps that `response_type_id`. The envelope itself is included:
+ * it is the caller's own verification result (same as on the success path).
+ */
+const businessFailure = (tool: ToolDef, envelope: Envelope) => {
+	const status = envelope.status as number;
+	const typeId =
+		typeof envelope.response_type_id === "number"
+			? envelope.response_type_id
+			: undefined;
+	const route =
+		typeId !== undefined
+			? tool.responseTypes.find((r) => r.id === typeId)
+			: undefined;
+	return errorResult({
+		code: `BUSINESS_${status}`,
+		status,
+		...(typeId !== undefined && { response_type_id: typeId }),
+		message:
+			typeof envelope.message === "string"
+				? envelope.message
+				: `EPS returned status ${status}.`,
+		...(route?.meaning && { meaning: route.meaning }),
+		...(route?.next && { next: route.next }),
+		envelope,
+	});
+};
 
 /**
  * Build an MCP Server bound to one caller's context. Stateless by design:
@@ -78,6 +142,7 @@ export const createTransactServer = (
 			title: t.title,
 			description: t.description,
 			annotations: t.annotations,
+			outputSchema: ENVELOPE_OUTPUT_SCHEMA,
 			// Identity params covered by a server-side default are demoted from
 			// `required` so schema-validating hosts don't force the model to
 			// invent them; EpsClient still enforces presence after merging.
@@ -126,15 +191,19 @@ export const createTransactServer = (
 			...(ctx.now && { now: ctx.now }),
 		});
 		try {
-			const result = await client.call(
+			const result = (await client.call(
 				tool.slug,
 				(req.params.arguments ?? {}) as Record<string, unknown>,
-			);
+			)) as Envelope & Record<string, unknown>;
+			if (typeof result.status === "number" && result.status !== 0)
+				return businessFailure(tool, result);
 			// The upstream response goes back to the authenticated caller — it is
 			// their verification result. It is never logged server-side. Minified:
 			// the consumer is an LLM, indentation is pure token waste.
+			// structuredContent is required once outputSchema is declared.
 			return {
 				content: [{ type: "text" as const, text: JSON.stringify(result) }],
+				structuredContent: result,
 			};
 		} catch (err) {
 			return errorResult(sanitizeError(err));

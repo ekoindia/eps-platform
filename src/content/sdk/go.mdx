@@ -44,7 +44,7 @@ rules. A `*Client` is safe for concurrent use once constructed.
 You never compute a signature yourself. On every request the client derives
 `secret-key = base64(HMAC-SHA256(timestamp, base64(AccessKey)))` and sends it
 with `secret-key-timestamp` and `developer_key`. `eps.Sign` is exported only so
-you can reproduce a signature while debugging a `403`.
+you can reproduce a signature while debugging a `401`.
 
 ## File uploads
 

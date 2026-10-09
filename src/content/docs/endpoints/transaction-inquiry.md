@@ -34,7 +34,7 @@ look up by your **`client_ref_id`, prefix it** with `client_ref_id:`:
 |---|---|
 | 0 | Success |
 | 1 | Fail |
-| 2 | Response Awaited / Initiated (in case of NEFT) |
+| 2 | Initiated / Response Awaited (NEFT) — keep polling |
 | 3 | Refund Pending |
 | 4 | Refunded |
-| 5 | Hold (Transaction Inquiry required) |
+| 6 | Response Awaited — Transaction Inquiry required |

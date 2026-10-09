@@ -9,10 +9,10 @@ after OTP verification. Returns the financial response envelope with `tx_status`
 |---|---|
 | 0 | Success |
 | 1 | Fail |
-| 2 | Initiated |
+| 2 | Initiated / response awaited — keep polling |
 | 3 | Refund pending |
 | 4 | Refunded |
-| 5 | Hold (inquiry required) |
+| 6 | Response awaited — inquiry required |
 
 Treat any unexpected status as **initiated** and follow up with an inquiry.
 

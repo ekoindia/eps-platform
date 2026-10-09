@@ -398,21 +398,21 @@ describe("EpsClient response contract", () => {
 	};
 
 	it("throws EpsHttpError on a non-2xx response, keeping the envelope", async () => {
-		const body = { status: 403, message: "Forbidden" };
+		const body = { status: 401, message: "Unauthorized" };
 		const client = clientWith(
-			vi.fn(async () => new Response(JSON.stringify(body), { status: 403 })),
+			vi.fn(async () => new Response(JSON.stringify(body), { status: 401 })),
 		);
 		const err = await client
 			.call("pan-lite", PAN_ARGS)
 			.catch((e: unknown) => e);
 		expect(err).toBeInstanceOf(EpsHttpError);
 		const httpErr = err as EpsHttpError;
-		expect(httpErr.status).toBe(403);
+		expect(httpErr.status).toBe(401);
 		expect(httpErr.url).toContain("/tools/kyc/pan-lite");
 		expect(httpErr.body).toEqual(body);
 		expect(httpErr.raw).toBe(JSON.stringify(body));
 		expect(httpErr.message).toBe(
-			`EPS request to ${httpErr.url} failed with HTTP 403.`,
+			`EPS request to ${httpErr.url} failed with HTTP 401.`,
 		);
 	});
 
@@ -725,7 +725,7 @@ describe("retry and status check", () => {
 	});
 
 	it("financial POST + decisive 4xx: plain EpsHttpError, no inquiry", async () => {
-		const f = vi.fn(async () => http(403));
+		const f = vi.fn(async () => http(401));
 		await expect(
 			make(f).call("dmt-initiate-transfer", TRANSFER),
 		).rejects.toBeInstanceOf(EpsHttpError);

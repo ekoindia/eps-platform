@@ -2,8 +2,7 @@ import {
 	EPS_MCP_PKG,
 	SALES_MOBILE,
 	SIGNUP_PAGE,
-	SITE_URL,
-} from "@/lib/config/site";
+	SITE_URL, EPS_CONTEXT_MCP_OPENAPI_URL } from "@/lib/config/site";
 import { uatCredentials } from "@/lib/uat-credentials";
 
 /**
@@ -216,7 +215,7 @@ export function aiGettingStartedNotice(): string {
 	// value can never be served as if it were a credential.
 	const credentials = uatCredentials();
 	return (
-		"AI coding agents can get started immediately to dicsover APIs, auth, and integration recipes without scraping the HTML pages, and without the need for signup.\n\n" +
+		"AI coding agents can get started immediately to discover APIs, auth, and integration recipes without scraping the HTML pages, and without the need for signup.\n\n" +
 		bulletList([
 			`${MCP_INSTALL_INSTRUCTIONS}`,
 			`**Developer docs:** ${SITE_URL}/docs (Markdown: ${SITE_URL}/docs.md)`,
@@ -229,6 +228,8 @@ export function aiGettingStartedNotice(): string {
 			`[Full Machine bundle](${SITE_URL}/agent/eps.json): Canonical JSON of every endpoint, topic, and recipe (context heavy)`,
 			`[Endpoint index](${SITE_URL}/agent/index.json): Compact list; fetch /agent/api/<slug>.json for details`,
 			`[OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 document`,
+			`[API catalog](${SITE_URL}/.well-known/api-catalog): RFC 9727 linkset of every machine surface (OpenAPI, bundle, both MCP servers)`,
+			`[Context MCP as REST](${EPS_CONTEXT_MCP_OPENAPI_URL}): the same docs tools over plain HTTP + OpenAPI, for ChatGPT Actions / Gemini function calling`,
 			`[AI hub](${SITE_URL}/ai): All agent artifacts + install instructions`,
 		])
 	);

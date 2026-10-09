@@ -7,7 +7,7 @@
  *
  * Source: https://eps.eko.in/docs/how-auth-works
  */
-import { API_DEFAULT_VERSION } from "@/lib/config/site";
+import { API_DEFAULT_VERSION, SITE_URL } from "@/lib/config/site";
 import type { ApiParam } from "./api-specs-common";
 
 /** Portal docs page describing the auth flow in full. */
@@ -34,7 +34,7 @@ export const API_ENVIRONMENTS: Record<
 	sandbox: {
 		label: "UAT / Sandbox",
 		baseUrl: `https://staging.eko.in/ekoapi/${API_VERSION}`,
-		note: "Self-serve credentials available immediately on signup.",
+		note: "Credentials self-issued on signup. Use for development and testing. Login to Console to view your sandbox credentials.",
 	},
 	production: {
 		label: "Production",
@@ -42,6 +42,21 @@ export const API_ENVIRONMENTS: Record<
 		note: "Credentials issued after organizational KYC.",
 	},
 };
+
+/**
+ * Sandbox note for AI-agent surfaces (agent bundle → MCP `environments` topic,
+ * context packs). Humans are told to sign up and read their keys off the
+ * Console (`API_ENVIRONMENTS.sandbox.note`); agents get the zero-signup path:
+ * the shared public UAT keypair is published in llms.txt / index.md (see
+ * `aiGettingStartedNotice` and the header of `lib/uat-credentials.ts`). The key
+ * values themselves are deliberately NOT repeated in the bundle.
+ */
+export const AGENT_SANDBOX_NOTE =
+	"Shared public UAT keypair — no signup needed. The developer_key and " +
+	`access_key for this environment are published in ${SITE_URL}/llms.txt ` +
+	"(and index.md); use them for development and testing only (scoped, " +
+	"quota'd, rotatable). Production credentials are issued after " +
+	"organizational KYC.";
 
 /** Default base URL used to build full endpoint URLs in previews/portal. */
 export const DEFAULT_BASE_URL = API_ENVIRONMENTS.sandbox.baseUrl;
@@ -119,7 +134,7 @@ export const API_AUTH_INFO = {
 	 * `accessKey` is a dummy string, NOT a credential — the point is that an
 	 * integrator (or an AI agent) can prove their signing code is correct without
 	 * ever handling a real key. Run your own implementation over these inputs; if
-	 * it reproduces `secretKey`, the HMAC is right and a 403 is coming from
+	 * it reproduces `secretKey`, the HMAC is right and a 401 is coming from
 	 * somewhere else. Pinned against `node:crypto` in `api-auth.test.ts`.
 	 */
 	testVector: {

@@ -51,6 +51,19 @@
   status = 301
   force = true
 
+# Aadhaar encryption guide scoped to Fingpay AePS — slug renamed.
+[[redirects]]
+  from = "/docs/aadhaar-number-encryption"
+  to = "/docs/fingpay-aeps-aadhaar-encryption"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/aadhaar-number-encryption.md"
+  to = "/docs/fingpay-aeps-aadhaar-encryption.md"
+  status = 301
+  force = true
+
 # Quickstart guide folded into the /docs overview (now the quickstart itself).
 [[redirects]]
   from = "/docs/quickstart"
@@ -65,10 +78,30 @@
   to = "/__spa-fallback.html"
   status = 404
 
+# Machine-discovery paths: an unknown /.well-known/* (agent-card.json,
+# openapi, mcp.json…) or the non-standard /ai-sitemap.xml must be a real 404.
+# Scanners and agents parse a 200 HTML shell as a broken JSON document, which
+# scores worse than an honest miss. Existing files (api-catalog) still win.
+[[redirects]]
+  from = "/.well-known/*"
+  to = "/__spa-fallback.html"
+  status = 404
+
+[[redirects]]
+  from = "/ai-sitemap.xml"
+  to = "/__spa-fallback.html"
+  status = 404
+
 [[redirects]]
   from = "/*"
   to = "/__spa-fallback.html"
   status = 200
+
+# RFC 9727 API catalog (public/.well-known/api-catalog) is a linkset document.
+[[headers]]
+  for = "/.well-known/api-catalog"
+  [headers.values]
+    Content-Type = "application/linkset+json"
 
 # Sample partner agreement: noindex, but deliberately still fetchable (no
 # robots.txt Disallow) so an AI agent handed the URL can read and explain it.

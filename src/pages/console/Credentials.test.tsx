@@ -40,8 +40,8 @@ describe("Credentials", () => {
 		renderCredentials(ACTIVE);
 		expect(await screen.findByText("PROD-RSA-KEY")).toBeInTheDocument();
 		expect(
-			screen.getByRole("link", { name: /aadhaar number encryption/i }),
-		).toHaveAttribute("href", "/docs/aadhaar-number-encryption");
+			screen.getByRole("link", { name: /aadhaar encryption \(fingpay aeps\)/i }),
+		).toHaveAttribute("href", "/docs/fingpay-aeps-aadhaar-encryption");
 	});
 
 	it("hides the Aadhaar key row when the backend has none", async () => {

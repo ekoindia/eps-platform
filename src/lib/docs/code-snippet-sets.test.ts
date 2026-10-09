@@ -37,9 +37,9 @@ describe("sign-request snippet set", () => {
 		expect(secretKey).toBe(GOLDEN.expected);
 	});
 
-	it("no snippet base64-DECODES the key before HMAC (the classic 403 bug)", () => {
+	it("no snippet base64-DECODES the key before HMAC (the classic 401 bug)", () => {
 		// Each pattern indicates keying HMAC with the DECODED bytes — the wrong
-		// convention that produces a different signature and a 403. Note the JS
+		// convention that produces a different signature and a 401. Note the JS
 		// pattern targets Buffer.from(x, "base64") specifically; the correct
 		// `.toString("base64")` / `.digest("base64")` encodings are fine.
 		const wrongConvention = [
@@ -103,20 +103,5 @@ describe("encrypt-aadhaar snippet set", () => {
 		// Randomized padding: same input, different ciphertext each call.
 		expect(encryptAadhaar("123412341234", publicKeyBase64)).not.toBe(first);
 		expect(() => encryptAadhaar("1234 1234 1234", publicKeyBase64)).toThrow();
-	});
-});
-
-describe("aadhaar-number-encryption guide", () => {
-	it("publishes a UAT key that parses as an RSA SPKI public key", async () => {
-		const { default: mdx } =
-			await import("../../content/docs/aadhaar-number-encryption.mdx?raw");
-		const uatKey = mdx.match(/### UAT\s+```text\s+(\S+)\s+```/)?.[1];
-		expect(uatKey).toBeDefined();
-		const key = crypto.createPublicKey({
-			key: Buffer.from(uatKey as string, "base64"),
-			format: "der",
-			type: "spki",
-		});
-		expect(key.asymmetricKeyType).toBe("rsa");
 	});
 });

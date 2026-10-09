@@ -32,8 +32,16 @@ export const EPS_TRANSACT_MCP_PKG = "@ekoindia/eps-transact-mcp@latest";
 export const EPS_TRANSACT_MCP_CMD = `npx -y ${EPS_TRANSACT_MCP_PKG}`;
 /** Hosted remote endpoint (streamable HTTP) for the transactional MCP server.
  * Path-namespaced under /transact/ — mcp.eko.in hosts multiple MCP servers
- * (/context/ is reserved for the future remote eps-context-mcp). */
+ * (/context/ hosts the remote eps-context-mcp, see EPS_CONTEXT_MCP_URL). */
 export const EPS_TRANSACT_MCP_URL = "https://mcp.eko.in/transact/mcp";
+
+/** Remote context (docs) MCP endpoint; `/context/openapi.json` + `/context/tools/*`
+ * next to it expose the same tools as REST for clients that cannot speak MCP. */
+export const EPS_CONTEXT_MCP_URL = "https://mcp.eko.in/context/mcp";
+export const EPS_CONTEXT_MCP_OPENAPI_URL = EPS_CONTEXT_MCP_URL.replace(
+	/\/mcp$/,
+	"/openapi.json",
+);
 
 export const PARENT_SITE_URL = "https://about.eko.in";
 export const PARENT_SITE_NAME = "Eko Bharat Ventures Pvt. Ltd.";

@@ -44,7 +44,7 @@ the slug, and the baked surface supplies the method, path, and validation rules.
 You never compute a signature yourself. On every request the client derives
 `secret-key = base64(HMAC-SHA256(timestamp, base64(accessKey)))` and sends it
 with `secret-key-timestamp` and `developer_key`. `signSecretKey` is exported
-only so you can reproduce a signature while debugging a `403`.
+only so you can reproduce a signature while debugging a `401`.
 
 ## File uploads
 

@@ -1,2 +1,5 @@
 # Netlify _redirects file (alternative to netlify.toml)
+# Unknown /.well-known/* and /ai-sitemap.xml are real 404s, never the SPA shell.
+/.well-known/*    /__spa-fallback.html   404
+/ai-sitemap.xml   /__spa-fallback.html   404
 /*    /__spa-fallback.html   200

@@ -26,9 +26,10 @@ The settleable amount equals the agent's total AePS business over the last
 | `tx_status` | Meaning |
 |---|---|
 | 0 | Success |
-| 2 | Initiated / response awaited |
+| 2 | Initiated / response awaited — keep polling |
 | 4 | Refunded |
-| 5 | Hold (inquiry required) |
+| 6 | Response awaited — inquiry required |
+
 
 If the bank declines the settlement it moves to the **refunded** state and the
 balance is auto-reversed — no manual action needed. After initiating, confirm the

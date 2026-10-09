@@ -65,7 +65,14 @@ One tool per verification endpoint, named `eps_<slug with underscores>` — e.g.
 
 Every tool declares MCP annotations: `openWorldHint: true` on all (they call a paid external API), and `readOnlyHint: false` + `idempotentHint: false` on the side-effecting ones — `eps_bank_account_verification` (live, non-refundable ₹1 penny-drop), the two bulk-submit tools (enqueue async batches), `eps_mobile_otp_send`/`eps_mobile_otp_verify` (send/consume an OTP), and `eps_digilocker_create_url` (creates a consent session). Their descriptions state the side effect instead of "Read-only verification". Hosts should gate side-effecting tools accordingly; billing applies to **all** successful calls either way.
 
-Errors come back sanitized as `{ code, message }`: `VALIDATION` (names the missing/invalid params — never their values), `TOOL_NOT_ALLOWED`, `UNKNOWN_TOOL`, `UPSTREAM_TIMEOUT`, `UPSTREAM_ERROR`. Successful upstream envelopes (including business failures like "PAN not found") are returned verbatim — they are your data.
+Every tool declares the shared EPS envelope as its `outputSchema` (`status`, `message`, `response_type_id`, `response_status_id`, `data`); successful calls return it both as text and as `structuredContent`.
+
+Errors come back as MCP error results (`isError: true`) with a JSON `{ code, message, … }` body:
+
+- `VALIDATION` — names the missing / mistyped / out-of-constraint params (constraint text such as `expected format pan` or `longer than 20 bytes`; never the submitted values).
+- `HTTP_<status>` — EPS answered non-2xx. `status` is included; the upstream body is **not** (it can echo request data). `HTTP_401` tells the agent to run the context MCP's secret-free `debug_auth`; `HTTP_429` / `HTTP_5xx` say the outcome is unknown and how to retry safely.
+- `BUSINESS_<status>` — EPS answered 2xx but the envelope `status` is non-zero (wrong OTP, user not found, limit exhausted…). Carries `status`, `message`, `response_type_id`, and — when the endpoint documents that id — `meaning` and `next` (the slug to call next), plus the full `envelope` (it is your verification result). A business failure is never returned as success.
+- `TOOL_NOT_ALLOWED`, `UNKNOWN_TOOL`, `MISSING_CREDENTIALS`, `UPSTREAM_TIMEOUT`, `UPSTREAM_ERROR` (network / non-JSON upstream).
 
 ## Data handling
 

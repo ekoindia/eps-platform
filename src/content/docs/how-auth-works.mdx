@@ -34,8 +34,9 @@ for every call:
    **base64 string as the key**.
 4. Base64-encode the result — that's the `secret-key`.
 
-Send the same timestamp in `secret-key-timestamp`. A stale or mismatched
-timestamp returns `403 Forbidden`.
+Send the same timestamp in `secret-key-timestamp`. It must be within **2
+minutes** of our server clock (either direction) and must not be reused from an
+earlier request — so generate a new timestamp and `secret-key` for every call.
 
 ```
 secret-key = base64( HMAC-SHA256( message = timestamp, key = base64(access_key) ) )
@@ -43,7 +44,7 @@ secret-key = base64( HMAC-SHA256( message = timestamp, key = base64(access_key) 
 
 > **Common mistake:** the HMAC key is the base64 **string** `base64(access_key)`,
 > used as-is. Do **not** base64-decode it back to raw bytes before signing — that
-> produces a different signature and a `403`.
+> produces a different signature and a `401`.
 
 ## Code examples
 
@@ -52,11 +53,32 @@ recipe in five languages:
 
 <CodeSnippets id="sign-request" />
 
+## Troubleshooting a 401
+
+A failed authentication returns HTTP `401`. The response body's `status` names
+the check that failed (full table in
+[Authentication errors](/docs/error-codes#authentication-errors-http-401)):
+
+- **`2483` Unauthorized** — wrong `developer_key`, or one from the other
+  environment.
+- **`2484` Invalid secret-key or timestamp** — the signature doesn't match.
+  Check the timestamp you signed is the one you sent, and verify your code in
+  the [playground](#try-it-secret-key-playground) below.
+- **`2485` Expired security headers** — the timestamp is more than 2 minutes
+  off our clock, or was reused. Sign every request fresh; sync your clock (NTP).
+- **`2486` Invalid secret-key-timestamp** — not in milliseconds (13 digits).
+  Seconds (10 digits) is the usual mistake.
+- **`2487` Missing security headers** — `secret-key` or `secret-key-timestamp`
+  not sent, or the header name is misspelled.
+
+Signing checks out but still `401`? Check the base URL matches your keys (UAT
+vs production) and, in production, that your server's IP is whitelisted.
+
 ## Try it: `secret-key` playground
 
 Paste an access key and a timestamp to see the exact `secret-key` those inputs
 produce — or paste a signature your own code generated and check it against
-ours to find out why a request is coming back `403`.
+ours to find out why a request is coming back `401`.
 
 <SecretKeyTester />
 
