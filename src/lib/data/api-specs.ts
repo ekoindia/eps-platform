@@ -5239,14 +5239,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: {},
 				},
 			},
-			{
-				scenario: "Invalid or inactive initiator_id / developer_key",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized — regenerate keys or check service activation",
-				},
-			},
 		],
 	},
 	{
@@ -5426,14 +5418,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					response_status_id: 347,
 					message: "Insufficient balance",
 					data: {},
-				},
-			},
-			{
-				scenario: "Invalid credentials or expired secret-key",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized — invalid developer_key or secret-key",
 				},
 			},
 		],
@@ -12538,17 +12522,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: {},
 				},
 			},
-			{
-				scenario:
-					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized: invalid authentication credentials",
-					data: {},
-				},
-			},
 		],
 	},
 	{
@@ -12670,17 +12643,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					response_status_id: -1,
 					message: "Bad request: invalid PAN format",
 					response_type_id: 1388,
-					data: {},
-				},
-			},
-			{
-				scenario:
-					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized: invalid authentication credentials",
 					data: {},
 				},
 			},
@@ -12808,17 +12770,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 						mobile_number: null,
 						transaction_id: "3560508955",
 					},
-				},
-			},
-			{
-				scenario:
-					"Authentication failure — wrong secret-key or stale timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized — invalid secret-key or secret-key-timestamp.",
-					data: {},
 				},
 			},
 			{
@@ -13201,14 +13152,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					message: "Invalid driving license number format",
 					response_type_id: 1388,
 					data: {},
-				},
-			},
-			{
-				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized: invalid secret-key or timestamp",
 				},
 			},
 			{
@@ -13867,14 +13810,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized: invalid secret-key or timestamp mismatch",
-				},
-			},
-			{
 				scenario: "VAHAN source temporarily unavailable",
 				statusCode: 200,
 				example: {
@@ -14437,14 +14372,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: null,
 				},
 			},
-			{
-				scenario: "Invalid or unauthorized developer key",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized: invalid developer_key or secret-key",
-				},
-			},
 		],
 	},
 	{
@@ -14592,14 +14519,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					message: "Required parameter missing",
 					response_type_id: 1388,
 					data: {},
-				},
-			},
-			{
-				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized",
 				},
 			},
 		],
@@ -14893,14 +14812,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: {},
 				},
 			},
-			{
-				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized — incorrect secret-key or timestamp",
-				},
-			},
 		],
 	},
 	{
@@ -15024,17 +14935,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					response_status_id: -1,
 					message: "Bad request: required parameter missing",
 					response_type_id: 1388,
-					data: {},
-				},
-			},
-			{
-				scenario:
-					"Authentication failure — wrong or expired secret-key / timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized: invalid authentication credentials",
 					data: {},
 				},
 			},
@@ -15222,16 +15122,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario: "Authentication failure — invalid secret-key or timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized: invalid or expired secret-key.",
-					data: null,
-				},
-			},
-			{
 				scenario: "Missing required body parameter (cin)",
 				statusCode: 200,
 				example: {
@@ -15369,15 +15259,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					data: {},
 				},
 			},
-			{
-				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 401,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized",
-				},
-			},
 		],
 	},
 	{
@@ -15483,14 +15364,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 						score: 0.05,
 						reason: "Names do not match",
 					},
-				},
-			},
-			{
-				scenario: "Invalid / missing developer_key — authentication failure",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized — incorrect developer_key or secret-key.",
 				},
 			},
 		],
@@ -15650,15 +15523,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario:
-					"Authentication failure — wrong or expired secret-key or timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized: invalid secret-key or timestamp",
-				},
-			},
-			{
 				scenario: "Upstream ITR source temporarily unavailable",
 				statusCode: 200,
 				example: {
@@ -15773,16 +15637,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					response_status_id: -1,
 					message: "No records found for the provided DIN.",
 					response_type_id: 1388,
-					data: null,
-				},
-			},
-			{
-				scenario: "Authentication failure — invalid secret-key or timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized: invalid or expired secret-key.",
 					data: null,
 				},
 			},
@@ -16004,14 +15858,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario: "Authentication failure — wrong or expired secret-key",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized: invalid secret-key or timestamp mismatch",
-				},
-			},
-			{
 				scenario: "E-challan source (Parivahan) temporarily unavailable",
 				statusCode: 200,
 				example: {
@@ -16168,17 +16014,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
-				scenario:
-					"Authentication failure — wrong secret-key or stale timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized — invalid secret-key or secret-key-timestamp.",
-					data: {},
-				},
-			},
-			{
 				scenario: "User (retailer) not found",
 				statusCode: 200,
 				example: {
@@ -16305,14 +16140,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					message: "Invalid FSSAI license number",
 					response_type_id: 1388,
 					data: {},
-				},
-			},
-			{
-				scenario: "Authentication failure — wrong secret-key or timestamp",
-				statusCode: 401,
-				example: {
-					status: 1,
-					message: "Unauthorized: invalid authentication credentials",
 				},
 			},
 			{

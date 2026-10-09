@@ -38,6 +38,10 @@ import {
 	API_ENVIRONMENTS,
 	AUTH_HEADERS,
 } from "@/lib/data/api-auth";
+import {
+	API_ERROR_CODES_DOCS_URL,
+	AUTH_ERROR_CODES,
+} from "@/lib/data/api-error-codes";
 import { API_PARAM_FORMATS } from "@/lib/data/api-formats";
 import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
@@ -340,8 +344,39 @@ const buildResponses = (spec: ApiSpec): Json => {
 		}
 	}
 
+	// Every operation shares the auth failure body; a spec-specific 401 wins.
+	responses["401"] ??= { $ref: "#/components/responses/Unauthorized" };
 	return responses;
 };
+
+/**
+ * Shared HTTP 401 response, one named example per known body `status`
+ * (2483–2487) from {@link AUTH_ERROR_CODES}. Referenced by every operation.
+ */
+const unauthorizedResponse = (): Json => ({
+	description:
+		"Authentication failed. For known causes the body `status` (also in " +
+		"`response_type_id`) names the check that failed; see " +
+		`${SITE_URL}${API_ERROR_CODES_DOCS_URL}#authentication-errors-http-401.`,
+	content: {
+		"application/json": {
+			examples: Object.fromEntries(
+				AUTH_ERROR_CODES.map((c) => [
+					`status_${c.status}`,
+					{
+						summary: `${c.status} — ${c.cause}`,
+						value: {
+							status: c.status,
+							response_type_id: c.status,
+							response_status_id: 1,
+							message: c.message,
+						},
+					},
+				]),
+			),
+		},
+	},
+});
 
 export interface BuildOpenApiOptions {
 	/** Override the document version (defaults to the site API version). */
@@ -456,6 +491,7 @@ export const buildOpenApiDocument = (
 		// the only header a plain apiKey scheme can model; the description makes
 		// the HMAC requirement explicit so the scheme never implies "key = done".
 		components: {
+			responses: { Unauthorized: unauthorizedResponse() },
 			securitySchemes: {
 				ekoHmac: {
 					type: "apiKey",
@@ -477,7 +513,8 @@ export const buildOpenApiDocument = (
 		"x-eko-signing": {
 			algorithm: "HMAC-SHA256",
 			key: "base64(access_key), used as the literal string bytes (do not decode)",
-			message: "secret-key-timestamp (current time in ms since epoch, as a string)",
+			message:
+				"secret-key-timestamp (current time in ms since epoch, as a string)",
 			output: "base64(signature) → `secret-key` header",
 			headers: AUTH_HEADERS.filter((h) => h.name !== "content-type").map(
 				(h) => h.name,

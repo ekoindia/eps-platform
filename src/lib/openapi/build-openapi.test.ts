@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 import { API_ENVIRONMENTS } from "@/lib/data/api-auth";
+import { AUTH_ERROR_CODES } from "@/lib/data/api-error-codes";
 import { getDocumentedSpecs } from "@/lib/data/docs-registry";
 import {
 	buildOpenApiDocument,
@@ -222,7 +223,9 @@ describe("buildOpenApiDocument", () => {
 		// authenticated API; the description must spell out the HMAC headers a
 		// plain apiKey scheme cannot express. No per-operation overrides.
 		const schemes = (
-			doc.components as { securitySchemes?: Record<string, Record<string, unknown>> }
+			doc.components as {
+				securitySchemes?: Record<string, Record<string, unknown>>;
+			}
 		).securitySchemes;
 		expect(schemes?.ekoHmac).toMatchObject({
 			type: "apiKey",
@@ -230,7 +233,9 @@ describe("buildOpenApiDocument", () => {
 			name: "developer_key",
 		});
 		expect(String(schemes?.ekoHmac.description)).toContain("secret-key");
-		expect(String(schemes?.ekoHmac.description)).toContain("secret-key-timestamp");
+		expect(String(schemes?.ekoHmac.description)).toContain(
+			"secret-key-timestamp",
+		);
 		expect(doc.security).toEqual([{ ekoHmac: [] }]);
 		for (const { op } of allOperations())
 			expect((op as Record<string, unknown>).security).toBeUndefined();
@@ -249,6 +254,30 @@ describe("buildOpenApiDocument", () => {
 		expect(signing.testVector.secretKey).toBe(
 			"88lqTf9ew69XbVbeczjxVL8/B4vibfp1MvTi1mIj2Xo=",
 		);
+	});
+
+	it("every operation shares one 401 response carrying the real auth body codes", () => {
+		for (const { op } of allOperations())
+			expect(op.responses?.["401"]).toEqual({
+				$ref: "#/components/responses/Unauthorized",
+			});
+		const unauthorized = (
+			doc.components as {
+				responses?: Record<string, OpenAPIV3_1.ResponseObject>;
+			}
+		).responses?.Unauthorized;
+		const examples = unauthorized?.content?.["application/json"]
+			?.examples as Record<string, { value: Record<string, unknown> }>;
+		expect(Object.keys(examples)).toEqual(
+			AUTH_ERROR_CODES.map((c) => `status_${c.status}`),
+		);
+		for (const c of AUTH_ERROR_CODES)
+			expect(examples[`status_${c.status}`].value).toEqual({
+				status: c.status,
+				response_type_id: c.status,
+				response_status_id: 1,
+				message: c.message,
+			});
 	});
 
 	it("emits param constraints (pattern, maxLength, enum, min/max) into schemas", () => {
@@ -271,10 +300,13 @@ describe("buildOpenApiDocument", () => {
 		for (const { op } of allOperations()) {
 			const o = op as OpenAPIV3_1.OperationObject;
 			const props =
-				((o.requestBody as OpenAPIV3_1.RequestBodyObject | undefined)?.content[
-					"application/json"
-				]?.schema as { properties?: Record<string, Record<string, unknown>> }
-				| undefined)?.properties ?? {};
+				(
+					(o.requestBody as OpenAPIV3_1.RequestBodyObject | undefined)?.content[
+						"application/json"
+					]?.schema as
+						| { properties?: Record<string, Record<string, unknown>> }
+						| undefined
+				)?.properties ?? {};
 			for (const p of Object.values(props))
 				if (p.pattern) expect(String(p.pattern).startsWith("^")).toBe(true);
 		}
