@@ -1,11 +1,19 @@
 import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 /** RFC 9727 API catalog served at /.well-known/api-catalog. Static file, so
  * the only thing that can rot is its JSON shape and the URLs it points at. */
 describe("public/.well-known/api-catalog", () => {
 	const catalog = JSON.parse(
-		readFileSync(new URL("../../public/.well-known/api-catalog", import.meta.url), "utf8"),
+		readFileSync(
+			resolve(
+				dirname(fileURLToPath(import.meta.url)),
+				"../../public/.well-known/api-catalog",
+			),
+			"utf8",
+		),
 	) as {
 		linkset: {
 			anchor: string;
@@ -15,7 +23,9 @@ describe("public/.well-known/api-catalog", () => {
 	};
 
 	it("is a linkset whose site anchor points at the OpenAPI document", () => {
-		const site = catalog.linkset.find((l) => l.anchor === "https://eps.eko.in/");
+		const site = catalog.linkset.find(
+			(l) => l.anchor === "https://eps.eko.in/",
+		);
 		expect(site?.["service-desc"]?.[0]).toMatchObject({
 			href: "https://eps.eko.in/openapi.json",
 		});
