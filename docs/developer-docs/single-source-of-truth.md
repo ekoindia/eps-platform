@@ -16,7 +16,7 @@ endpoint's param table, every cURL/JS/Python sample, and every generated `.md`.
 | --- | --- |
 | `src/lib/data/api-specs-common.ts` | The `ApiSpec` / `ApiParam` / `ResponseField` types, `COMMON_REQUEST_PARAMS`, the response envelopes, and the resolvers. |
 | `src/lib/data/api-auth.ts` | `AUTH_HEADERS`, `API_VERSION`, `API_ENVIRONMENTS` (sandbox + production base URLs). |
-| `src/lib/data/api-error-codes.ts` | `HTTP_STATUS_CODES`, `RESPONSE_STATUS_CODES`, `getErrorCodeMeaning()`. |
+| `src/lib/data/api-error-codes.ts` | `HTTP_STATUS_CODES`, `RESPONSE_STATUS_CODES`, `AUTH_ERROR_CODES` (401 body codes), `getErrorCodeMeaning()`. |
 | `src/lib/data/api-products.ts` | Product + category registry (`ApiProductRef`), the FK target for `spec.productId`. |
 | `src/lib/data/api-specs.ts` | The spec database — one `ApiSpec` per endpoint, deltas only. |
 
@@ -127,6 +127,15 @@ success, 302 = wrong OTP, 347 = insufficient balance, 463 = user not found, …;
 + `txStatusSummary()` hold the financial `tx_status` enum once; every envelope /
 endpoint description that lists it is built from that helper. The Error Codes MDX
 guide hand-mirrors these tables (comment in the file says so).
+
+`AUTH_ERROR_CODES` holds the known HTTP `401` body codes (2483–2487: wrong
+`developer_key`, bad signature, timestamp expired/reused, timestamp not ms,
+missing headers) with message, cause and fix. It feeds `ALL_ERROR_CODES` (agent
+bundle `errors` topic, as `scope: "transaction"`), the auth FAQ in
+`common-faqs.ts`, and the shared `components.responses.Unauthorized` that every
+operation in `openapi.json` references — so specs no longer declare their own
+401 `errorScenarios`. The MDX table is hand-mirrored; `api-error-codes.test.ts`
+fails if its status/message columns drift.
 
 ## The resolvers — recomposition at read time
 

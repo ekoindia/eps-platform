@@ -13,6 +13,7 @@
  */
 
 import { API_ENVIRONMENTS } from "./api-auth";
+import { AUTH_ERROR_CODES } from "./api-error-codes";
 import { CLIENT_REF_ID_LENGTH, SECURITY_FAQS, SECURITY_PATH } from "./security";
 
 /**
@@ -118,6 +119,22 @@ export const COMMON_API_FAQS: FAQ[] = [
 		],
 	},
 	{
+		q: "Why does my API call return 401 Unauthorized?",
+		// Codes and causes come from the shared auth-error table.
+		a: `Authentication failed. For the known causes, the response body's \`status\` names the check that failed:\n\n${AUTH_ERROR_CODES.map((c) => `- \`${c.status}\` — ${c.cause}.`).join("\n")}\n\nIf your signature checks out in the [secret-key playground](/docs/how-auth-works#try-it-secret-key-playground) and you still get a \`401\`, make sure the base URL matches your keys (UAT vs production) and, in production, that your server's IP is whitelisted.`,
+		tag: "auth",
+		links: [
+			{
+				label: "Authentication errors",
+				href: "/docs/error-codes#authentication-errors-http-401",
+			},
+			{
+				label: "Troubleshooting a 401",
+				href: "/docs/how-auth-works#troubleshooting-a-401",
+			},
+		],
+	},
+	{
 		q: "Is there a sandbox environment for testing?",
 		a: "Yes. A full **sandbox** is available immediately on signup — test your integration end-to-end before going live, no commitment required. For offline work you can also run our [mock server](/ai#artifacts) (`npx -y @ekoindia/eps-mock-server`) and get canned responses with no network calls at all.",
 		tag: "testing",
@@ -137,7 +154,12 @@ export const COMMON_API_FAQS: FAQ[] = [
 		q: "Do I need to whitelist my server IP?",
 		a: "It's optional. **IP whitelisting** is available for **production** access as an extra layer of security — share your **static public (server) IP** with us and we'll whitelist it.",
 		tag: "integration",
-		links: [{ label: "Security & data protection", href: `${SECURITY_PATH}#api-security` }],
+		links: [
+			{
+				label: "Security & data protection",
+				href: `${SECURITY_PATH}#api-security`,
+			},
+		],
 	},
 	{
 		q: "Can an AI coding agent build the integration for me?",

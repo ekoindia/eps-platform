@@ -67,7 +67,8 @@ export const HTTP_STATUS_CODES: ApiErrorCode[] = [
 	{
 		code: 401,
 		scope: "http",
-		meaning: "Unauthorized — incorrect secret-key or timestamp.",
+		meaning:
+			"Unauthorized — authentication failed. Known causes are reported in the body status (2483–2487).",
 	},
 	{ code: 404, scope: "http", meaning: "Not Found — wrong request URL." },
 	{
@@ -137,10 +138,75 @@ export const RESPONSE_STATUS_CODES: ApiErrorCode[] = [
 	{ code: 1297, scope: "transaction", meaning: "User/agent not onboarded." },
 ];
 
+/** One authentication failure: an HTTP `401` whose body `status` names the cause. */
+export interface AuthErrorCode {
+	/** Body `status`; `response_type_id` carries the same value. */
+	status: number;
+	/** The body `message`, verbatim. */
+	message: string;
+	cause: string;
+	fix: string;
+}
+
+/**
+ * Known HTTP `401` body codes. The body is
+ * `{ message, status, response_type_id: status, response_status_id: 1 }`.
+ * Not exhaustive: an IP that is not allowlisted, an inactive key, or a UAT/prod
+ * key mix-up is not confirmed to map to any of these.
+ *
+ * Keep in sync with the "Authentication errors" table in
+ * `src/content/docs/error-codes.mdx` (guarded by `api-error-codes.test.ts`).
+ */
+export const AUTH_ERROR_CODES: AuthErrorCode[] = [
+	{
+		status: 2483,
+		message: "Unauthorized",
+		cause: "The developer_key is wrong",
+		fix: "Send the developer_key for the environment you are calling, in the developer_key header.",
+	},
+	{
+		status: 2484,
+		message: "Invalid secret-key or timestamp",
+		cause: "The secret-key (signature) is wrong",
+		fix: "Sign the exact timestamp you send, keyed by base64(access_key) used as a string. Check your code against the secret-key playground.",
+	},
+	{
+		status: 2485,
+		message:
+			"Expired security headers (secret-key-timestamp older than 2 minutes)",
+		cause:
+			"The secret-key-timestamp is more than 2 minutes older or newer than the server clock, or was reused from an earlier request",
+		fix: "Generate a new timestamp and secret-key for every request, and keep the server clock synced (NTP).",
+	},
+	{
+		status: 2486,
+		message:
+			"Invalid secret-key-timestamp (expected milliseconds since the UNIX epoch)",
+		cause:
+			"The secret-key-timestamp is not in milliseconds (13 digits) — often seconds (10 digits)",
+		fix: "Send milliseconds since the UNIX epoch, e.g. Date.now() in JavaScript or int(time.time() * 1000) in Python.",
+	},
+	{
+		status: 2487,
+		message: "Missing security headers",
+		cause: "The secret-key or secret-key-timestamp header is missing",
+		fix: "Send both headers, spelled exactly secret-key and secret-key-timestamp.",
+	},
+];
+
 /** All known codes, for convenient lookup/rendering. */
 export const ALL_ERROR_CODES: ApiErrorCode[] = [
 	...HTTP_STATUS_CODES,
 	...RESPONSE_STATUS_CODES,
+	// Body codes of an HTTP 401. Scope stays "transaction" (a body `status`) so
+	// the MCP packages' closed `scope` union needs no change.
+	...AUTH_ERROR_CODES.map(
+		(c): ApiErrorCode => ({
+			code: c.status,
+			scope: "transaction",
+			meaning: `HTTP 401 — ${c.cause}. ${c.fix}`,
+		}),
+	),
 ];
 
 /** Look up a code's meaning across both scopes. */
