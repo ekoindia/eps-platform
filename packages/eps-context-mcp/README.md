@@ -289,7 +289,12 @@ Instead the tool hands back a **known-answer test vector** — a dummy key, a
 fixed timestamp, and the signature they must produce. Reproduce it with your own
 code and the algorithm is proven; the 401 is then almost always provisioning
 (IP allowlist, inactive key, wrong environment), which `ranked_causes` walks in
-likelihood order. If you want a server that signs with real credentials, that is
+likelihood order. Causes EPS reports with a known `401` body `status` carry it in
+`statuses` (2483 wrong `developer_key`, 2484 bad signature, 2485 timestamp more
+than 2 minutes off or reused, 2486 timestamp not in ms, 2487 missing headers), so
+match the failing response's `status` first; a cause without `statuses` is
+unconfirmed, not ruled out. The clock-drift check uses that same 2-minute window
+but measures against this server's clock at diagnosis time, so it is advisory. If you want a server that signs with real credentials, that is
 `@ekoindia/eps-transact-mcp`, which takes them from the environment or per-request
 headers — never as tool arguments.
 

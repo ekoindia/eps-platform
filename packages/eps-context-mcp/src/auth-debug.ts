@@ -22,6 +22,11 @@ export interface AuthCause {
 	id: string;
 	cause: string;
 	fix: string;
+	/**
+	 * Body `status` codes (2483–2487) EPS returns for this cause. Absent = not
+	 * confirmed, not "never": match the failing response's `status` against it.
+	 */
+	statuses?: number[];
 }
 
 /** Epoch milliseconds is 13 digits until November 2286; seconds is 10. */
@@ -29,11 +34,12 @@ const MS_DIGITS = 13;
 const SECONDS_DIGITS = 10;
 
 /**
- * How far a timestamp may drift before it is worth suspecting. Eko does not
- * publish its tolerance, so this is a heuristic for the report, not a
- * documented limit — the correct behaviour is always to sign per request.
+ * EPS rejects a `secret-key-timestamp` more than 2 minutes off its clock, in
+ * either direction (`status` 2485). Measured against THIS server's clock at
+ * diagnosis time, which is later than the failing call, so the check is
+ * advisory: it cannot prove EPS rejected the call, nor detect a reused value.
  */
-export const DRIFT_WARN_MS = 5 * 60 * 1000;
+export const DRIFT_WARN_MS = 2 * 60 * 1000;
 
 /** Treat an omitted argument and an empty/whitespace string alike. */
 const supplied = (value: string | undefined): string | undefined => {
@@ -103,10 +109,11 @@ export const checkTimestamp = (
 			ok: magnitude <= DRIFT_WARN_MS,
 			detail:
 				magnitude <= DRIFT_WARN_MS
-					? `${driftMs} ms from this server's clock — within the ${DRIFT_WARN_MS} ms heuristic.`
-					: `${magnitude} ms ${direction} vs this server's clock (heuristic threshold ${DRIFT_WARN_MS} ms). ` +
-						"Either the machine's clock is wrong (check NTP) or the timestamp is being " +
-						"reused instead of regenerated per request.",
+					? `${driftMs} ms from this server's clock — within EPS's ${DRIFT_WARN_MS} ms window.`
+					: `${magnitude} ms ${direction} vs this server's clock (EPS window ${DRIFT_WARN_MS} ms; status 2485). ` +
+						"Either the machine's clock is wrong (check NTP), the timestamp is being " +
+						"reused instead of regenerated per request, or it is simply an old value " +
+						"pasted after the fact.",
 		},
 	];
 };
@@ -215,21 +222,45 @@ export const RANKED_401_CAUSES: AuthCause[] = [
 		fix: "Check the base URL against the environments topic; the developer_key and access_key must come from the same environment.",
 	},
 	{
+		id: "developer_key_wrong",
+		cause: "The developer_key header value is wrong.",
+		fix: "Copy the developer_key for that environment again; check for stray whitespace or a truncated value.",
+		statuses: [2483],
+	},
+	{
 		id: "header_name_typo",
 		cause:
 			"Header spelled wrongly: `secret_key`/`secretKey` instead of `secret-key`, or `developer-key` instead of `developer_key`.",
 		fix: "Header names are exactly: developer_key, secret-key, secret-key-timestamp, content-type.",
+		// Misspelled developer_key reads as a wrong key; the others as missing.
+		statuses: [2483, 2487],
 	},
 	{
 		id: "timestamp_mismatch",
 		cause:
 			"The signed timestamp is not the one sent in `secret-key-timestamp` — often a second Date.now() call, or a value cached across requests.",
 		fix: "Compute the timestamp once, sign that exact string, and send the same string.",
+		statuses: [2484],
+	},
+	{
+		id: "timestamp_not_milliseconds",
+		cause:
+			"secret-key-timestamp is not 13-digit epoch milliseconds — usually seconds (10 digits).",
+		fix: "Send milliseconds since the UNIX epoch (Date.now(), int(time.time() * 1000), System.currentTimeMillis()).",
+		statuses: [2486],
+	},
+	{
+		id: "timestamp_expired_or_reused",
+		cause:
+			"secret-key-timestamp is more than 2 minutes off EPS's clock, or was reused from an earlier request.",
+		fix: "Generate a new timestamp and secret-key for every request (never cache them) and keep the clock NTP-synced.",
+		statuses: [2485],
 	},
 	{
 		id: "key_decoded_before_signing",
 		cause:
 			"The base64 of the access_key was decoded back to bytes before being used as the HMAC key.",
 		fix: "The HMAC key is the base64 STRING itself, used as-is. Confirm with the test vector.",
+		statuses: [2484],
 	},
 ];

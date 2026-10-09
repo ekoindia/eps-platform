@@ -296,7 +296,9 @@ export const createEpsServer = (
 				"Diagnose a 401 from an EPS API. Returns a known-answer TEST VECTOR: run " +
 				"your own signing code over test_vector.accessKey + test_vector.timestamp — " +
 				"if you reproduce test_vector.secretKey, your HMAC is correct, so stop " +
-				"debugging the algorithm and work through ranked_causes instead. Optionally " +
+				"debugging the algorithm and work through ranked_causes instead. If the failing " +
+				"response body has a status of 2483–2487, start with the causes whose " +
+				"statuses include it (causes without statuses are unconfirmed, not ruled out). Optionally " +
 				"pass the timestamp and secret-key from the failing request and they are " +
 				"checked for the mechanical faults (seconds instead of milliseconds, clock " +
 				"drift, wrong digest length, stray newline). SECRET-FREE BY DESIGN: there is " +

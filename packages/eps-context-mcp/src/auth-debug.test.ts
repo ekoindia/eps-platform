@@ -54,6 +54,18 @@ describe("checkTimestamp", () => {
 		expect(byName(future, "clock_drift")?.detail).toMatch(/in the future/);
 	});
 
+	it("uses EPS's documented 2-minute window, inclusive, both directions", () => {
+		expect(DRIFT_WARN_MS).toBe(120_000);
+		for (const drift of [-120_000, 120_000])
+			expect(
+				byName(checkTimestamp(String(NOW + drift), NOW), "clock_drift")?.ok,
+			).toBe(true);
+		for (const drift of [-120_001, 120_001])
+			expect(
+				byName(checkTimestamp(String(NOW + drift), NOW), "clock_drift")?.ok,
+			).toBe(false);
+	});
+
 	it("reports 'nothing supplied' for undefined and for an empty string alike", () => {
 		for (const value of [undefined, "", "   "]) {
 			expect(byName(checkTimestamp(value, NOW), "timestamp")?.ok).toBeNull();
@@ -124,6 +136,23 @@ describe("RANKED_401_CAUSES", () => {
 	it("has stable unique ids", () => {
 		const ids = RANKED_401_CAUSES.map((c) => c.id);
 		expect(new Set(ids).size).toBe(ids.length);
+	});
+
+	it("maps causes to EPS 401 body statuses; unconfirmed causes stay unmapped", () => {
+		const statusesById = Object.fromEntries(
+			RANKED_401_CAUSES.map((c) => [c.id, c.statuses]),
+		);
+		expect(statusesById).toEqual({
+			ip_not_allowlisted: undefined,
+			key_inactive: undefined,
+			environment_mismatch: undefined,
+			developer_key_wrong: [2483],
+			header_name_typo: [2483, 2487],
+			timestamp_mismatch: [2484],
+			timestamp_not_milliseconds: [2486],
+			timestamp_expired_or_reused: [2485],
+			key_decoded_before_signing: [2484],
+		});
 	});
 
 	it("ranks provisioning above signing math", () => {
