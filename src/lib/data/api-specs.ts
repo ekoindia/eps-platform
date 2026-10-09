@@ -71,6 +71,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Checking sender registration status before starting a DMT transaction.",
 		method: "GET",
 		path: "/customer/payment/dmt-fino/sender/{customer_id}",
+		trxnTypeId: 100,
+		epsProductCode: 96,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-get-sender",
 		extraRequestParams: [
 			{
@@ -281,6 +284,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "First-time sender registration in the DMT flow.",
 		method: "POST",
 		path: "/customer/payment/dmt-fino/sender/{customer_id}",
+		trxnTypeId: 110,
+		epsProductCode: 106,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/create-customer",
 		extraRequestParams: [
 			{
@@ -395,6 +401,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "KYC upgrade for new senders to raise monthly transfer limits.",
 		method: "PUT",
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/otp",
+		trxnTypeId: 810,
+		epsProductCode: 750,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-dmt-customer-kyc",
 		extraRequestParams: [
 			{
@@ -514,6 +523,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Completing sender eKYC after biometric capture.",
 		method: "PUT",
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/otp/verify",
+		trxnTypeId: 812,
+		epsProductCode: 752,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-validate-aadhar",
 		extraRequestParams: [
 			{
@@ -616,6 +628,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Listing a sender's saved beneficiaries before initiating a transfer.",
 		method: "GET",
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/recipients",
+		trxnTypeId: 82,
+		epsProductCode: 80,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-get-recipients",
 		extraRequestParams: [
 			{
@@ -809,6 +824,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Adding a new beneficiary before a first-time transfer.",
 		method: "POST",
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/recipient",
+		trxnTypeId: 74,
+		epsProductCode: 72,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-add-recipient",
 		extraRequestParams: [
 			{
@@ -951,6 +969,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Pre-authorising a DMT transfer by triggering OTP dispatch to the sender.",
 		method: "POST",
 		path: "/customer/payment/dmt-fino/otp",
+		trxnTypeId: 811,
+		epsProductCode: 751,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-otp-transaction",
 		extraRequestParams: [
 			{
@@ -1053,6 +1074,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Executing the actual money transfer — the only money-debit step in the DMT flow.",
 		method: "POST",
 		path: "/customer/payment/dmt-fino",
+		trxnTypeId: 81,
+		epsProductCode: 79,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/initiate-transaction-fino",
 		financial: true,
 		extraRequestParams: [
@@ -1363,6 +1387,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Platforms onboarding BC agents and CSPs to offer AePS services for the first time",
 		method: "PUT",
 		path: "/admin/network/agent/{user_code}/aeps-fingpay/activate",
+		trxnTypeId: 383,
+		epsProductCode: 364,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/activate-aeps-fingpay",
 		extraRequestParams: [
 			{
@@ -1563,6 +1590,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Populating the shop-type dropdown before onboarding an agent for AePS Fingpay",
 		method: "GET",
 		path: "/user/collection/aeps-fingpay/get-Mcc-Category",
+		trxnTypeId: 798,
+		epsProductCode: 739,
 		docsUrl: "https://developers.eko.in/reference/activate-aeps-fingpay",
 		extraRequestParams: [],
 		responseTypes: [
@@ -1639,6 +1668,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Populating the state dropdown for the agent address before AePS Fingpay onboarding",
 		method: "GET",
 		path: "/user/collection/aeps-fingpay/get-states",
+		trxnTypeId: 799,
+		epsProductCode: 740,
 		docsUrl: "https://developers.eko.in/reference/activate-aeps-fingpay",
 		extraRequestParams: [],
 		responseTypes: [
@@ -1719,6 +1750,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Initial one-time KYC setup for newly activated AePS Fingpay agents",
 		method: "POST",
 		path: "/user/collection/aeps-fingpay/kyc/otp",
+		trxnTypeId: 540,
+		epsProductCode: 512,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -1826,6 +1860,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Completing OTP validation during initial one-time agent eKYC",
 		method: "PUT",
 		path: "/user/collection/aeps-fingpay/kyc/otp/verify",
+		trxnTypeId: 542,
+		epsProductCode: 514,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-kyc-verify-otp",
 		extraRequestParams: [
 			{
@@ -1960,6 +1997,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
 		method: "PUT",
 		path: "/user/collection/aeps-fingpay/kyc/biometric",
+		trxnTypeId: 543,
+		epsProductCode: 515,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -2089,6 +2129,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Agent-side automation to trigger the daily biometric KYC at session start before serving AePS customers",
 		method: "PUT",
 		path: "/user/collection/aeps-fingpay/kyc/biometric/daily",
+		trxnTypeId: 594,
+		epsProductCode: 565,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -2232,6 +2275,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"BC agents and CSPs pre-authorising AePS cash withdrawals above ₹5,000",
 		method: "POST",
 		path: "/customer/collection/aeps-fingpay/cash-withdrawal/otp/{customer_id}",
+		trxnTypeId: 851,
+		epsProductCode: 784,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -2343,6 +2389,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
 		method: "POST",
 		path: "/customer/collection/aeps-fingpay/cash-withdrawl/{customer_id}",
+		trxnTypeId: 345,
+		epsProductCode: 329,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		financial: true,
 		extraRequestParams: [
@@ -2764,6 +2813,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Agent-assisted balance checks for rural customers without smartphone or internet access",
 		method: "POST",
 		path: "/customer/collection/aeps-fingpay/balance-enquiry/{customer_id}",
+		trxnTypeId: 346,
+		epsProductCode: 330,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		financial: true,
 		extraRequestParams: [
@@ -3021,6 +3073,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
 		method: "POST",
 		path: "/customer/collection/aeps-fingpay/mini-statement/{customer_id}",
+		trxnTypeId: 497,
+		epsProductCode: 469,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		financial: true,
 		extraRequestParams: [
@@ -3284,6 +3339,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Registering an agent's settlement bank account before payout.",
 		method: "POST",
 		path: "/user/payment/aeps/settlement/account",
+		trxnTypeId: 399,
+		epsProductCode: 380,
+		uatUnavailable: true,
 		docsUrl:
 			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
 		extraRequestParams: [
@@ -3384,6 +3442,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Choosing a settlement account and checking unsettled funds.",
 		method: "GET",
 		path: "/user/payment/aeps/settlement/accounts",
+		trxnTypeId: 391,
+		epsProductCode: 372,
+		uatUnavailable: true,
 		docsUrl:
 			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
 		extraRequestParams: [
@@ -3486,6 +3547,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Settling collected AePS funds to an agent's bank account.",
 		method: "POST",
 		path: "/user/payment/aeps/settlement",
+		trxnTypeId: 392,
+		epsProductCode: 373,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fund-settlement-request",
 		financial: true,
 		extraRequestParams: [
@@ -3668,6 +3732,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Populating a category picker UI before letting the user choose a biller.",
 		method: "GET",
 		path: "/customer/payment/bbps/categories",
+		trxnTypeId: 844,
+		epsProductCode: 782,
 		docsUrl: "https://developers.eko.in/reference/bbps-get-categories",
 		extraRequestParams: [],
 		responseData: [
@@ -3773,6 +3839,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Populating a state filter when displaying biller lists to end users.",
 		method: "GET",
 		path: "/customer/payment/bbps/locations",
+		trxnTypeId: 844,
+		epsProductCode: 782,
 		docsUrl: "https://developers.eko.in/reference/bbps-get-locations",
 		extraRequestParams: [],
 		responseData: [
@@ -3864,6 +3932,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Building a biller selection UI and determining which operators support a live bill fetch.",
 		method: "GET",
 		path: "/customer/payment/bbps/operators",
+		trxnTypeId: 844,
+		epsProductCode: 782,
 		docsUrl: "https://developers.eko.in/reference/bbps-get-operators",
 		extraRequestParams: [
 			{
@@ -4019,6 +4089,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Rendering a dynamic bill payment form with correct validation for each biller.",
 		method: "GET",
 		path: "/customer/payment/bbps/operator/{operator_id}/parameters",
+		trxnTypeId: 844,
+		epsProductCode: 782,
 		docsUrl: "https://developers.eko.in/reference/bbps-get-operator-parameters",
 		extraRequestParams: [
 			{
@@ -4170,6 +4242,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Populating the district picker for UPPCL electricity bill payments.",
 		method: "GET",
 		path: "/customer/payment/bbps/operators/190/district-discome",
+		trxnTypeId: 849,
+		epsProductCode: 783,
 		docsUrl: "https://developers.eko.in/reference/bbps-district-discome",
 		extraRequestParams: [],
 		responseData: [
@@ -4261,6 +4335,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Resolving operator and circle before fetching recharge plans.",
 		method: "GET",
 		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator",
+		trxnTypeId: 648,
+		epsProductCode: 608,
 		docsUrl: "https://developers.eko.in/reference/operator-and-circle-area",
 		extraRequestParams: [
 			{
@@ -4331,6 +4407,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Showing the customer the available recharge packs before submitting the recharge.",
 		method: "GET",
 		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator/plans",
+		trxnTypeId: 650,
+		epsProductCode: 610,
 		docsUrl: "https://developers.eko.in/reference/bbps-recharge-plans",
 		extraRequestParams: [
 			{
@@ -4486,6 +4564,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Showing the customer their outstanding bill amount and due date before confirming payment.",
 		method: "GET",
 		path: "/customer/payment/bbps/bill",
+		trxnTypeId: 280,
+		epsProductCode: 265,
 		docsUrl: "https://developers.eko.in/reference/bbps-fetch-bill",
 		extraRequestParams: [
 			{
@@ -4708,6 +4788,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Executing utility bill payments and prepaid recharges for end customers.",
 		method: "POST",
 		path: "/customer/payment/bbps",
+		trxnTypeId: 63,
+		epsProductCode: 62,
 		docsUrl: "https://developers.eko.in/reference/bbps-pay",
 		financial: true,
 		extraRequestParams: [
@@ -5006,6 +5088,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Reconciling pending transactions and confirming payment outcomes when the Pay Bill response is awaited.",
 		method: "GET",
 		path: "/tools/reference/transaction/{transaction-reference}",
+		trxnTypeId: 98,
+		epsProductCode: 94,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/transaction-inquiry",
 		extraRequestParams: [
 			{
@@ -5119,6 +5204,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Onboarding new agents onto the BBPS bill payment service before their first transaction.",
 		method: "PUT",
 		path: "/user/service/activate",
+		trxnTypeId: 564,
+		epsProductCode: 536,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/bbps",
 		extraRequestParams: [
 			{
@@ -5690,6 +5778,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Reconciliation polling, fallback status check when webhook delivery is delayed.",
 		method: "GET",
 		path: "/tools/reference/transaction/{transaction-reference}",
+		trxnTypeId: 98,
+		epsProductCode: 94,
 		docsUrl: "https://developers.eko.in/reference/transaction-inquiry",
 		extraRequestParams: [
 			{
@@ -5896,6 +5986,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Starting the refund process for a failed QR collection transaction.",
 		method: "POST",
 		path: "/customer/payment/refund/{tid}/otp",
+		trxnTypeId: 144,
+		epsProductCode: 135,
 		docsUrl: "https://developers.eko.in/reference/get-refund-otp",
 		extraRequestParams: [
 			{
@@ -5979,6 +6071,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Processing customer refunds for failed or disputed QR collection transactions.",
 		method: "POST",
 		path: "/customer/payment/refund/{tid}",
+		trxnTypeId: 83,
+		epsProductCode: 81,
 		docsUrl: "https://developers.eko.in/reference/refund",
 		financial: true,
 		extraRequestParams: [
@@ -6134,6 +6228,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Resolving a PAN number to its registered name when no name or DOB is available",
 		method: "POST",
 		path: "/tools/kyc/fetch-pan",
+		trxnTypeId: 1013,
+		epsProductCode: 790,
 		docsUrl: "https://developers.eko.in/reference/fetch-pan",
 		extraRequestParams: [
 			{
@@ -6222,6 +6318,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Basic PAN status checks and quick KYC pre-screening",
 		method: "POST",
 		path: "/tools/kyc/pan-lite",
+		trxnTypeId: 814,
+		epsProductCode: 754,
 		docsUrl: "https://developers.eko.in/reference/pan-lite",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan/pan-lite",
@@ -6387,6 +6485,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"KYC workflows needing richer identity attributes and verified registered name",
 		method: "POST",
 		path: "/tools/kyc/pan-advanced",
+		trxnTypeId: 817,
+		epsProductCode: 757,
 		docsUrl: "https://developers.eko.in/reference/pan-advanced",
 		sourceDoc: "https://www.cashfree.com/docs/api-reference/vrs/v2/pan/pan-360",
 		extraRequestParams: [
@@ -6616,6 +6716,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"High-volume PAN verification with async processing (employee on-boarding, batch KYC)",
 		method: "POST",
 		path: "/tools/kyc/pan/bulk",
+		trxnTypeId: 818,
+		epsProductCode: 758,
 		docsUrl: "https://developers.eko.in/reference/pan-bulk-verify",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan/verify-pan-in-bulk",
@@ -6694,6 +6796,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Fetching individual PAN results after submitting a batch to the Bulk PAN Verification API.",
 		method: "GET",
 		path: "/tools/kyc/pan/bulk/status",
+		trxnTypeId: 819,
+		epsProductCode: 759,
 		docsUrl: "https://developers.eko.in/reference/bulk-pan-verification-status",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan/verify-pan-in-bulk",
@@ -6873,6 +6977,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"DMT Levin sender onboarding flows that require Aadhaar number validation as a step before completing identity verification.",
 		method: "POST",
 		path: "/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp",
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/validate-aadhar-levin",
 		extraRequestParams: [
 			{
@@ -6962,6 +7067,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Completing OTP-based Aadhaar validation in the DMT Levin sender onboarding flow.",
 		method: "POST",
 		path: "/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp/verify",
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/validate-otp-levin",
 		extraRequestParams: [
 			{
@@ -10014,6 +10120,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Adding a new agent/retailer to your EPS network.",
 		method: "POST",
 		path: "/user/network/eps-agent",
+		trxnTypeId: 378,
+		epsProductCode: 359,
 		docsUrl: "https://developers.eko.in/reference/onboard-user-new",
 		extraRequestParams: [
 			{
@@ -10122,6 +10230,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Enabling a new service on an existing agent before their first transaction on it",
 		method: "PUT",
 		path: "/admin/network/agent/{user_code}/service/{service_code}/activate",
+		trxnTypeId: 384,
+		epsProductCode: 365,
 		docsUrl: "https://developers.eko.in/reference/activate-user-service",
 		extraRequestParams: [
 			{
@@ -10206,6 +10316,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Auditing which services are active for an agent.",
 		method: "GET",
 		path: "/user/account/services",
+		trxnTypeId: 496,
+		epsProductCode: 468,
 		docsUrl: "https://developers.eko.in/reference/user-services",
 		extraRequestParams: [
 			{
@@ -10396,6 +10508,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Checking an agent's wallet/settlement balance.",
 		method: "GET",
 		path: "/user/account/balance",
+		trxnTypeId: 9,
+		epsProductCode: 9,
 		docsUrl: "https://developers.eko.in/reference/wallet-balance",
 		extraRequestParams: [
 			{
@@ -10460,6 +10574,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Rail-agnostic customer onboarding before a transaction.",
 		method: "POST",
 		path: "/customer/account/{customer_id}",
+		trxnTypeId: 110,
+		epsProductCode: 106,
 		docsUrl: "https://developers.eko.in/reference/onboard-customer",
 		extraRequestParams: [
 			{
@@ -10535,6 +10651,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Checking customer enrolment before a transaction.",
 		method: "GET",
 		path: "/customer/profile/{customer_id}",
+		trxnTypeId: 100,
+		epsProductCode: 96,
 		docsUrl: "https://developers.eko.in/reference/get-customer-info",
 		extraRequestParams: [
 			{
@@ -10757,6 +10875,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Reconciling a transaction whose response timed out.",
 		method: "GET",
 		path: "/tools/reference/transaction/{transaction-reference}",
+		trxnTypeId: 98,
+		epsProductCode: 94,
 		docsUrl: "https://developers.eko.in/reference/transaction-inquiry",
 		extraRequestParams: [
 			{
@@ -10860,6 +10980,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Obtaining the refund OTP before initiating a refund.",
 		method: "POST",
 		path: "/customer/payment/refund/{tid}/otp",
+		trxnTypeId: 144,
+		epsProductCode: 135,
 		docsUrl: "https://developers.eko.in/reference/refund-otp",
 		omitCommonParams: ["client_ref_id"],
 		extraRequestParams: [
@@ -10904,6 +11026,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Completing the refund of a failed cash-out transaction.",
 		method: "POST",
 		path: "/customer/payment/refund/{tid}",
+		trxnTypeId: 83,
+		epsProductCode: 81,
 		docsUrl: "https://developers.eko.in/reference/refund",
 		financial: true,
 		omitCommonParams: ["client_ref_id"],
@@ -11016,6 +11140,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "L",
 		method: "GET",
 		path: "/tools/reference/banks",
+		trxnTypeId: 155,
+		epsProductCode: 144,
 		docsUrl: "https://developers.eko.in/reference/get-bank-list",
 		extraRequestParams: [],
 		responseData: [],
@@ -11034,6 +11160,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Resolving an Eko bank_id before adding a recipient.",
 		method: "GET",
 		path: "/tools/reference/bank/{bank_code}",
+		trxnTypeId: 163,
+		epsProductCode: 151,
 		docsUrl: "https://developers.eko.in/reference/bank-details",
 		extraRequestParams: [
 			{
@@ -11127,6 +11255,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor: "Validating an IFSC and resolving its bank/branch.",
 		method: "GET",
 		path: "/tools/reference/banks/ifsc/{ifsc}",
+		trxnTypeId: 161,
+		epsProductCode: 149,
 		docsUrl: "https://developers.eko.in/reference/get-ifsc-details",
 		extraRequestParams: [
 			{
@@ -11204,6 +11334,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"KYC flows that use DigiLocker for government-issued document verification, avoiding manual document uploads.",
 		method: "POST",
 		path: "/tools/kyc/digilocker",
+		trxnTypeId: 821,
+		epsProductCode: 761,
 		docsUrl: "https://developers.eko.in/reference/create-digilocker-url",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/digilocker/create-digilocker-url",
@@ -11298,6 +11430,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Fetching verified identity details from DigiLocker after Aadhaar consent, for use in KYC records and onboarding.",
 		method: "POST",
 		path: "/tools/kyc/digilocker/document",
+		trxnTypeId: 823,
+		epsProductCode: 763,
 		docsUrl: "https://developers.eko.in/reference/get-digilocker-document",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/digilocker/get-document-from-digilocker",
@@ -11510,6 +11644,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Polling for consent completion before fetching the full document data.",
 		method: "GET",
 		path: "/tools/kyc/digilocker/status",
+		trxnTypeId: 822,
+		epsProductCode: 762,
 		docsUrl:
 			"https://developers.eko.in/reference/digilocker-verification-status",
 		sourceDoc:
@@ -11652,6 +11788,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Businesses that disburse funds and need to confirm both account existence and the registered account holder name before transferring money.",
 		method: "POST",
 		path: "/tools/kyc/bank-account/sync",
+		trxnTypeId: 839,
+		epsProductCode: 777,
 		docsUrl: "https://developers.eko.in/reference/bank-account-verification",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/bav-v2/bank-account-verification-sync-v2",
@@ -11803,6 +11941,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Onboarding and payout pre-checks that need the registered account holder name without debiting ₹1.",
 		method: "POST",
 		path: "/tools/kyc/bank-acc-verify-pennyless",
+		trxnTypeId: 1019,
+		epsProductCode: 796,
 		docsUrl:
 			"https://developers.eko.in/reference/bank-account-verification-pennyless",
 		extraRequestParams: [
@@ -11891,6 +12031,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Platforms processing hundreds to thousands of bank account verifications in one go, where results can be retrieved asynchronously.",
 		method: "POST",
 		path: "/tools/kyc/bank-account/bulk",
+		trxnTypeId: 834,
+		epsProductCode: 773,
 		docsUrl:
 			"https://developers.eko.in/reference/bulk-bank-account-verification",
 		sourceDoc:
@@ -12028,6 +12170,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Fetching individual account results after submitting a batch to the Bulk Bank Account Verification API.",
 		method: "GET",
 		path: "/tools/kyc/bank-account/bulk/status",
+		trxnTypeId: 835,
+		epsProductCode: 774,
 		docsUrl:
 			"https://developers.eko.in/reference/bulk-bank-account-verification-status",
 		sourceDoc:
@@ -12188,6 +12332,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Vendor and merchant onboarding flows, KYB pipelines, B2B compliance checks, and any workflow that needs to confirm a business's GST registration status before issuing payouts or onboarding a counterparty.",
 		method: "POST",
 		path: "/tools/kyc/gstin",
+		trxnTypeId: 815,
+		epsProductCode: 755,
 		docsUrl: "https://developers.eko.in/reference/verify-gstin",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/gstin/verify-gstin",
@@ -12538,6 +12684,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"KYB and compliance workflows that need to discover all GST registrations of a business from a single PAN — particularly useful for multi-state vendors, pan-India merchant networks, and supplier due diligence.",
 		method: "POST",
 		path: "/tools/kyc/gstin-with-pan",
+		trxnTypeId: 820,
+		epsProductCode: 760,
 		docsUrl: "https://developers.eko.in/reference/gstin-with-pan",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan-to-gstin/fetch-gstin-with-pan",
@@ -12662,6 +12810,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Pre-payment UPI ID validation, bulk payout verification, and assisted-payment flows where the agent must confirm the payee before sending funds.",
 		method: "POST",
 		path: "/customer/payment/upi/validate-vpa",
+		trxnTypeId: 744,
+		epsProductCode: 687,
 		docsUrl: "https://developers.eko.in/reference/upi-validate-vpa",
 		extraRequestParams: [
 			{
@@ -12799,6 +12949,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Businesses that onboard drivers, delivery agents, or any user whose identity needs to be confirmed against a government-issued driving license.",
 		method: "POST",
 		path: "/tools/kyc/driving-license",
+		trxnTypeId: 826,
+		epsProductCode: 765,
 		docsUrl: "https://developers.eko.in/reference/driving-license",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/driving-license/verify-driving-licence-details",
@@ -13181,6 +13333,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Mobility platforms, logistics companies, fleet operators, motor insurers, vehicle finance and lending platforms, used-car marketplaces.",
 		method: "POST",
 		path: "/tools/kyc/vehicle-rc",
+		trxnTypeId: 824,
+		epsProductCode: 764,
 		docsUrl: "https://developers.eko.in/reference/vehicle-rc",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/vehicle-rc/get-vehicle-rc-details-1",
@@ -13836,6 +13990,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Organizations that need to confirm employment history, tenure, and PF filing status digitally — without manual document collection.",
 		method: "POST",
 		path: "/tools/kyc/advance-employment",
+		trxnTypeId: 830,
+		epsProductCode: 769,
 		docsUrl: "https://developers.eko.in/reference/advance-employment",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/advanced-employment/get-employment-details",
@@ -14388,6 +14544,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Cross-checking customer-provided addresses against GPS-derived data for onboarding, KYC, and fraud prevention.",
 		method: "POST",
 		path: "/tools/kyc/reverse-geocoding",
+		trxnTypeId: 832,
+		epsProductCode: 771,
 		docsUrl: "https://developers.eko.in/reference/reverse-geocoding",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/reverse-geocoding/reverse-geocoding",
@@ -14537,6 +14695,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Businesses that need to verify Indian voter identity documents (EPIC) as part of KYC, onboarding, or fraud-prevention pipelines.",
 		method: "POST",
 		path: "/tools/kyc/voter-id",
+		trxnTypeId: 827,
+		epsProductCode: 766,
 		docsUrl: "https://developers.eko.in/reference/voter-id",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/voter-id/verify-voter-id",
@@ -14828,6 +14988,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Employee BGV, travel-platform KYC, fintech onboarding, and immigration-assistance workflows that need structured passport data from the government source.",
 		method: "POST",
 		path: "/tools/kyc/passport",
+		trxnTypeId: 828,
+		epsProductCode: 767,
 		docsUrl: "https://developers.eko.in/reference/passport",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/passport/verify-passport",
@@ -14954,6 +15116,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"KYB and corporate due-diligence workflows that need authoritative MCA data on a company before onboarding or credit decisioning.",
 		method: "POST",
 		path: "/tools/kyc/cin",
+		trxnTypeId: 829,
+		epsProductCode: 768,
 		docsUrl: "https://developers.eko.in/reference/cin",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/cin/verify-cin",
@@ -15148,6 +15312,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Fintech, lending, e-commerce, and SaaS platforms that need real-time IP intelligence for fraud prevention and geo-compliance.",
 		method: "POST",
 		path: "/tools/kyc/ip",
+		trxnTypeId: 831,
+		epsProductCode: 770,
 		docsUrl: "https://developers.eko.in/reference/ip",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/ip/verify-ip#verify-ip",
@@ -15275,6 +15441,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Cross-document name validation — PAN vs Aadhaar, bank account holder vs GST trade name, and any KYC or KYB workflow that needs to tolerate Indian naming variations without manual review.",
 		method: "POST",
 		path: "/tools/kyc/name-match",
+		trxnTypeId: 833,
+		epsProductCode: 772,
 		docsUrl: "https://developers.eko.in/reference/name-match",
 		sourceDoc:
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/name-match/name-match#verify-name-match",
@@ -15382,6 +15550,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Lending platforms, NBFCs, and compliance teams that need an instant, automated ITR filing signal for a PAN holder during credit assessment or onboarding.",
 		method: "POST",
 		path: "/tools/kyc/touras/itr-compliance",
+		trxnTypeId: 1021,
+		epsProductCode: 798,
 		docsUrl: "https://developers.eko.in/reference/itr-compliance",
 		sourceDoc:
 			"https://docs.touras.in/verification-suite?pageId=ITR-Compliance",
@@ -15549,6 +15719,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Corporate KYB and director due-diligence workflows that need real-time validation of a Director Identification Number against authoritative MCA records before onboarding or credit decisioning.",
 		method: "POST",
 		path: "/tools/kyc/touras/din-verification",
+		trxnTypeId: 1025,
+		epsProductCode: 802,
 		docsUrl: "https://developers.eko.in/reference/din-verification",
 		sourceDoc: "https://docs.touras.in/verification-suite?pageId=DIN",
 		extraRequestParams: [
@@ -15667,6 +15839,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Fleet operators, logistics and delivery platforms, motor insurers, gig-worker onboarding platforms, and used-vehicle marketplaces that need automated, real-time challan status checks.",
 		method: "POST",
 		path: "/tools/kyc/touras/e-challan",
+		trxnTypeId: 1036,
+		epsProductCode: 813,
 		docsUrl: "https://developers.eko.in/reference/e-challan",
 		sourceDoc:
 			"https://docs.touras.in/verification-suite?pageId=Vehicle-Challan",
@@ -15884,6 +16058,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"User onboarding flows, registration fraud prevention, contact-database cleaning, and any scenario where an invalid or dummy email address would cause downstream failures or fraud.",
 		method: "POST",
 		path: "/tools/kyc/touras/check-email",
+		trxnTypeId: 1032,
+		epsProductCode: 809,
 		docsUrl: "https://developers.eko.in/reference/email-check",
 		sourceDoc:
 			"https://docs.touras.in/verification-suite?pageId=Email_verification",
@@ -16039,6 +16215,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Food delivery and aggregator platforms, e-commerce marketplaces, and compliance teams that need to confirm a vendor or restaurant holds a valid, active FSSAI license before onboarding or order fulfilment.",
 		method: "POST",
 		path: "/tools/kyc/touras/fetch-fssai",
+		trxnTypeId: 1024,
+		epsProductCode: 801,
 		docsUrl: "https://developers.eko.in/reference/fssai-verification",
 		sourceDoc: "https://docs.touras.in/verification-suite?pageId=FSSAI",
 		extraRequestParams: [
@@ -16181,6 +16359,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Confirming a customer owns a mobile number before onboarding, payouts, or any OTP-gated transaction.",
 		method: "POST",
 		path: "/tools/kyc/mobile/otp",
+		trxnTypeId: 553,
+		epsProductCode: 525,
 		docsUrl: "https://developers.eko.in/reference/mobile-otp-send",
 		extraRequestParams: [
 			{
@@ -16262,6 +16442,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Confirming a customer-entered OTP and obtaining a short-lived proof token for OTP-gated transactions.",
 		method: "PUT",
 		path: "/tools/kyc/mobile/otp/verify",
+		trxnTypeId: 555,
+		epsProductCode: 527,
 		docsUrl: "https://developers.eko.in/reference/mobile-otp-verify",
 		extraRequestParams: [
 			{
@@ -16363,6 +16545,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Server-to-server proof that a mobile OTP was verified recently, before honouring an OTP-gated action.",
 		method: "GET",
 		path: "/tools/kyc/mobile/otp/validate-token",
+		trxnTypeId: 1061,
+		epsProductCode: 829,
 		docsUrl: "https://developers.eko.in/reference/mobile-otp-validate-token",
 		extraRequestParams: [
 			{

@@ -167,6 +167,16 @@ const TryItDialog = ({
 							</span>
 						</div>
 					)}
+					{state.env === "sandbox" && spec.uatUnavailable && (
+						<div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+							<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+							<span>
+								<strong>UAT not available.</strong> This API is not provisioned
+								in the UAT environment — requests here return an error response.
+								Switch to {API_ENVIRONMENTS.production.label} to test it.
+							</span>
+						</div>
+					)}
 				</div>
 
 				{/* Panes */}

@@ -198,6 +198,17 @@ export interface ApiSpec {
 	sourceDoc?: string;
 	/** Money-debit API: returns the financial response envelope (tx_status, etc.). */
 	financial?: boolean;
+	/** OPTIONAL: Eko's internal transaction-type id (`trxn_type_id`) for this
+	 * endpoint. Set together with {@link epsProductCode}. */
+	trxnTypeId?: number;
+	/** OPTIONAL: Eko's EPS product code (`eps_product_code`) for this endpoint.
+	 * Set together with {@link trxnTypeId}. */
+	epsProductCode?: number;
+	/** When true, the UAT / sandbox environment is not available for this API:
+	 * requests there return an error response. Surfaced as a warning on the docs
+	 * page, in the Try-it console (UAT tab), the `.md` twin, OpenAPI and the
+	 * agent bundle. */
+	uatUnavailable?: boolean;
 	/** API-specific request params ONLY (common ones are inherited).
 	 * A param whose `name` matches a {@link COMMON_REQUEST_PARAMS} entry OVERRIDES
 	 * that common param (to change its example / required / description / location). */
