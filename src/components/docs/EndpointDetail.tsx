@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { API_AUTH_DOCS_URL } from "@/lib/data/api-auth";
+import { API_AUTH_DOCS_URL, API_ENVIRONMENTS } from "@/lib/data/api-auth";
 import { recipeHref, recipesForSpec } from "@/lib/data/api-recipes";
 import type { ApiParam, ApiSpec } from "@/lib/data/api-specs-common";
 import {
@@ -177,6 +177,16 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 					<span className="break-all text-foreground/70">{spec.path}</span>
 				</div>
 			</header>
+
+			{spec.uatUnavailable && (
+				<div className="mt-6">
+					<Callout type="warning">
+						The UAT environment is not available for this API — requests to{" "}
+						<code>{API_ENVIRONMENTS.sandbox.baseUrl}</code> return an error
+						response. Test it in {API_ENVIRONMENTS.production.label}.
+					</Callout>
+				</div>
+			)}
 
 			{description && (
 				<div data-toc="Description" data-toc-level="2">

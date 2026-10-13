@@ -158,6 +158,38 @@ describe("buildOpenApiDocument", () => {
 		}
 	});
 
+	it("carries internal codes + UAT availability as x-eko-* on ops and variants", () => {
+		const coded: ApiSpec = {
+			...specs[0],
+			trxnTypeId: 81,
+			epsProductCode: 79,
+			uatUnavailable: true,
+		};
+		const variant: ApiSpec = {
+			...specs[0],
+			id: `${specs[0].id}-variant`,
+			slug: `${specs[0].slug}-variant`,
+			trxnTypeId: undefined,
+			epsProductCode: undefined,
+			uatUnavailable: undefined,
+		};
+		const single = buildOpenApiDocument([coded]);
+		const [{ op }] = allOperations(single);
+		expect(op).toMatchObject({
+			"x-eko-trxn-type-id": 81,
+			"x-eko-product-code": 79,
+			"x-eko-uat-unavailable": true,
+		});
+
+		const grouped = buildOpenApiDocument([coded, variant]);
+		const variants = (allOperations(grouped)[0].op as Record<string, unknown>)[
+			"x-eko-variants"
+		] as Array<Record<string, unknown>>;
+		expect(variants[0]).toMatchObject({ "x-eko-trxn-type-id": 81 });
+		expect(variants[1]).not.toHaveProperty("x-eko-trxn-type-id");
+		expect(variants[1]).not.toHaveProperty("x-eko-uat-unavailable");
+	});
+
 	it("operationIds are unique and the builder rejects collisions", () => {
 		const ids = allOperations().map((o) => o.op.operationId);
 		expect(new Set(ids).size).toBe(ids.length);

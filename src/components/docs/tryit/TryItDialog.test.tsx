@@ -134,6 +134,22 @@ describe("TryItDialog", () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
+	it("warns on UAT for a uatUnavailable spec, still sends, and hides it on Production", async () => {
+		renderDialog({ ...spec, id: "no-uat", uatUnavailable: true } as ApiSpec);
+		expect(screen.getByText(/^UAT not available\./)).toBeInTheDocument();
+		send();
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+		fireEvent.click(
+			screen.getByRole("tab", { name: API_ENVIRONMENTS.production.label }),
+		);
+		expect(screen.queryByText(/^UAT not available\./)).not.toBeInTheDocument();
+	});
+
+	it("shows no UAT warning for a spec available on UAT", () => {
+		renderDialog();
+		expect(screen.queryByText(/^UAT not available\./)).not.toBeInTheDocument();
+	});
+
 	it("financial + production needs a second click, and an edit disarms", async () => {
 		renderDialog(financialSpec);
 		fireEvent.click(

@@ -54,6 +54,16 @@ An `ApiSpec` stores **only what is unique** to that endpoint:
   `description`; see [`responseTypes`](#responsetypes-branching-on-response_type_id).
 - `financial: true` opts an endpoint into the financial response envelope
   (`tx_status`/`txstatus_desc`).
+- `trxnTypeId` / `epsProductCode` — Eko's internal `trxn_type_id` and
+  `eps_product_code` for the endpoint (source: the EPS portal API ↔ product-code
+  mapping sheet). Optional; set both or neither (guarded in `api-specs.test.ts`).
+  Exported to the agent bundle (→ MCP) and OpenAPI as `x-eko-trxn-type-id` /
+  `x-eko-product-code` (on the operation and each `x-eko-variants` entry).
+- `uatUnavailable: true` — UAT/sandbox is not provisioned for this endpoint;
+  requests there return an error. Renders a warning on the docs page, in the
+  Try-it console's UAT tab (Send stays enabled) and in the `.md` twin; exported
+  as `uatUnavailable` (agent bundle) and `x-eko-uat-unavailable` (OpenAPI).
+  Set per endpoint, not per product — e.g. DMT is unavailable on UAT, BBPS is not.
 
 To reconstruct a full view (for a portal or preview), use the resolvers in
 `api-specs-common.ts` — they merge the shared layer back in:
@@ -93,6 +103,9 @@ interface ApiSpec {
 	path: string; // relative; full URL = environment baseUrl + path
 	docsUrl: string; // developer-portal reference link
 	financial?: boolean; // adds the financial response envelope
+	trxnTypeId?: number; // Eko trxn_type_id (set with epsProductCode)
+	epsProductCode?: number; // Eko eps_product_code
+	uatUnavailable?: boolean; // UAT not provisioned → warning in docs/Try-it/.md/OpenAPI
 	extraRequestParams: ApiParam[]; // API-specific; same name overrides a common param
 	// (ApiParam may carry format / enum / min / max / maxLength — see below)
 	omitCommonParams?: string[]; // rare: drop a common param
@@ -251,6 +264,8 @@ source.
    headers, and the response envelope — the resolvers add them).
 2. For verification APIs, mark the verifiable response fields with `imp: true`.
 3. Set `financial: true` for money-debit endpoints (adds the financial response envelope).
+   Add `trxnTypeId` + `epsProductCode` when known, and `uatUnavailable: true`
+   if the API is not available on UAT (it then returns an error there).
 4. If the endpoint's `response_type_id` decides the next call, declare
    `responseTypes` — the table, the OpenAPI description and the sample
    annotations all generate from it. See

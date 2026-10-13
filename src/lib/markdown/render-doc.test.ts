@@ -84,6 +84,12 @@ describe("renderEndpointMarkdown", () => {
 		// The error table keeps its column, but the undocumented id still shows.
 		expect(bare).toContain("| 200 | `308` | PAN not found |");
 	});
+
+	it("warns only when UAT is unavailable for the endpoint", () => {
+		expect(md).not.toContain("[!WARNING]");
+		const noUat = renderEndpointMarkdown({ ...spec, uatUnavailable: true });
+		expect(noUat).toMatch(/> \[!WARNING\]\n> .*not available for this API/);
+	});
 });
 
 describe("renderGuideMarkdown — <CodeSnippets> expansion", () => {

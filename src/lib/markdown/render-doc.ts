@@ -148,6 +148,8 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 		h1(`${spec.name} API Reference`),
 		`\`${spec.method} ${DEFAULT_BASE_URL}${spec.path}\``,
 		spec.summary,
+		spec.uatUnavailable &&
+			`> [!WARNING]\n> The ${API_ENVIRONMENTS.sandbox.label} environment is not available for this API — requests to \`${API_ENVIRONMENTS.sandbox.baseUrl}\` return an error response. Test it in ${API_ENVIRONMENTS.production.label}.`,
 		resolveShortDescription(spec),
 		product &&
 			`> View product & pricing details: ${link(product.name, `${SITE_URL}${productHref(product.slug)}.md`, "md")}`,

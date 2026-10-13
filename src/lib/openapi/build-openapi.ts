@@ -132,6 +132,17 @@ const childrenToObject = (children?: ResponseField[]): Json => {
 	return { properties };
 };
 
+/** `x-eko-*` extensions for a spec's internal codes + UAT availability;
+ * unset fields are omitted. */
+const ekoCodeExtensions = (spec: ApiSpec): Json =>
+	Object.fromEntries(
+		Object.entries({
+			"x-eko-trxn-type-id": spec.trxnTypeId,
+			"x-eko-product-code": spec.epsProductCode,
+			"x-eko-uat-unavailable": spec.uatUnavailable,
+		}).filter(([, value]) => value !== undefined),
+	);
+
 /** Tooling-friendly operationId (camelCase of the kebab-case spec id). */
 export const operationIdFor = (spec: Pick<ApiSpec, "id">): string =>
 	spec.id.replace(/[-_]+(.)?/g, (_, c: string | undefined) =>
@@ -446,6 +457,7 @@ export const buildOpenApiDocument = (
 				.join("\n\n"),
 			tags: [productNameFor(primary)],
 			[X_DOCS_SLUG]: endpointSlug(primary),
+			...ekoCodeExtensions(primary),
 			parameters,
 			responses: buildResponses(primary),
 		};
@@ -459,6 +471,7 @@ export const buildOpenApiDocument = (
 				name: s.name,
 				slug: endpointSlug(s),
 				summary: s.summary,
+				...ekoCodeExtensions(s),
 			}));
 		}
 
