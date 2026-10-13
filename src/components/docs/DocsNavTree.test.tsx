@@ -17,15 +17,16 @@ const branch = (id: string, children: NavBranch["children"]): NavBranch => ({
 const leaf = (slug: string) =>
 	({ type: "leaf", slug, title: slug, method: "GET" }) as const;
 
-/** First branch in the real nav whose only child is a branch, if any. */
+/** Path (outermost first) to the first branch in the real nav whose only
+ * child is a branch, if any. The last element is that branch. */
 const findSoleChildBranch = (
 	nodes: NavBranch["children"],
-): NavBranch | null => {
+): NavBranch[] | null => {
 	for (const node of nodes) {
 		if (node.type !== "branch") continue;
-		if (soleBranchChain(node).length > 0) return node;
+		if (soleBranchChain(node).length > 0) return [node];
 		const nested = findSoleChildBranch(node.children);
-		if (nested) return nested;
+		if (nested) return [node, ...nested];
 	}
 	return null;
 };
@@ -58,9 +59,11 @@ describe("soleBranchChain", () => {
 describe("DocsNavTree", () => {
 	it("opens the sole branch child when a branch is expanded", () => {
 		const nav = buildNavTree();
-		const parent = nav.categories
+		const path = nav.categories
 			.map((c) => findSoleChildBranch(c.nodes))
 			.find(Boolean);
+		const ancestors = path?.slice(0, -1) ?? [];
+		const parent = path?.at(-1);
 		// Guard: the fixture-free assertion below only means something while the
 		// real nav still contains such a branch (e.g. DMT with one provider).
 		expect(parent, "no sole-branch-child branch in the nav tree").toBeTruthy();
@@ -74,6 +77,8 @@ describe("DocsNavTree", () => {
 		// Re-query after each render: the row components are declared inside
 		// DocsNavTree, so every state change remounts them into fresh DOM nodes.
 		const row = (label: string) => screen.getByRole("button", { name: label });
+		// Open the ancestors so a nested parent (e.g. a DMT provider) is on screen.
+		for (const ancestor of ancestors) fireEvent.click(row(ancestor.label));
 		expect(row(parent!.label)).toHaveAttribute("aria-expanded", "false");
 
 		fireEvent.click(row(parent!.label));
