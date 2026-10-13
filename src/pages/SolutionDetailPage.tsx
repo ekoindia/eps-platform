@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { SolutionPageLayout } from "@/components/SolutionPageLayout";
 import { AiHint } from "@/components/AiHint";
@@ -15,9 +16,12 @@ const SolutionDetailPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title={`${data.seo.title} | Eko Platform Services`}
+				description={data.seo.description}
+				ogTitle={data.seo.title}
+			/>
 			<Helmet>
-				<title>{data.seo.title} | Eko Platform Services</title>
-				<meta name="description" content={data.seo.description} />
 				<link rel="canonical" href={`${SITE_URL}/solutions/${data.slug}`} />
 				<link
 					rel="alternate"
@@ -25,9 +29,6 @@ const SolutionDetailPage = () => {
 					title="Markdown version"
 					href={`/solutions/${data.slug}.md`}
 				/>
-				<meta property="og:title" content={data.seo.title} />
-				<meta property="og:description" content={data.seo.description} />
-				<meta property="og:type" content="website" />
 				<script type="application/ld+json">
 					{JSON.stringify({
 						"@context": "https://schema.org",

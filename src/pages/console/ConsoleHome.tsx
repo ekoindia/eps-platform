@@ -1,3 +1,4 @@
+import { PageMeta } from "@/components/PageMeta";
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import BusinessDashboard from "@/components/console/dashboard/BusinessDashboard";
 import NextStepsCard from "@/components/console/NextStepsCard";
@@ -32,6 +33,7 @@ export default function ConsoleHome() {
 	const me = useConsoleMe();
 	return (
 		<div className="flex flex-col gap-6">
+			<PageMeta title="Developer Console — EPS" />
 			<h2 className="text-lg font-semibold text-eko-navy">Home</h2>
 			{/* One column below `lg` — the profile card stacks above the steps, the
 			    same order it reads in on a wide screen. */}

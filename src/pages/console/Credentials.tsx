@@ -1,3 +1,4 @@
+import { PageMeta } from "@/components/PageMeta";
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import {
 	CredentialRow,
@@ -140,6 +141,7 @@ function ProductionCredentials() {
 export default function Credentials() {
 	return (
 		<div className="flex max-w-2xl flex-col gap-6">
+			<PageMeta title="Credentials | Eko Console" />
 			<div className="flex flex-col gap-1">
 				<h2 className="text-lg font-semibold text-eko-navy">Credentials</h2>
 				<p className="text-sm text-muted-foreground">

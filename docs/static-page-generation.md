@@ -86,6 +86,8 @@ npm run build
         │         src/entry-server.tsx (renderToString + Helmet)
         ├── For each route:
         │     renderPage(url) → { html, head }
+        │       (hoisted <title>/<meta>/<link> split into head;
+        │        build FAILS on bad head — see "Page meta" below)
         │     inject into dist/index.html template
         │     rewrite /src/assets/* → /assets/* via manifest map
         │     inject <link rel="modulepreload"> for route's lazy chunk
@@ -172,7 +174,7 @@ can be added to the manifest incrementally.
 | File                   | Purpose                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------ |
 | `ssg/routes.ts`        | Deterministic route manifest — add routes here                                       |
-| `ssg/renderer.ts`      | Injects rendered HTML + Helmet head tags into template                               |
+| `ssg/renderer.ts`      | Injects rendered HTML + hoisted head tags into template                              |
 | `ssg/prerender.ts`     | Orchestrator: iterates routes, writes HTML, generates sitemap                        |
 | `ssg/plugin.ts`        | Vite plugin (`closeBundle` hook) — registered in `vite.config.ts`                    |
 | `ssg/sitemap.ts`       | XML sitemap generator (uses the same route manifest)                                 |
@@ -182,6 +184,31 @@ can be added to the manifest incrementally.
 | `src/lib/ssr-safe.ts`  | Browser-API guards (`safeSessionStorage`, `safeLocalStorage`, `safeLocationHref`)    |
 | `vite.config.ts`       | Enables `build.manifest` for asset URL rewriting                                     |
 | `tsconfig.node.json`   | Covers `ssg/` files; includes `@/*` path alias so SSG modules can import `src/` data |
+
+### Page meta (title, description, OG) — React 19 rules
+
+React 19 + react-helmet-async v3 is a passthrough: every `<Helmet>` renders
+real tags and React hoists them. **There is no dedupe and no "deepest wins"
+cascading.** Consequences:
+
+- **One `<PageMeta>` per page** (`src/components/PageMeta.tsx`) owns title,
+  description, `og:*` and `twitter:title/description/image`, defaulting to the
+  site values in `src/lib/config/site.ts`. Page-specific extras (canonical,
+  alternate, keywords, robots, JSON-LD) stay in the page's own `<Helmet>`.
+  `DefaultMeta` only carries `twitter:card` / `twitter:site`.
+- **Title must be one string.** `<title>{name} | Eko</title>` is array
+  children → React renders an empty title (browser shows the URL).
+  `PageMeta`'s `title: string` prop makes that a type error.
+- **Layouts don't set titles their child routes also set** — two titles, and
+  the first in tree order wins. `ConsoleLayout` titles only its own sign-in /
+  loading / admin screens; each console child route sets its own.
+- **Head placement.** `renderToString` of a tree without `<html>` emits the
+  hoisted tags as a leading block inside `#root`; `splitHoistedHead`
+  (`src/lib/ssr-head.ts`) moves them into `<head>` (crawlers ignore canonical /
+  meta in `<body>`). React adopts them on hydration.
+- **Build guard.** `findHeadProblems` fails the pre-render for a route with
+  ≠ 1 `<title>`, an empty title, a missing description, a duplicate
+  `meta name=/property=`, or metadata left in `<body>`.
 
 ### SEO outputs per page
 
@@ -193,8 +220,8 @@ Every pre-rendered page includes:
 - `fetchpriority="low"` on the main app `<script>` tag (tells the browser to
   prioritise images and CSS over the hydration bundle; content is already
   visible so JS is not on the critical path)
-- `<title>` and `<meta name="description">` from page-level Helmet
-- `<meta property="og:*">` Open Graph tags
+- `<title>`, `<meta name="description">`, Open Graph + Twitter tags from the
+  page's single `<PageMeta>` (see "Page meta" below)
 - `<link rel="canonical">` pointing to `SITE_URL + route` (via `src/lib/config/site.ts`)
 - `<link rel="alternate" type="text/markdown">` pointing to the `.md` version
 - `<script type="application/ld+json">` structured data where applicable:

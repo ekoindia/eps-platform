@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Footer } from "@/components/Footer";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { IndustryCard } from "@/components/IndustryCard";
@@ -10,12 +11,11 @@ import { FadeIn } from "@/components/FadeIn";
 const IndustriesPage = () => {
 	return (
 		<>
+			<PageMeta
+				title="Industries | Eko Platform Services"
+				description="Explore Eko's API solutions for every industry — lending, microfinance, insurance, retail, logistics, and more. Find the right stack for your business."
+			/>
 			<Helmet>
-				<title>Industries | Eko Platform Services</title>
-				<meta
-					name="description"
-					content="Explore Eko's API solutions for every industry — lending, microfinance, insurance, retail, logistics, and more. Find the right stack for your business."
-				/>
 				<link rel="canonical" href={`${SITE_URL}/industries`} />
 			</Helmet>
 			<div className="min-h-screen bg-background">

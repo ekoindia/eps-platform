@@ -19,7 +19,7 @@ import {
 } from "@/lib/pdf/pdf-client";
 import { printPage } from "@/lib/print";
 import { useState, type ReactNode } from "react";
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 
 /**
  * A dev-only bench for the dialogs the Eko Connect widget drives.
@@ -34,10 +34,7 @@ import { Helmet } from "react-helmet-async";
 export default function TestDialogs() {
 	return (
 		<div className="flex flex-col gap-6">
-			<Helmet>
-				<title>Dialog test bench | Eko Console</title>
-				<meta name="robots" content="noindex,nofollow" />
-			</Helmet>
+			<PageMeta title="Dialog test bench | Eko Console" />
 			<div className="flex flex-col gap-1">
 				<h2 className="text-lg font-semibold text-eko-navy">
 					Dialog test bench

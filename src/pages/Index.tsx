@@ -6,8 +6,9 @@ import { HeroSection } from "@/components/sections/HeroSection";
 import { ProductsSection } from "@/components/sections/ProductsSection";
 import { UseCasesSection } from "@/components/sections/UseCasesSection";
 import { WhyEkoSection } from "@/components/sections/WhyEkoSection";
-import { SITE_URL } from "@/lib/config/site";
+import { SITE_OG_TITLE, SITE_TITLE, SITE_URL } from "@/lib/config/site";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 
 import { CTASection } from "@/components/sections/CTASection";
 
@@ -17,6 +18,7 @@ const MD_PATH = "/index.md";
 const Index = () => {
 	return (
 		<div className="min-h-screen bg-background">
+			<PageMeta title={SITE_TITLE} ogTitle={SITE_OG_TITLE} />
 			<Helmet>
 				<link rel="canonical" href={SITE_URL} />
 				<link

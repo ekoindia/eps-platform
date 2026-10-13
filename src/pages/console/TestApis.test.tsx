@@ -107,14 +107,12 @@ describe("TestApis", () => {
 		expect(postman).toHaveAttribute("download");
 	});
 
-	it("keeps the console out of the index", async () => {
+	// noindex lives on ConsoleLayout (ConsoleLayout.test.tsx); the page owns the title.
+	it("sets its own document title", async () => {
 		stubKeys();
 		renderPage();
 		await waitFor(() =>
-			expect(document.querySelector('meta[name="robots"]')).toHaveAttribute(
-				"content",
-				"noindex,nofollow",
-			),
+			expect(document.title).toBe("How to test APIs (UAT)? | Eko Console"),
 		);
 	});
 

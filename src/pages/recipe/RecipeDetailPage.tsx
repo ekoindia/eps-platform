@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link, useParams } from "react-router-dom";
 import { AiHint } from "@/components/AiHint";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
@@ -35,14 +36,14 @@ const RecipeDetailPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title={`${title}${SITE_TITLE_SUFFIX}`}
+				description={recipe.summary}
+				ogTitle={title}
+				type="article"
+			/>
 			<Helmet>
-				{/* Single child: react-helmet-async drops a multi-child <title>. */}
-				<title>{`${title}${SITE_TITLE_SUFFIX}`}</title>
-				<meta name="description" content={recipe.summary} />
 				<link rel="canonical" href={canonical} />
-				<meta property="og:title" content={title} />
-				<meta property="og:description" content={recipe.summary} />
-				<meta property="og:type" content="article" />
 				<link
 					rel="alternate"
 					type="text/markdown"

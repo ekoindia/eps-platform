@@ -89,12 +89,8 @@ function ZohoChatVisibility() {
 	return null;
 }
 
-const App = ({
-	helmetContext,
-}: {
-	helmetContext?: Record<string, unknown>;
-}) => (
-	<HelmetProvider context={helmetContext}>
+const App = () => (
+	<HelmetProvider>
 		<DefaultMeta />
 		<TooltipProvider>
 			<Sonner />

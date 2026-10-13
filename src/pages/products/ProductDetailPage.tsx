@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { API_PRODUCTS } from "@/lib/data/api-products";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
@@ -36,19 +37,14 @@ const ProductDetailPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title={`${seo.title} | Eko Platform Services`}
+				description={seo.description}
+				ogTitle={`${seo.ogTitle ?? seo.title} | Eko Platform Services`}
+				ogDescription={seo.ogDescription ?? seo.description}
+			/>
 			<Helmet>
-				<title>{seo.title} | Eko Platform Services</title>
-				<meta name="description" content={seo.description} />
 				<link rel="canonical" href={`${SITE_URL}/products/${product.slug}`} />
-				<meta
-					property="og:title"
-					content={`${seo.ogTitle ?? seo.title} | Eko Platform Services`}
-				/>
-				<meta
-					property="og:description"
-					content={seo.ogDescription ?? seo.description}
-				/>
-				<meta property="og:type" content="website" />
 				<link
 					rel="alternate"
 					type="text/markdown"

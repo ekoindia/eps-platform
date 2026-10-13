@@ -35,6 +35,7 @@ import {
 	Workflow,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { SiOpenapiinitiative, SiPostman } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { AiVibeCodingSession } from "./ai/AiVibeCodingSession";
@@ -215,14 +216,11 @@ const docHref = (slug: string) => `/docs/${slug}`;
 const AiPage = () => {
 	return (
 		<div className="min-h-screen bg-background">
+			<PageMeta
+				title="AI Coding Agent Integration for Fintech APIs | EPS MCP Server"
+				description="Connect Claude Code, Cursor, Codex, Copilot, and other MCP-compatible agents to EPS fintech APIs. Get HMAC signing, OpenAPI specs, SDKs, mock server, Postman collection, and real payment and verification recipes."
+			/>
 			<Helmet>
-				<title>
-					AI Coding Agent Integration for Fintech APIs | EPS MCP Server
-				</title>
-				<meta
-					name="description"
-					content="Connect Claude Code, Cursor, Codex, Copilot, and other MCP-compatible agents to EPS fintech APIs. Get HMAC signing, OpenAPI specs, SDKs, mock server, Postman collection, and real payment and verification recipes."
-				/>
 				<link rel="canonical" href={`${SITE_URL}/ai`} />
 				<link rel="alternate" type="text/markdown" href={`${SITE_URL}/ai.md`} />
 			</Helmet>

@@ -82,6 +82,24 @@ describe("ConsoleLayout", () => {
 		expect(screen.queryByText("home-page")).toBeNull();
 	});
 
+	it("keeps the console out of the index and titles the sign-in screen", () => {
+		renderLayout({ status: "anon" });
+		expect(document.querySelector('meta[name="robots"]')).toHaveAttribute(
+			"content",
+			"noindex,nofollow",
+		);
+		expect(document.querySelectorAll("title")).toHaveLength(1);
+		expect(document.title).toBe("Developer Console — EPS");
+	});
+
+	it("leaves the title to the child route for a developer", () => {
+		// React 19 renders every <title>; a layout title would shadow the page's.
+		renderLayout(DEVELOPER);
+		expect(screen.getByText("home-page")).toBeInTheDocument();
+		expect(document.querySelectorAll("title")).toHaveLength(0);
+		expect(document.querySelector('meta[name="robots"]')).not.toBeNull();
+	});
+
 	it("shows a skeleton while loading", () => {
 		renderLayout({ status: "loading" });
 		expect(screen.getByTestId("console-loading")).toBeInTheDocument();

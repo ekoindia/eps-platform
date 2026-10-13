@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import {
 	Link,
 	NavLink,
@@ -423,8 +424,9 @@ export default function ConsoleLayout() {
 
 	return (
 		<>
+			{/* A developer session renders a child route, which owns the title. */}
+			{developer ? null : <PageMeta title="Developer Console — EPS" />}
 			<Helmet>
-				<title>Developer Console — EPS</title>
 				<meta name="robots" content="noindex,nofollow" />
 			</Helmet>
 			{/* An anonymous visitor gets the full-bleed sign-in pitch, which needs

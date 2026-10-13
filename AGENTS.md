@@ -51,8 +51,8 @@ npm run preview      # Preview production build locally
 
 ### Meta & Head
 
-1. **Helmet is required** on every page. Set `title`, `meta description`, `keywords`, `og:*`, `twitter:*`.
-2. **DefaultMeta** ([`src/components/DefaultMeta.tsx`](src/components/DefaultMeta.tsx)) provides fallback meta. Page-level `<Helmet>` overrides it.
+1. **Exactly one `<PageMeta>`** ([`src/components/PageMeta.tsx`](src/components/PageMeta.tsx)) per page — it owns `title`, `meta description`, `og:*`, `twitter:*` (defaults from `site.ts`). Put `keywords`, canonical, alternate, robots and JSON-LD in the page's own `<Helmet>`. `title` must be a single string (`` title={`${name} | Eko`} ``) — JSX like `<title>{name} | Eko</title>` renders an empty title.
+2. **No cascading.** React 19 + react-helmet-async v3 renders every `<Helmet>` (no dedupe), so never repeat a tag a page or layout already sets. [`DefaultMeta`](src/components/DefaultMeta.tsx) only holds `twitter:card`/`twitter:site`. The pre-render fails on a second/empty title or a duplicate meta — see [docs/static-page-generation.md](docs/static-page-generation.md#page-meta-title-description-og--react-19-rules).
 3. **Canonical URL** — always set `<link rel="canonical">` pointing to `SITE_URL` + path.
 4. **Site constants** live in [`src/lib/config/site.ts`](src/lib/config/site.ts) — `SITE_URL`, `SITE_TITLE`, `SITE_OG_IMAGE`, etc. Import from there.
 
@@ -108,6 +108,6 @@ npm run preview      # Preview production build locally
 3. Add route to both `App.tsx` (lazy) and `AppServer.tsx` (eager).
 4. Add route entry to `ssg/routes.ts`.
 5. Update `Header.tsx` and `Footer.tsx` navigation if user-facing.
-6. Ensure Helmet meta, canonical, and JSON-LD structured data are present.
+6. Ensure `<PageMeta>`, canonical, and JSON-LD structured data are present.
 7. Add markdown renderer if new page type (or update existing one in `src/lib/markdown/`).
 8. Run `npm run build` and verify the pre-rendered HTML and sitemap.

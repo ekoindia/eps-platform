@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { useParams } from "react-router-dom";
 import { AiHint } from "@/components/AiHint";
 import { CodeSamples } from "@/components/docs/CodeSamples";
@@ -32,18 +33,14 @@ const DocDetailPage = () => {
 	if (node.kind === "guide") {
 		return (
 			<>
+				<PageMeta
+					title={`${node.title}${SITE_TITLE_SUFFIX}`}
+					description={node.summary}
+					ogTitle={node.title}
+					type="article"
+				/>
 				<Helmet>
-					<title>
-						{node.title}
-						{SITE_TITLE_SUFFIX}
-					</title>
-					{node.summary && <meta name="description" content={node.summary} />}
 					<link rel="canonical" href={canonical} />
-					<meta property="og:title" content={node.title} />
-					{node.summary && (
-						<meta property="og:description" content={node.summary} />
-					)}
-					<meta property="og:type" content="article" />
 					<link
 						rel="alternate"
 						type="text/markdown"
@@ -71,15 +68,14 @@ const DocDetailPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title={`${spec.name} API Reference${SITE_TITLE_SUFFIX}`}
+				description={spec.summary}
+				ogTitle={`${spec.name} API Reference`}
+				type="article"
+			/>
 			<Helmet>
-				<title>
-					{spec.name} API Reference{SITE_TITLE_SUFFIX}
-				</title>
-				<meta name="description" content={spec.summary} />
 				<link rel="canonical" href={canonical} />
-				<meta property="og:title" content={`${spec.name} API Reference`} />
-				<meta property="og:description" content={spec.summary} />
-				<meta property="og:type" content="article" />
 				<link
 					rel="alternate"
 					type="text/markdown"

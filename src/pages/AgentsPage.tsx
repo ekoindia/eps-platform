@@ -26,6 +26,7 @@ import {
 	Workflow,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 // ponytail: CommandBlock/ConfigBlock are page-local to /ai; importing across
 // the page boundary instead of lifting them to src/components/. Lift if a third
@@ -95,14 +96,11 @@ const REMOTE_CONFIG = `{
 const AgentsPage = () => {
 	return (
 		<div className="min-h-screen bg-background">
+			<PageMeta
+				title="EPS for AI Agents | Run Indian Fintech Verifications via MCP"
+				description="Give your AI agents a verification runtime. The EPS Transactional MCP server exposes PAN, Aadhaar, bank account, GST and more as typed tools your agents call directly — with pass-through credentials that are never stored."
+			/>
 			<Helmet>
-				<title>
-					EPS for AI Agents | Run Indian Fintech Verifications via MCP
-				</title>
-				<meta
-					name="description"
-					content="Give your AI agents a verification runtime. The EPS Transactional MCP server exposes PAN, Aadhaar, bank account, GST and more as typed tools your agents call directly — with pass-through credentials that are never stored."
-				/>
 				<link rel="canonical" href={`${SITE_URL}/agents`} />
 				<link
 					rel="alternate"

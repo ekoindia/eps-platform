@@ -19,7 +19,7 @@ import { Callout } from "@/components/docs/Callout";
 import { CopyButton } from "@/pages/ai/CommandBlock";
 import { CircleCheck, Landmark, Search, Wallet } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -525,10 +525,7 @@ export default function PayActivationFee() {
 
 	return (
 		<div className="flex max-w-3xl flex-col gap-8">
-			<Helmet>
-				<title>Pay Activation Fee — Developer Console — EPS</title>
-				<meta name="robots" content="noindex,nofollow" />
-			</Helmet>
+			<PageMeta title="Pay Activation Fee — Developer Console — EPS" />
 
 			<div className="flex flex-col gap-1">
 				<h2 className="text-lg font-semibold text-eko-navy">

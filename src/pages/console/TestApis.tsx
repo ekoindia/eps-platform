@@ -17,7 +17,7 @@ import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { uatCredentials } from "@/lib/uat-credentials";
 import { BookOpen, Download, ShieldCheck, Terminal } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { SiPostman } from "react-icons/si";
 import { Link } from "react-router-dom";
 
@@ -102,10 +102,7 @@ export default function TestApis() {
 
 	return (
 		<div className="flex max-w-3xl flex-col gap-6">
-			<Helmet>
-				<title>How to test APIs (UAT)? | Eko Console</title>
-				<meta name="robots" content="noindex,nofollow" />
-			</Helmet>
+			<PageMeta title="How to test APIs (UAT)? | Eko Console" />
 
 			<div className="flex flex-col gap-1">
 				<h2 className="text-lg font-semibold text-eko-navy">

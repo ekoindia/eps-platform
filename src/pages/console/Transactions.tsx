@@ -1,3 +1,4 @@
+import { PageMeta } from "@/components/PageMeta";
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -120,7 +121,11 @@ function FilterFields({
 		return {
 			today: isoDate(now),
 			oldest: isoDate(
-				new Date(now.getFullYear(), now.getMonth(), now.getDate() - HISTORY_MAX_DAYS),
+				new Date(
+					now.getFullYear(),
+					now.getMonth(),
+					now.getDate() - HISTORY_MAX_DAYS,
+				),
 			),
 		};
 	});
@@ -707,6 +712,7 @@ export default function Transactions() {
 function Header() {
 	return (
 		<div className="flex flex-col gap-1">
+			<PageMeta title="Transaction History | Eko Console" />
 			<h2 className="text-lg font-semibold text-eko-navy">
 				Transaction History
 			</h2>
