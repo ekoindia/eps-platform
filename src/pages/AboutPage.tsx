@@ -21,11 +21,11 @@ import {
 	COMPANY_FOUNDED_YEAR,
 	PARENT_SITE_NAME,
 	PARENT_SITE_URL,
-	SITE_OG_IMAGE,
 	SITE_URL,
 } from "@/lib/config/site";
 import { generateAboutJsonLd } from "@/lib/utils/json-ld";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 
 const PAGE_TITLE = `About Eko — Building India's Financial Infrastructure Since ${COMPANY_FOUNDED_YEAR} | Eko Platform Services`;
 const PAGE_DESCRIPTION = `${PARENT_SITE_NAME} has been building financial infrastructure for Bharat since ${COMPANY_FOUNDED_YEAR}, connecting brands, banks and fintechs to customers through a nationwide network of trusted micro-entrepreneurs.`;
@@ -126,21 +126,14 @@ const AboutPage = () => {
 
 	return (
 		<>
+			<PageMeta title={PAGE_TITLE} description={PAGE_DESCRIPTION} />
 			<Helmet>
-				<title>{PAGE_TITLE}</title>
-				<meta name="description" content={PAGE_DESCRIPTION} />
 				<meta name="keywords" content={PAGE_KEYWORDS} />
 				<link rel="canonical" href={`${SITE_URL}/about-us`} />
 				{/* No <link rel="alternate" type="text/markdown"> yet: /about-us.md
 				    is not generated because the About copy still lives inline in
 				    this component rather than in a data module. See AGENTS.md. */}
-				<meta property="og:title" content={PAGE_TITLE} />
-				<meta property="og:description" content={PAGE_DESCRIPTION} />
 				<meta property="og:url" content={`${SITE_URL}/about-us`} />
-				<meta property="og:image" content={SITE_OG_IMAGE} />
-				<meta name="twitter:title" content={PAGE_TITLE} />
-				<meta name="twitter:description" content={PAGE_DESCRIPTION} />
-				<meta name="twitter:image" content={SITE_OG_IMAGE} />
 				{jsonLdSchemas.map((schema, i) => (
 					<script key={i} type="application/ld+json">
 						{JSON.stringify(schema)}

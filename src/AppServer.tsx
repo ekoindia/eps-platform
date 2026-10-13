@@ -80,12 +80,8 @@ function TrackingParamCapture() {
 	return null;
 }
 
-const AppServer = ({
-	helmetContext,
-}: {
-	helmetContext?: Record<string, unknown>;
-}) => (
-	<HelmetProvider context={helmetContext}>
+const AppServer = () => (
+	<HelmetProvider>
 		<DefaultMeta />
 		<TooltipProvider>
 			<Sonner />

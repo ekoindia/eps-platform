@@ -1,3 +1,4 @@
+import { PageMeta } from "@/components/PageMeta";
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
@@ -214,6 +215,7 @@ function PersonalDetails() {
 export default function Profile() {
 	return (
 		<div className="flex max-w-3xl flex-col gap-6">
+			<PageMeta title="My Profile | Eko Console" />
 			<div className="flex flex-col gap-1">
 				<h2 className="text-lg font-semibold text-eko-navy">My Profile</h2>
 				<p className="text-sm text-muted-foreground">

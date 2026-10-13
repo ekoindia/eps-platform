@@ -1,3 +1,4 @@
+import { PageMeta } from "@/components/PageMeta";
 import { KycUploadDialog } from "@/components/console/KycUploadDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ function Header({
 }) {
 	return (
 		<div className="flex flex-col gap-1">
+			<PageMeta title="Upload Documents | Eko Console" />
 			<h2 className="text-lg font-semibold text-eko-navy">Upload Documents</h2>
 			{quiet ? null : (
 				<p className="text-sm text-muted-foreground">

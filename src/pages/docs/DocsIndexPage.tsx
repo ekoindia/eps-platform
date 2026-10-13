@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link, useLocation } from "react-router-dom";
 
 const MD_PATH = "/docs.md";
@@ -294,19 +295,14 @@ const DocsIndexPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title={`Developer Documentation${SITE_TITLE_SUFFIX}`}
+				description={`Start building on Eko's EPS platform — SDKs for ${SDK_LANG_LIST}, REST APIs, Postman & OpenAPI downloads, or fully automated integration with AI agents.`}
+				ogTitle="Developer Documentation"
+				ogDescription="SDKs, REST APIs and AI-agent tooling to integrate Eko's KYC, verification, payment and banking platform."
+			/>
 			<Helmet>
-				<title>Developer Documentation{SITE_TITLE_SUFFIX}</title>
-				<meta
-					name="description"
-					content={`Start building on Eko's EPS platform — SDKs for ${SDK_LANG_LIST}, REST APIs, Postman & OpenAPI downloads, or fully automated integration with AI agents.`}
-				/>
 				<link rel="canonical" href={canonical} />
-				<meta property="og:title" content="Developer Documentation" />
-				<meta
-					property="og:description"
-					content="SDKs, REST APIs and AI-agent tooling to integrate Eko's KYC, verification, payment and banking platform."
-				/>
-				<meta property="og:type" content="website" />
 				<link
 					rel="alternate"
 					type="text/markdown"

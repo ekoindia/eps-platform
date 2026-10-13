@@ -1,10 +1,12 @@
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Footer } from "@/components/Footer";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 
 interface LegalPageLayoutProps {
 	title: string;
+	/** Document <title>; defaults to `${title} | Eko`. */
+	documentTitle?: string;
 	description?: string;
 	subtitle?: string;
 	breadcrumb?: string;
@@ -13,6 +15,7 @@ interface LegalPageLayoutProps {
 
 const LegalPageLayout = ({
 	title,
+	documentTitle = `${title} | Eko`,
 	description,
 	subtitle,
 	breadcrumb,
@@ -20,10 +23,7 @@ const LegalPageLayout = ({
 }: LegalPageLayoutProps) => {
 	return (
 		<>
-			<Helmet>
-				<title>{title} | Eko</title>
-				<meta name="description" content={description || title} />
-			</Helmet>
+			<PageMeta title={documentTitle} description={description || title} />
 
 			{/* Hero Section */}
 			{(subtitle || breadcrumb) && (

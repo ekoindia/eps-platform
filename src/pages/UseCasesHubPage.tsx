@@ -19,6 +19,7 @@ import {
 	Zap,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 
 const FEATURED_SOLUTION_SLUGS = [
@@ -37,12 +38,11 @@ const UseCasesHubPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title="Use Cases | Eko Platform Services"
+				description="Find the right Eko API stack for your business. Browse by industry or solution pack to see pre-bundled APIs for common workflows."
+			/>
 			<Helmet>
-				<title>Use Cases | Eko Platform Services</title>
-				<meta
-					name="description"
-					content="Find the right Eko API stack for your business. Browse by industry or solution pack to see pre-bundled APIs for common workflows."
-				/>
 				<link rel="canonical" href={`${SITE_URL}/use-cases`} />
 				<link
 					rel="alternate"

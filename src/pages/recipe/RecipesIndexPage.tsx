@@ -6,6 +6,7 @@ import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { RECIPES, recipeHref } from "@/lib/data/api-recipes";
 import { ArrowRight } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 
 const TITLE = "API Recipes";
@@ -19,14 +20,13 @@ const MD_PATH = `${recipeHref()}.md`;
  */
 const RecipesIndexPage = () => (
 	<>
+		<PageMeta
+			title={`${TITLE}${SITE_TITLE_SUFFIX}`}
+			description={DESCRIPTION}
+			ogTitle={TITLE}
+		/>
 		<Helmet>
-			{/* Single child: react-helmet-async drops a multi-child <title>. */}
-			<title>{`${TITLE}${SITE_TITLE_SUFFIX}`}</title>
-			<meta name="description" content={DESCRIPTION} />
 			<link rel="canonical" href={`${SITE_URL}${recipeHref()}`} />
-			<meta property="og:title" content={TITLE} />
-			<meta property="og:description" content={DESCRIPTION} />
-			<meta property="og:type" content="website" />
 			<link
 				rel="alternate"
 				type="text/markdown"

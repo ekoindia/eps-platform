@@ -53,7 +53,7 @@ export const PARENT_SITE_NAME = "Eko Bharat Ventures Pvt. Ltd.";
 export const COMPANY_FOUNDED_YEAR = 2007;
 
 /**
- * Default SEO meta — used by DefaultMeta.tsx as the base layer for Helmet cascading.
+ * Default SEO meta — PageMeta.tsx falls back to these; Index.tsx uses the titles.
  */
 export const SITE_TITLE =
 	"Fintech APIs & Platform for KYC, Verification & Transactions in India | Eko Platform Services";

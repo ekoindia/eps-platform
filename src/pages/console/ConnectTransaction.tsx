@@ -1,6 +1,6 @@
 import { ConnectWidget } from "@/components/connect/ConnectWidget";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link, useParams } from "react-router-dom";
 
 /**
@@ -31,10 +31,7 @@ const ConnectTransaction = () => {
 
 	return (
 		<>
-			<Helmet>
-				<title>Transaction | Eko Console</title>
-				<meta name="robots" content="noindex,nofollow" />
-			</Helmet>
+			<PageMeta title="Transaction | Eko Console" />
 			{/* Its own boundary: the widget is third-party code that patches global
 			    DOM APIs to run, so a failure inside it must degrade to a message here
 			    rather than unmount the whole console shell at the app-level boundary. */}

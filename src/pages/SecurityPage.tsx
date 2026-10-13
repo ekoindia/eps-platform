@@ -7,6 +7,7 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 
 import { AiHint } from "@/components/AiHint";
@@ -16,7 +17,7 @@ import { Footer } from "@/components/Footer";
 import { SectionContainer } from "@/components/SectionContainer";
 import { FaqAnswer } from "@/components/sections/FaqSection";
 import { PageHero } from "@/components/sections/PageHero";
-import { SITE_OG_IMAGE, SITE_URL } from "@/lib/config/site";
+import { SITE_URL } from "@/lib/config/site";
 import {
 	SECURITY_PAGE_DESCRIPTION,
 	SECURITY_PAGE_TITLE,
@@ -46,19 +47,15 @@ const SecurityPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title={SECURITY_PAGE_TITLE}
+				description={SECURITY_PAGE_DESCRIPTION}
+			/>
 			<Helmet>
-				<title>{SECURITY_PAGE_TITLE}</title>
-				<meta name="description" content={SECURITY_PAGE_DESCRIPTION} />
 				<meta name="keywords" content={PAGE_KEYWORDS} />
 				<link rel="canonical" href={canonical} />
 				<link rel="alternate" type="text/markdown" href={`${canonical}.md`} />
-				<meta property="og:title" content={SECURITY_PAGE_TITLE} />
-				<meta property="og:description" content={SECURITY_PAGE_DESCRIPTION} />
 				<meta property="og:url" content={canonical} />
-				<meta property="og:image" content={SITE_OG_IMAGE} />
-				<meta name="twitter:title" content={SECURITY_PAGE_TITLE} />
-				<meta name="twitter:description" content={SECURITY_PAGE_DESCRIPTION} />
-				<meta name="twitter:image" content={SITE_OG_IMAGE} />
 			</Helmet>
 
 			<AiHint mdPath={`${SECURITY_PATH}.md`} />

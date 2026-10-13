@@ -36,6 +36,7 @@ import {
 	Zap,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 
 const TRUST_CHIPS = [
 	{ icon: IndianRupee, label: "Per-transaction billing" },
@@ -53,23 +54,20 @@ const TRUST_CHIPS = [
  */
 const ALL_FAQS = [...PRICING_FAQS, ...DMT_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS];
 
+const PAGE_DESCRIPTION = CONNECTED_BANKING_ENABLED
+	? "Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
+	: "Transparent pricing for 25+ verification APIs and partner commissions for DMT, AePS and BBPS. Estimate your monthly cost or earnings with our interactive calculators.";
+
 const PricingPage = () => {
 	const jsonLdSchemas = generatePricingJsonLd(ALL_FAQS);
 
 	return (
 		<>
+			<PageMeta
+				title="API Pricing & Commissions Calculator | Eko Platform Services"
+				description={PAGE_DESCRIPTION}
+			/>
 			<Helmet>
-				<title>
-					API Pricing & Commissions Calculator | Eko Platform Services
-				</title>
-				<meta
-					name="description"
-					content={
-						CONNECTED_BANKING_ENABLED
-							? "Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
-							: "Transparent pricing for 25+ verification APIs and partner commissions for DMT, AePS and BBPS. Estimate your monthly cost or earnings with our interactive calculators."
-					}
-				/>
 				<link rel="canonical" href={`${SITE_URL}/pricing`} />
 				<link
 					rel="alternate"

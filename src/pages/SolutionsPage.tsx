@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Footer } from "@/components/Footer";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { SolutionCard } from "@/components/SolutionCard";
@@ -20,12 +21,11 @@ const SolutionsPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title="Solutions | Eko Platform Services"
+				description="Pre-bundled API packs for common business workflows — lending KYC, agent banking, merchant onboarding, fleet compliance, and more. Sandbox in minutes."
+			/>
 			<Helmet>
-				<title>Solutions | Eko Platform Services</title>
-				<meta
-					name="description"
-					content="Pre-bundled API packs for common business workflows — lending KYC, agent banking, merchant onboarding, fleet compliance, and more. Sandbox in minutes."
-				/>
 				<link rel="canonical" href={`${SITE_URL}/solutions`} />
 			</Helmet>
 			<div className="min-h-screen bg-background">

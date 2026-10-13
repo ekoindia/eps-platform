@@ -2,6 +2,7 @@ import { AdminConsole } from "@/components/admin/AdminConsole";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
@@ -53,8 +54,8 @@ export default function Admin() {
 	const { state } = useAuth();
 	return (
 		<>
+			<PageMeta title="Admin — EPS" />
 			<Helmet>
-				<title>Admin — EPS</title>
 				<meta name="robots" content="noindex,nofollow" />
 			</Helmet>
 			<main className="container mx-auto px-4 pt-28 pb-16 flex flex-col items-center gap-6 min-h-[60vh]">

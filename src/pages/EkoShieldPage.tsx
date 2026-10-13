@@ -40,7 +40,7 @@ import {
 	Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 // import ekoShieldLogo from "@/assets/eko-shield-logo.png";
 
 /* ─── Data ─── */
@@ -386,13 +386,10 @@ const EkoShieldPage = () => {
 
 	return (
 		<div className="min-h-screen bg-background">
-			<Helmet>
-				<title>Eko Shield - Unified Verification Platform | Eko</title>
-				<meta
-					name="description"
-					content="One platform for all identity, financial & compliance verifications. Real-time KYC checks with a unified control dashboard."
-				/>
-			</Helmet>
+			<PageMeta
+				title="Eko Shield - Unified Verification Platform | Eko"
+				description="One platform for all identity, financial & compliance verifications. Real-time KYC checks with a unified control dashboard."
+			/>
 
 			<main>
 				{/* ─── Hero ─── */}

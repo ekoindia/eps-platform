@@ -1,6 +1,6 @@
 import { EKOSTORE_KYC_ID, useEkostoreUrl } from "@/lib/connect/use-ekostore";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 
 /** Heading for the states that are a message rather than the embedded sandbox. */
@@ -60,10 +60,7 @@ const KycVerification = () => {
 
 	return (
 		<>
-			<Helmet>
-				<title>KYC &amp; Verification Sandbox | Eko Console</title>
-				<meta name="robots" content="noindex,nofollow" />
-			</Helmet>
+			<PageMeta title="KYC & Verification Sandbox | Eko Console" />
 			{/* ponytail: negative margins rather than a full-bleed branch in the
 			    layout — `main` pads with px-4 sm:px-6 lg:px-8 pb-16, and this is the
 			    only page that wants none of it. The top padding stays: `lg:pt-28` is

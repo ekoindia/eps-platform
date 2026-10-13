@@ -6,7 +6,7 @@ import { SignupWizard } from "@/features/signup/SignupWizard";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { readNextParam } from "@/lib/auth/next-param";
 import { useEffect } from "react";
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { useLocation, useNavigate } from "react-router-dom";
 
 /**
@@ -42,13 +42,10 @@ const SignupPage = () => {
 		// Faint parchment wash (a paler cut of the docs pane's #f4efe6) so the
 		// wizard's white cards lift off the page instead of merging into it.
 		<div className="min-h-screen bg-[#faf7f1]">
-			<Helmet>
-				<title>Create your account | Eko</title>
-				<meta
-					name="description"
-					content="Create your Eko Platform Services account and start integrating."
-				/>
-			</Helmet>
+			<PageMeta
+				title="Create your account | Eko"
+				description="Create your Eko Platform Services account and start integrating."
+			/>
 
 			{/* Anonymous visitors get the same full-bleed sign-in pitch as `/console`,
 			    so the two entry points into one OTP flow look like one product. It

@@ -1,6 +1,7 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { SearchX, Home, ArrowRight } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { FadeIn } from "@/components/FadeIn";
@@ -74,8 +75,8 @@ const NotFound = () => {
 
 	return (
 		<>
+			<PageMeta title="Page Not Found | Eko Platform Services" />
 			<Helmet>
-				<title>Page Not Found | Eko Platform Services</title>
 				<meta name="robots" content="noindex" />
 			</Helmet>
 

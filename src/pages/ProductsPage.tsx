@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Footer } from "@/components/Footer";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
@@ -199,21 +200,13 @@ const ProductsPage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title="APIs & Products | Eko Platform Services"
+				description="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services. Production-ready APIs built for India's digital economy."
+				ogDescription="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services."
+			/>
 			<Helmet>
-				<title>APIs & Products | Eko Platform Services</title>
-				<meta
-					name="description"
-					content="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services. Production-ready APIs built for India's digital economy."
-				/>
 				<link rel="canonical" href={`${SITE_URL}/products`} />
-				<meta
-					property="og:title"
-					content="APIs & Products | Eko Platform Services"
-				/>
-				<meta
-					property="og:description"
-					content="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services."
-				/>
 				<meta property="og:url" content={`${SITE_URL}/products`} />
 				<link
 					rel="alternate"

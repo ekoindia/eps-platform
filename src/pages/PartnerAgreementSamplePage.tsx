@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 import agreementMarkdown from "@/content/legal/partner-agreement.md?raw";
 import { AiHint } from "@/components/AiHint";
 import LegalPageLayout from "@/components/LegalPageLayout";
-import { SITE_OG_IMAGE, SITE_URL } from "@/lib/config/site";
+import { SITE_URL } from "@/lib/config/site";
 
 const PAGE_PATH = "/samples/partner-agreement";
 const MD_PATH = `${PAGE_PATH}.md`;
@@ -28,10 +28,10 @@ const PAGE_KEYWORDS =
 const PartnerAgreementSamplePage = () => (
 	<LegalPageLayout
 		title="Eko Platform Services Agreement — Sample"
+		documentTitle={PAGE_TITLE}
 		description={PAGE_DESCRIPTION}
 	>
 		<Helmet>
-			<title>{PAGE_TITLE}</title>
 			<meta name="robots" content="noindex" />
 			<meta name="keywords" content={PAGE_KEYWORDS} />
 			<link rel="canonical" href={`${SITE_URL}${PAGE_PATH}`} />
@@ -40,13 +40,7 @@ const PartnerAgreementSamplePage = () => (
 				type="text/markdown"
 				href={`${SITE_URL}${MD_PATH}`}
 			/>
-			<meta property="og:title" content={PAGE_TITLE} />
-			<meta property="og:description" content={PAGE_DESCRIPTION} />
 			<meta property="og:url" content={`${SITE_URL}${PAGE_PATH}`} />
-			<meta property="og:image" content={SITE_OG_IMAGE} />
-			<meta name="twitter:title" content={PAGE_TITLE} />
-			<meta name="twitter:description" content={PAGE_DESCRIPTION} />
-			<meta name="twitter:image" content={SITE_OG_IMAGE} />
 		</Helmet>
 
 		<AiHint mdPath={MD_PATH} />

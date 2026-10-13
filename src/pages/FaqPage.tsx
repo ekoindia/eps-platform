@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 
 import { AiHint } from "@/components/AiHint";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
@@ -6,7 +7,7 @@ import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { PageHero } from "@/components/sections/PageHero";
-import { SITE_OG_IMAGE, SITE_URL } from "@/lib/config/site";
+import { SITE_URL } from "@/lib/config/site";
 import { GLOBAL_FAQS } from "@/lib/data/common-faqs";
 import { generateFaqJsonLd } from "@/lib/utils/json-ld";
 
@@ -25,9 +26,8 @@ const FaqPage = () => {
 
 	return (
 		<>
+			<PageMeta title={PAGE_TITLE} description={PAGE_DESCRIPTION} />
 			<Helmet>
-				<title>{PAGE_TITLE}</title>
-				<meta name="description" content={PAGE_DESCRIPTION} />
 				<meta name="keywords" content={PAGE_KEYWORDS} />
 				<link rel="canonical" href={`${SITE_URL}/faq`} />
 				<link
@@ -35,13 +35,7 @@ const FaqPage = () => {
 					type="text/markdown"
 					href={`${SITE_URL}/faq.md`}
 				/>
-				<meta property="og:title" content={PAGE_TITLE} />
-				<meta property="og:description" content={PAGE_DESCRIPTION} />
 				<meta property="og:url" content={`${SITE_URL}/faq`} />
-				<meta property="og:image" content={SITE_OG_IMAGE} />
-				<meta name="twitter:title" content={PAGE_TITLE} />
-				<meta name="twitter:description" content={PAGE_DESCRIPTION} />
-				<meta name="twitter:image" content={SITE_OG_IMAGE} />
 				{jsonLdSchemas.map((schema, i) => (
 					<script key={i} type="application/ld+json">
 						{JSON.stringify(schema)}

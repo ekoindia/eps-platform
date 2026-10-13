@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 import { AiHint } from "@/components/AiHint";
 import { DocsLayout } from "@/components/docs/DocsLayout";
@@ -26,14 +27,13 @@ const SdkIndexPage = () => {
 	const ordered = [...SDK_GUIDES].sort((a, b) => a.order - b.order);
 	return (
 		<>
+			<PageMeta
+				title={`${TITLE}${SITE_TITLE_SUFFIX}`}
+				description={DESCRIPTION}
+				ogTitle={TITLE}
+			/>
 			<Helmet>
-				{/* Single child: react-helmet-async drops a multi-child <title>. */}
-				<title>{`${TITLE}${SITE_TITLE_SUFFIX}`}</title>
-				<meta name="description" content={DESCRIPTION} />
 				<link rel="canonical" href={`${SITE_URL}${sdkGuideHref()}`} />
-				<meta property="og:title" content={TITLE} />
-				<meta property="og:description" content={DESCRIPTION} />
-				<meta property="og:type" content="website" />
 				<link
 					rel="alternate"
 					type="text/markdown"
@@ -54,8 +54,8 @@ const SdkIndexPage = () => {
 					{TITLE}
 				</h1>
 				<p className="mt-3 text-muted-foreground">
-					Every SDK embeds the same API surface these docs are built from, so one
-					generic <code>call(slug, params)</code> reaches all{" "}
+					Every SDK embeds the same API surface these docs are built from, so
+					one generic <code>call(slug, params)</code> reaches all{" "}
 					{getDocumentedSpecs().length} endpoints. Each signs your requests,
 					validates params before sending, and reports failures the same way.
 					Pick a language.
@@ -104,7 +104,10 @@ const SdkIndexPage = () => {
 				</h2>
 				<p className="mt-2 text-muted-foreground">
 					Every endpoint is a plain signed REST call. The{" "}
-					<Link to={docsHref("how-auth-works")} className="text-eko-gold hover:underline">
+					<Link
+						to={docsHref("how-auth-works")}
+						className="text-eko-gold hover:underline"
+					>
 						authentication guide
 					</Link>{" "}
 					has paste-ready signing code in six languages, and each{" "}

@@ -2,7 +2,7 @@
  * SSR entry point for static pre-rendering.
  *
  * Exports a single `renderPage(url)` function that renders any route to HTML
- * and extracts `<head>` tags set by react-helmet-async.
+ * and moves the `<head>` tags React hoisted (title, meta, link) into `head`.
  *
  * This is the abstraction boundary — if migrating to Vike / Astro later,
  * only this file and the SSG plugin need to change. Page components, data
@@ -10,39 +10,31 @@
  */
 import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router";
-import type { HelmetServerState } from "react-helmet-async";
+import { findHeadProblems, splitHoistedHead } from "./lib/ssr-head";
 import App from "./AppServer";
 
 interface RenderResult {
 	/** The rendered HTML for inside <div id="root"> */
 	html: string;
-	/** Serialised <head> tags (title, meta, link, script) to inject into the template */
+	/** Serialised <head> tags (title, meta, link) to inject into the template */
 	head: string;
 }
 
 export function renderPage(url: string): RenderResult {
-	// react-helmet-async requires a mutable context object
-	const helmetContext: { helmet?: HelmetServerState } = {};
-
-	const html = renderToString(
-		<StaticRouter location={url}>
-			<App helmetContext={helmetContext} />
-		</StaticRouter>,
+	// React 19 emits <Helmet> tags as a leading block of the markup (see
+	// lib/ssr-head.ts); react-helmet-async's server context stays empty.
+	const { head, html } = splitHoistedHead(
+		renderToString(
+			<StaticRouter location={url}>
+				<App />
+			</StaticRouter>,
+		),
 	);
 
-	const { helmet } = helmetContext;
+	const problems = findHeadProblems(head, html);
+	if (problems.length) {
+		throw new Error(`invalid <head>: ${problems.join("; ")}`);
+	}
 
-	// Combine all head tags produced by <Helmet> across the component tree
-	const head = helmet
-		? [
-				helmet.title.toString(),
-				helmet.meta.toString(),
-				helmet.link.toString(),
-				helmet.script.toString(),
-			]
-				.filter(Boolean)
-				.join("\n")
-		: "";
-
-	return { html, head };
+	return { head, html };
 }

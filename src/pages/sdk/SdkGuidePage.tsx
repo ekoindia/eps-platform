@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import { Link, useParams } from "react-router-dom";
 import { AiHint } from "@/components/AiHint";
 import { Callout } from "@/components/docs/Callout";
@@ -37,14 +38,14 @@ const SdkGuidePage = () => {
 
 	return (
 		<>
+			<PageMeta
+				title={`${guide.title}${SITE_TITLE_SUFFIX}`}
+				description={guide.summary}
+				ogTitle={guide.title}
+				type="article"
+			/>
 			<Helmet>
-				{/* Single child: react-helmet-async drops a multi-child <title>. */}
-				<title>{`${guide.title}${SITE_TITLE_SUFFIX}`}</title>
-				<meta name="description" content={guide.summary} />
 				<link rel="canonical" href={`${SITE_URL}${href}`} />
-				<meta property="og:title" content={guide.title} />
-				<meta property="og:description" content={guide.summary} />
-				<meta property="og:type" content="article" />
 				<link
 					rel="alternate"
 					type="text/markdown"

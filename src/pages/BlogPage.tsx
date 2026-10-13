@@ -1,5 +1,5 @@
 import { Footer } from "@/components/Footer";
-import { Helmet } from "react-helmet-async";
+import { PageMeta } from "@/components/PageMeta";
 import {
 	Card,
 	CardHeader,
@@ -43,13 +43,10 @@ const blogPosts = [
 const BlogPage = () => {
 	return (
 		<div className="min-h-screen bg-background">
-			<Helmet>
-				<title>Blog | Eko Platform Services</title>
-				<meta
-					name="description"
-					content="Insights, guides, and updates on fintech APIs, payments, KYC verification, and India's financial infrastructure from Eko Platform Services."
-				/>
-			</Helmet>
+			<PageMeta
+				title="Blog | Eko Platform Services"
+				description="Insights, guides, and updates on fintech APIs, payments, KYC verification, and India's financial infrastructure from Eko Platform Services."
+			/>
 
 			<main className="pt-28 pb-16">
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
