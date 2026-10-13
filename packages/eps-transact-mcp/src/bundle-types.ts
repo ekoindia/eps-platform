@@ -92,6 +92,12 @@ export interface AgentApiDetail extends AgentApiIndexEntry {
 	bestFor?: string;
 	docsUrl: string;
 	financial?: boolean;
+	/** Eko internal transaction-type id (`trxn_type_id`), when known. */
+	trxnTypeId?: number;
+	/** Eko EPS product code (`eps_product_code`), when known. */
+	epsProductCode?: number;
+	/** True when UAT/sandbox is not available: calls there return an error. */
+	uatUnavailable?: boolean;
 	headers: ApiParam[];
 	requestParams: ApiParam[];
 	sampleRequest: Record<string, unknown>;
