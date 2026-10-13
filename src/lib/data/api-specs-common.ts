@@ -193,7 +193,7 @@ export interface ApiSpec {
 	 * internal `/docs/<slug>` page derived from `slug`. Kept temporarily for
 	 * old-vs-new comparison; slated for removal (see docs-migration follow-up).
 	 */
-	docsUrl: string;
+	docsUrl?: string;
 	/** API reference URL from the source website (actual provider of the API) */
 	sourceDoc?: string;
 	/** Money-debit API: returns the financial response envelope (tx_status, etc.). */

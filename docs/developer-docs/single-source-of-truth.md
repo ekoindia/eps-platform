@@ -39,7 +39,7 @@ export interface ApiSpec {
 	bestFor?: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";
 	path: string;                            // relative; full URL = baseUrl + path
-	docsUrl: string;
+	docsUrl?: string;
 	sourceDoc?: string;
 	financial?: boolean;                     // uses the financial response envelope
 	extraRequestParams: ApiParam[];          // API-specific params; a same-named

@@ -162,10 +162,7 @@ describe("buildNavTree", () => {
 			(b) => b.label,
 		);
 		// Provider labels carry a "<product> – <provider>" prefix (see api-specs-common.ts).
-		// DMT – Levin is absent by design: both of its specs are `disabled: true`
-		// in api-specs.ts (archived, not deleted), so the branch must not render.
-		expect(providers).toEqual(["DMT – Fino"]);
-		expect(providers).not.toContain("DMT – Levin");
+		expect(providers).toEqual(["DMT – Fino", "DMT – Levin"]);
 		const fino = findBranch(dmt!.children, "DMT – Fino")!;
 		const finoGroups = childBranches(fino.children, "group").map(
 			(b) => b.label,
