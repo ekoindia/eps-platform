@@ -19,9 +19,9 @@
  * response shapes for JavaScript-rendered or rate-limited portal pages were
  * seeded from curated samples and should be reconciled against live API calls.
  */
+import { txStatusSummary } from "./api-error-codes";
 import type { ApiParam, ApiSpec, RelatedLink } from "./api-specs-common";
 import { enabledSpecs } from "./api-specs-common";
-import { txStatusSummary } from "./api-error-codes";
 
 /** Docs slug of the shared guide explaining Aadhaar RSA encryption. */
 const AADHAAR_ENCRYPTION_SLUG = "fingpay-aeps-aadhaar-encryption";
@@ -819,7 +819,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		slug: "dmt-add-recipient",
 		summary: "Register a new beneficiary under a sender's DMT-Fino account.",
 		description:
-			"Adds a new beneficiary to the sender's saved recipients list. Provide the recipient's full name, bank account number, IFSC code, and mobile number. On success a recipient_id is returned; use it in Send Transaction OTP and Execute Transaction. The system may validate the account via penny-drop before activating the recipient.",
+			"Adds a new beneficiary to the sender's saved recipients list. Provide the recipient's full name, bank account number, IFSC code, and mobile number. On success a recipient_id is returned; use it in Send Transaction OTP and Execute Transaction.",
 		relevance: "M",
 		bestFor: "Adding a new beneficiary before a first-time transfer.",
 		method: "POST",
@@ -1131,8 +1131,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "tx_status",
 				type: "string",
-				description:
-					`Transaction state within the data block: ${txStatusSummary()}.`,
+				description: `Transaction state within the data block: ${txStatusSummary()}.`,
 				imp: true,
 				example: "0",
 			},
@@ -5107,8 +5106,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "tx_status",
 				type: "string",
 				imp: true,
-				description:
-					`Transaction status (${txStatusSummary()}).`,
+				description: `Transaction status (${txStatusSummary()}).`,
 				example: "0",
 			},
 			{
@@ -6491,14 +6489,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 		sourceDoc: "https://www.cashfree.com/docs/api-reference/vrs/v2/pan/pan-360",
 		extraRequestParams: [
 			{
-				name: "pan",
+				name: "pan_number",
 				label: "PAN Number",
 				type: "string",
 				format: "pan",
 				required: true,
 				description:
 					"10-character alphanumeric PAN identifier (first 5 alphabets, 4 digits, 1 alphabet).",
-				example: "ABCDE1234F",
+				example: "ABCPV1234D",
 			},
 			{
 				name: "name",
@@ -6803,12 +6801,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan/verify-pan-in-bulk",
 		extraRequestParams: [
 			{
-				name: "reference_id",
+				name: "bulk_verification_id",
 				type: "string",
 				required: true,
 				description:
-					"Unique id returned by the Bulk PAN Verification API for the submitted batch.",
-				example: "123456",
+					"Unique `bulk_verification_id` returned by the Bulk PAN Verification API for the submitted batch.",
+				example: "",
 			},
 			{
 				name: "bulk_reference_id",
@@ -10869,7 +10867,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Get the status of any transaction by Eko TID or your client_ref_id.",
 		description:
-			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: " + txStatusSummary() + ". A timeout should never be treated as an automatic failure — always inquire.",
+			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: " +
+			txStatusSummary() +
+			". A timeout should never be treated as an automatic failure — always inquire.",
 		descriptionFile: "transaction-inquiry.md",
 		relevance: "H",
 		bestFor: "Reconciling a transaction whose response timed out.",
@@ -10893,8 +10893,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "tx_status",
 				type: "string",
 				imp: true,
-				description:
-					`Transaction status (${txStatusSummary()}).`,
+				description: `Transaction status (${txStatusSummary()}).`,
 				example: "0",
 			},
 			{
@@ -12344,7 +12343,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				required: true,
 				description:
 					"Goods and Services Tax Identification Number of the business to verify (15-character alphanumeric).",
-				example: "29ABCDE1234F1Z5",
+				example: "29AAICP2912R1ZR",
 			},
 			{
 				name: "business_name",
@@ -12691,13 +12690,13 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan-to-gstin/fetch-gstin-with-pan",
 		extraRequestParams: [
 			{
-				name: "pan",
+				name: "pan_number",
 				type: "string",
 				format: "pan",
 				required: true,
 				description:
 					"10-character alphanumeric PAN of the business or individual (5 letters, 4 digits, 1 letter).",
-				example: "ABCDE1234F",
+				example: "DUMPY1001A",
 			},
 		],
 		responseData: [
@@ -15000,7 +14999,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				required: true,
 				description:
 					"Unique alphanumeric code that identifies an individual's passport application (passport file number).",
-				example: "J8369854",
+				example: "PA1000000000001",
 			},
 			{
 				name: "dob",
@@ -16452,8 +16451,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"The OTP value the customer received via SMS from the Send OTP API.",
-				example: "3643",
+					"The OTP value the customer received via SMS from the Send OTP API. For UAT, the Send OTP API returns the OTP in the response for testing purposes; in production, the OTP is only sent via SMS.",
+				example: "",
 			},
 			{
 				name: "mobile",
@@ -16463,6 +16462,15 @@ const ALL_API_SPECS: ApiSpec[] = [
 				required: true,
 				description: "The same 10-digit mobile number the OTP was sent to.",
 				example: "9002336768",
+			},
+			{
+				name: "otp_ref_id",
+				label: "OTP Reference ID",
+				type: "string",
+				required: true,
+				description:
+					"Reference id returned by the Send OTP API, used to track the OTP flow.",
+				example: "",
 			},
 		],
 		responseData: [
@@ -16554,8 +16562,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				label: "OTP Verification Token",
 				type: "string",
 				required: true,
-				description: "The signed JWT received from the Verify OTP API.",
-				example: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+				description: "The token returned by the Verify OTP API.",
+				example: "",
 			},
 		],
 		responseData: [
