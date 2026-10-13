@@ -237,14 +237,6 @@ export const PRICED_APIS: PricedApi[] = [
 		tiers: [{ upTo: null, rate: 1.2 }],
 		isBulk: true,
 	},
-	{
-		id: "pan-bulk-status",
-		name: "Bulk PAN Status",
-		productId: "pan",
-		group: "PAN",
-		tiers: [{ upTo: null, rate: 1.2 }],
-		isBulk: true,
-	},
 
 	// Bank Account
 	{
