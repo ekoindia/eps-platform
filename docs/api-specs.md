@@ -101,7 +101,7 @@ interface ApiSpec {
 	bestFor?: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";
 	path: string; // relative; full URL = environment baseUrl + path
-	docsUrl: string; // developer-portal reference link
+	docsUrl?: string; // developer-portal reference link
 	financial?: boolean; // adds the financial response envelope
 	trxnTypeId?: number; // Eko trxn_type_id (set with epsProductCode)
 	epsProductCode?: number; // Eko eps_product_code
