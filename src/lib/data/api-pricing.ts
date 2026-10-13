@@ -248,15 +248,6 @@ export const PRICED_APIS: PricedApi[] = [
 
 	// Bank Account
 	{
-		id: "bank-ifsc",
-		name: "Bank Search by IFSC",
-		shortName: "IFSC Lookup",
-		productId: "bank",
-		group: "Bank Account",
-		tiers: [{ upTo: null, rate: 0.18 }],
-		unitLabel: "per lookup",
-	},
-	{
 		id: "bank-pennyless",
 		name: "Bank Account Verification (Pennyless)",
 		shortName: "Pennyless",
