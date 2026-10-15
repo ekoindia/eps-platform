@@ -86,7 +86,7 @@ Each sellable API is a `PricedApi`:
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`        | URL-stable id used in query params (e.g. `pan-lite`). Never rename once shipped — breaks shared links.                                                                                                  |
 | `name`      | Display name                                                                                                                                                                                            |
-| `productId` | Optional — maps to `ApiProductRef.id` in `api-products.ts`. One product → many priced APIs (`pan` → PAN Lite / Bulk / Status / Comprehensive). Omit when no product page exists (e.g. `ckyc-download`). |
+| `productId` | Optional — maps to `ApiProductRef.id` in `api-products.ts`. One product → many priced APIs (`pan` → Fetch / Lite / Advanced / Bulk). Omit when no product page exists (e.g. `ckyc-download`). |
 | `group`     | Section heading; ordered by `PRICING_GROUP_ORDER`                                                                                                                                                       |
 | `tiers`     | Volume slabs, ascending; last has `upTo: null`. Flat rate = single entry.                                                                                                                               |
 | `tierMode`  | `"volume"` (default — matched slab rate applies to all units) or `"graduated"` (each slab priced separately)                                                                                            |
@@ -97,6 +97,21 @@ Each sellable API is a `PricedApi`:
 
 All rates: **INR per transaction, exclusive of GST @ 18%** (`GST_RATE`).
 Money math runs in integer paise to avoid float drift (`calcQuote`, `calcLineCost`).
+
+Rows added or re-keyed 2026-10-15 from the [semantics review](semantics-review-sheet.md):
+
+- `ip` (₹2.50, per lookup) was missing although the API is paid.
+- `bank-ifsc` (₹1.00, per lookup) now prices `get-ifsc-details` under the
+  Bank & IFSC product. The key is reused from the ₹0.18 row removed in fdf0ac64.
+- DigiLocker: Create URL is free. `digilocker-create-url` was replaced by
+  `digilocker-get-document` (₹2.50) and `digilocker-verification-status`
+  (₹2.50 per check, `setupFee: 0` because it is a companion call). Old share
+  links carrying `digilocker-create-url` now drop that line; `calcQuote` ignores
+  unknown ids.
+
+A price row and an endpoint's `semantics.billable` must agree. There is no
+id link between them (`dl` prices `driving-license`), so check both when a
+price changes.
 
 ### Payments & BC (`src/lib/data/payments-pricing.ts`)
 
@@ -244,9 +259,13 @@ tds     = round(gross × 2%)
   `rcmGst + ekoGst === gstInFee` exactly.
 - `calcDmtQuote(input)` → monthly projection. **TDS is withheld on the monthly
   aggregate**, not per transaction (₹367.80 vs ₹370.00 at 1,000 × ₹2,500).
-- Add-ons are debited from the partner's wallet: `DMT_SENDER_KYC_FEE` (₹11 +
-  GST = ₹12.98, per new sender), `DMT_RECIPIENT_VERIFY_FEE` (₹3.25 incl. GST,
-  per new **recipient**, not per transfer). `recoverChargesFromCustomer` adds
+- Add-ons are debited from the partner's wallet: `DMT_SENDER_KYC_FEE` (₹11
+  **incl.** GST, per new sender), `DMT_RECIPIENT_VERIFY_FEE` (₹3.54 incl. GST,
+  per new **recipient**, not per transfer). Both are the same for every DMT
+  provider (Fino, Levin), so the calculator has no provider switch. Changed
+  2026-10-15 from ₹11 + GST (₹12.98) and ₹3.25, on figures supplied by the
+  product owner during the semantics review; the public DMT pricing claims were
+  earlier flagged as pending marketing sign-off. `recoverChargesFromCustomer` adds
   an **offsetting credit** — it never zeroes the debit, because the wallet is
   debited either way.
 - `dmtRateCardRows()` derives the rate card from `calcDmtTxn`, so the table,

@@ -100,6 +100,7 @@ interface ApiSpec {
 	disabled?: boolean; // hide the endpoint everywhere — see "Hide (disable) an API"
 	bestFor?: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";
+	semantics?: ApiSemantics; // read-only / idempotent / billable / side effects — see "Semantics"
 	path: string; // relative; full URL = environment baseUrl + path
 	docsUrl?: string; // developer-portal reference link
 	financial?: boolean; // adds the financial response envelope
@@ -182,6 +183,35 @@ either. A step that runs only for some requests sets `appliesWhen` (e.g.
 `"amount > ₹5,000"`) instead of a branch — see the recipe notes in
 `ai-agent-platform.md`.
 
+### Semantics (`readOnly`, `idempotent`, `billable`, `sideEffects`)
+
+Every spec of an **active** product must declare what a call does to the world:
+
+```ts
+semantics: {
+	readOnly: false,
+	idempotent: false,
+	billable: true,
+	sideEffects: ["moves-money"], // absent when readOnly; ≥1 entry otherwise
+},
+```
+
+- Set it explicitly. Never infer it from `method` (POST lookups are read-only;
+  `digilocker-verification-status` is a billable GET) or from `financial`.
+- `idempotent: true` only with evidence. A wrong `true` invites a retry that
+  duplicates a side effect.
+- `billable` means Eko charges per call (verification price list, DMT charges).
+  Commission the partner earns (AePS, BBPS) is not a charge.
+- `SideEffect` values: `moves-money`, `sends-otp`, `consumes-otp`, `creates`,
+  `updates`, `deactivates`, `enqueues`, `opens-session`.
+
+`assertSemantics` runs inside `buildAgentBundle` over `getDocumentedSpecs()` and
+fails the build when a label is missing or inconsistent. Specs of disabled
+products may stay unlabelled; re-enabling the product fails the build until they
+are labelled. Signed-off values and their evidence:
+[`semantics-review-sheet.md`](semantics-review-sheet.md). Nothing emits the field
+yet (agent-readiness steps 3.2–3.4).
+
 ### `imp` flags ("What can you verify?")
 
 `ResponseField` is a recursive tree (`children` for objects / arrays). Any field
@@ -263,7 +293,9 @@ source.
    existing `API_PRODUCTS` id; declare **deltas only** (skip common params, auth
    headers, and the response envelope — the resolvers add them).
 2. For verification APIs, mark the verifiable response fields with `imp: true`.
-3. Set `financial: true` for money-debit endpoints (adds the financial response envelope).
+3. Set `semantics` (see [Semantics](#semantics-readonly-idempotent-billable-sideeffects));
+   the build fails without it. Add a row to `semantics-review-sheet.md`.
+   Set `financial: true` for money-debit endpoints (adds the financial response envelope).
    Add `trxnTypeId` + `epsProductCode` when known, and `uatUnavailable: true`
    if the API is not available on UAT (it then returns an error there).
 4. If the endpoint's `response_type_id` decides the next call, declare
