@@ -58,8 +58,30 @@ describe("buildSdkSurface", () => {
 			surface.endpoints.find((e) => e.slug === slug)!;
 		expect(bySlug("bbps-pay-bill").financial).toBe(true);
 		expect(bySlug("dmt-get-sender")).not.toHaveProperty("financial");
+		// AePS enquiries move no money and return no `tx_status`.
+		expect(bySlug("aeps-fingpay-balance-enquiry")).not.toHaveProperty(
+			"financial",
+		);
+		expect(bySlug("aeps-fingpay-mini-statement")).not.toHaveProperty(
+			"financial",
+		);
 		expect(surface.endpoints.filter((e) => e.financial).length).toBe(
 			bundle.apis.filter((a) => a.financial).length,
 		);
+	});
+
+	it("marks retrySafe from semantics, not from method", () => {
+		const safe = (slug: string) =>
+			surface.endpoints.find((e) => e.slug === slug)?.retrySafe;
+		expect(safe("transaction-inquiry")).toBe(true); // free GET
+		expect(safe("get-ifsc-details")).toBe(false); // billable GET
+		expect(safe("deactivate-user-service")).toBe(true); // idempotent free PUT
+		expect(safe("pan-lite")).toBe(false); // billable POST lookup
+		expect(safe("dmt-initiate-transfer")).toBe(false); // moves money
+		// Not financial, but each call spends a single-use biometric PID block.
+		expect(safe("aeps-fingpay-balance-enquiry")).toBe(false);
+		expect(safe("aeps-fingpay-mini-statement")).toBe(false);
+		for (const e of surface.endpoints)
+			expect(e.retrySafe, e.slug).toBeTypeOf("boolean");
 	});
 });

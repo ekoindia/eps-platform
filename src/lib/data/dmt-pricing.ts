@@ -44,10 +44,12 @@ export const DMT_CUSTOMER_FEE_PCT = 0.01;
 export const DMT_CUSTOMER_FEE_MIN = 10;
 /** Eko's flat charge per transaction (₹, excl. GST) — same at any amount */
 export const EKO_DMT_CHARGE = 2.8;
-/** One-time sender KYC charge (₹, EXCL. GST), per newly registered sender */
+/** One-time sender KYC charge (₹, GST-INCLUSIVE), per newly registered sender.
+ * Same for every DMT provider (Fino, Levin). */
 export const DMT_SENDER_KYC_FEE = 11;
-/** Recipient bank account verification (₹, GST-INCLUSIVE), per new recipient */
-export const DMT_RECIPIENT_VERIFY_FEE = 3.25;
+/** Recipient bank account verification (₹, GST-INCLUSIVE), per new recipient.
+ * Same for every DMT provider (Fino, Levin). */
+export const DMT_RECIPIENT_VERIFY_FEE = 3.54;
 
 /** Default transfer amount preselected in the calculator (₹) */
 export const DMT_DEFAULT_AMOUNT = 2500;
@@ -213,10 +215,6 @@ export interface DmtQuote {
 	setupFee: SetupFeeQuote;
 }
 
-/** Sender KYC charge including GST (₹) — what actually leaves the wallet */
-export const dmtSenderKycInclGst = (): number =>
-	Math.round(toPaise(DMT_SENDER_KYC_FEE) * (1 + GST_RATE)) / 100;
-
 /**
  * Computes the monthly DMT earnings quote.
  *
@@ -238,7 +236,7 @@ export const calcDmtQuote = (input: DmtInput): DmtQuote => {
 	const monthlyTdsPaise = Math.round(monthlyGrossPaise * TDS_RATE);
 	const monthlyNetPaise = monthlyGrossPaise - monthlyTdsPaise;
 
-	const kycPaise = toPaise(dmtSenderKycInclGst()) * newSendersPerMonth;
+	const kycPaise = toPaise(DMT_SENDER_KYC_FEE) * newSendersPerMonth;
 	const verifyPaise = toPaise(DMT_RECIPIENT_VERIFY_FEE) * newRecipientsPerMonth;
 	const addOnPaise = kycPaise + verifyPaise;
 	const recoveredPaise = recoverChargesFromCustomer ? addOnPaise : 0;
@@ -304,7 +302,7 @@ export const DMT_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "What are the sender KYC and account verification charges?",
-		a: `Registering a new sender costs **₹${DMT_SENDER_KYC_FEE} + GST (₹${dmtSenderKycInclGst().toFixed(2)})**, charged once per sender. Verifying a new recipient's bank account costs **₹${DMT_RECIPIENT_VERIFY_FEE.toFixed(2)}** (incl. GST), charged once per recipient — not per transfer. Both are debited from your wallet; you are free to recover them from your customer in your own app.`,
+		a: `Registering a new sender costs **₹${DMT_SENDER_KYC_FEE.toFixed(2)}** (incl. GST), charged once per sender. Verifying a new recipient's bank account costs **₹${DMT_RECIPIENT_VERIFY_FEE.toFixed(2)}** (incl. GST), charged once per recipient — not per transfer. Both charges are the same whichever DMT provider (Fino or Levin) you use. Both are debited from your wallet; you are free to recover them from your customer in your own app.`,
 	},
 	{
 		q: "What is the maximum DMT transfer amount?",

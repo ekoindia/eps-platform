@@ -10,6 +10,7 @@ import type {
 	ApiParam,
 	ResponseField,
 	ApiResponseType,
+	ApiSemantics,
 } from "@/lib/data/api-specs-common";
 import type { ApiErrorCode } from "@/lib/data/api-error-codes";
 import type { ApiKeyInfo } from "@/lib/data/api-auth";
@@ -49,6 +50,10 @@ export interface AgentApiDetail extends AgentApiIndexEntry {
 	bestFor?: string;
 	docsUrl: string;
 	financial?: boolean;
+	/** Behaviour labels: read-only / idempotent / billable / side effects. Set
+	 * on every documented endpoint; absent only in bundles built before
+	 * 2026-10-15 — treat absence as unknown, never as read-only. */
+	semantics?: ApiSemantics;
 	/** Eko internal transaction-type id (`trxn_type_id`), when known. */
 	trxnTypeId?: number;
 	/** Eko EPS product code (`eps_product_code`), when known. */

@@ -86,9 +86,8 @@ export interface PricingXlsxData {
 	dmt: {
 		/** `dmtRateCardRows()` — derived ledger rows for the static rate card. */
 		rows: DmtTxnBreakdown[];
+		/** `DMT_SENDER_KYC_FEE` — GST-inclusive, per new sender. */
 		senderKycFee: number;
-		/** `DMT_SENDER_KYC_FEE` + GST — what actually leaves the wallet. */
-		senderKycInclGst: number;
 		/** `DMT_RECIPIENT_VERIFY_FEE` — GST-inclusive, per new recipient. */
 		recipientVerifyFee: number;
 		customerFeePct: number;

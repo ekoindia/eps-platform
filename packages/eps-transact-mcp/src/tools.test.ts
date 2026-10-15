@@ -4,7 +4,8 @@ import { loadBundle } from "./load-bundle.js";
 import type { AgentBundle } from "./bundle-types.js";
 import {
 	FLOW_GUIDANCE,
-	SIDE_EFFECTS,
+	SIDE_EFFECT_TEXT,
+	behaviourOf,
 	buildToolDefs,
 	paramToJsonSchema,
 	toToolName,
@@ -13,6 +14,7 @@ import {
 
 const { bundle } = await loadBundle();
 const tools = buildToolDefs(bundle);
+const bySlug = new Map(bundle.apis.map((a) => [a.slug, a]));
 
 describe("tool generation", () => {
 	it("exposes exactly the verification, non-financial APIs (registry-driven)", () => {
@@ -21,7 +23,6 @@ describe("tool generation", () => {
 		expect(tools.map((t) => t.slug).sort()).toEqual(
 			expected.map((a) => a.slug).sort(),
 		);
-		const bySlug = new Map(bundle.apis.map((a) => [a.slug, a]));
 		for (const t of tools) {
 			const api = bySlug.get(t.slug);
 			expect(api?.category).toBe("verification");
@@ -49,8 +50,14 @@ describe("tool generation", () => {
 		expect(tool?.inputSchema.properties.pan_number?.type).toBe("string");
 	});
 
-	it("marks each tool as billed in the description", () => {
-		for (const t of tools) expect(t.description).toContain("billed");
+	it("states billing from semantics.billable", () => {
+		for (const t of tools) {
+			const sem = bySlug.get(t.slug)?.semantics;
+			expect(sem, t.slug).toBeDefined();
+			expect(t.description, t.name).toContain(
+				sem?.billable ? "billed per EPS pricing" : "Not billed",
+			);
+		}
 	});
 
 	it("maps unknown spec types to untyped schema properties", () => {
@@ -92,36 +99,54 @@ describe("tool generation", () => {
 		expect(tools.length).toBe(verificationApis(bundle).length);
 	});
 
-	it("every SIDE_EFFECTS and FLOW_GUIDANCE slug exists in the exposed set", () => {
+	it("every FLOW_GUIDANCE slug exists in the exposed set", () => {
 		const exposed = new Set(tools.map((t) => t.slug));
-		for (const slug of Object.keys(SIDE_EFFECTS))
-			expect(exposed.has(slug), slug).toBe(true);
 		for (const slug of Object.keys(FLOW_GUIDANCE))
 			expect(exposed.has(slug), slug).toBe(true);
 	});
 
-	it("annotations: openWorld everywhere; readOnly false exactly on side-effect tools", () => {
+	it("annotations come from semantics: readOnly, idempotent, destructive", () => {
 		for (const t of tools) {
+			const sem = bySlug.get(t.slug)?.semantics;
 			expect(t.annotations.openWorldHint, t.name).toBe(true);
-			if (SIDE_EFFECTS[t.slug]) {
-				expect(t.annotations.readOnlyHint, t.name).toBe(false);
-				expect(t.annotations.idempotentHint, t.name).toBe(false);
-			} else {
-				expect(t.annotations.readOnlyHint, t.name).toBe(true);
+			expect(t.annotations.readOnlyHint, t.name).toBe(sem?.readOnly);
+			if (sem?.readOnly) {
 				expect(t.annotations).not.toHaveProperty("idempotentHint");
+				expect(t.annotations).not.toHaveProperty("destructiveHint");
+			} else {
+				expect(t.annotations.idempotentHint, t.name).toBe(sem?.idempotent);
+				expect(t.annotations.destructiveHint, t.name).toBe(
+					(sem?.sideEffects ?? []).includes("moves-money"),
+				);
 			}
 		}
 	});
 
-	it("side-effecting tools never claim to be read-only in the description", () => {
+	it("describes each declared side effect; read-only tools say so", () => {
 		for (const t of tools) {
-			if (SIDE_EFFECTS[t.slug]) {
-				expect(t.description, t.name).not.toContain("Read-only");
-				expect(t.description, t.name).toContain(SIDE_EFFECTS[t.slug]);
-			} else {
-				expect(t.description, t.name).toContain("Read-only verification");
+			const sem = bySlug.get(t.slug)?.semantics;
+			if (sem?.readOnly) {
+				expect(t.description, t.name).toContain("Read-only lookup");
+				continue;
 			}
+			expect(t.description, t.name).not.toContain("Read-only");
+			for (const e of sem?.sideEffects ?? [])
+				expect(t.description.toLowerCase(), t.name).toContain(
+					SIDE_EFFECT_TEXT[e].toLowerCase(),
+				);
 		}
+	});
+
+	it("treats a bundle without semantics as state-changing, never read-only", () => {
+		const { semantics: _drop, ...bare } = verificationApis(bundle)[0];
+		const { annotations, sentence } = behaviourOf(bare);
+		expect(annotations).toEqual({
+			readOnlyHint: false,
+			idempotentHint: false,
+			destructiveHint: true,
+			openWorldHint: true,
+		});
+		expect(sentence).toContain("undeclared");
 	});
 
 	it("multi-step tools carry flow-chaining guidance", () => {

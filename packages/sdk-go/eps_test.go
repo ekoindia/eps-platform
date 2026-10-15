@@ -735,6 +735,25 @@ func TestCancelledContextStopsRetrying(t *testing.T) {
 	}
 }
 
+func TestBillableGetNotRetried(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(503)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "get-ifsc-details",
+		map[string]any{"initiator_id": "9962981729", "ifsc": "SBIN0000001"})
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want *HTTPError after 1", err, len(tr.requests))
+	}
+}
+
+func TestRetrySafePutIsRetried(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(503), withBody(`{"status":0}`)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "deactivate-user-service",
+		map[string]any{"initiator_id": "9962981729", "user_code": "20810200", "service_code": "43"})
+	if err != nil || len(tr.requests) != 2 {
+		t.Errorf("err = %v after %d requests, want success after 2", err, len(tr.requests))
+	}
+}
+
 func TestPostNeverRetried(t *testing.T) {
 	tr := &scripted{steps: []step{httpStep(500)}}
 	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", panParams)
@@ -771,8 +790,11 @@ func TestFinancialPost5xxInquiresAndReturnsIndeterminate(t *testing.T) {
 		t.Fatalf("sent %d requests, want 2", len(tr.requests))
 	}
 	inq := tr.requests[1]
-	if inq.Method != http.MethodGet || !strings.Contains(inq.URL.String(),
-		"/tools/reference/transaction/client_ref_id:"+ref+"?initiator_id=9962981729") {
+	q := inq.URL.Query()
+	if inq.Method != http.MethodGet ||
+		!strings.HasSuffix(inq.URL.Path, "/tools/reference/transaction") ||
+		q.Get("client_ref_id") != ref || q.Get("initiator_id") != "9962981729" ||
+		q.Has("transaction-reference") {
 		t.Errorf("inquiry = %s %s, want GET transaction-inquiry by client_ref_id", inq.Method, inq.URL)
 	}
 }
@@ -792,7 +814,7 @@ func TestFinancialPostTransportFailureReusesSuppliedRef(t *testing.T) {
 	if !errors.As(ind.Err, &te) {
 		t.Errorf("Err = %v, want the *TransportError cause", ind.Err)
 	}
-	if !strings.Contains(tr.requests[1].URL.String(), "client_ref_id:MY-REF") {
+	if tr.requests[1].URL.Query().Get("client_ref_id") != "MY-REF" {
 		t.Errorf("inquiry url = %s, want the supplied ref", tr.requests[1].URL)
 	}
 }

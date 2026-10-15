@@ -167,6 +167,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow.
 - [Transactional MCP server](docs/eps-transact-mcp.md)
 - [API coverage roadmap](docs/api-coverage-roadmap.md)
 - [Agent-readiness review](docs/agent-readiness-review.md) — EPS vs the 7 ways agents fail APIs; phased fix plan
+- [Semantics review sheet](docs/semantics-review-sheet.md) — signed-off read-only / idempotent / billable / side-effect labels for every documented spec (Phase 3.1)
 - [AI-native gap analysis](docs/ai-native-gap-analysis.md)
 
 **API & data model**

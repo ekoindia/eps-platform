@@ -45,12 +45,13 @@ MULTIPART_JSON_FIELD = "form-data"
 
 #: Per-attempt budget in seconds, matching every other EPS SDK.
 _DEFAULT_TIMEOUT = 30.0
-#: Extra attempts for a GET that ended indeterminate.
+#: Extra attempts for a ``retrySafe`` call that ended indeterminate.
 _DEFAULT_RETRIES = 2
 #: Backoff base in seconds: attempt n waits a random slice of min(base * 2**(n-1), 2s).
 _DEFAULT_RETRY_BASE_DELAY = 0.2
 _MAX_RETRY_DELAY = 2.0
-#: Generic status-check endpoint, keyed by TID or ``client_ref_id:<ref>``.
+#: Generic status-check endpoint (``GET /tools/reference/transaction``), keyed
+#: by a ``tid`` or ``client_ref_id`` query param.
 _INQUIRY_SLUG = "transaction-inquiry"
 
 _NUMBER_RE = re.compile(r"^-?\d+(\.\d+)?$")
@@ -313,6 +314,9 @@ class Target:
     slug: str = ""
     #: Money-moving endpoint (surface ``financial``).
     financial: bool = False
+    #: Safe to re-send after an indeterminate outcome (surface ``retrySafe``;
+    #: older surfaces without it fall back to "GET only").
+    retry_safe: bool = False
     #: The ref this non-GET call carries (generated or supplied); None on GET.
     client_ref_id: Optional[str] = None
     #: The initiator the call resolved, reused by the status check.
@@ -383,8 +387,9 @@ class EpsClient:
     user_code: Optional[str] = None
     #: Per-attempt budget in seconds.
     timeout: float = _DEFAULT_TIMEOUT
-    #: Extra attempts for a GET whose outcome was indeterminate (timeout,
-    #: transport failure, HTTP 429/5xx). Non-GET calls are never retried.
+    #: Extra attempts for a ``retrySafe`` endpoint whose outcome was
+    #: indeterminate (timeout, transport failure, HTTP 429/5xx). Billable,
+    #: money-moving or non-idempotent calls are never retried.
     retries: int = _DEFAULT_RETRIES
     #: Backoff base in seconds: attempt n waits a random slice of
     #: min(base * 2**(n-1), 2.0). 0 retries immediately (tests).
@@ -546,6 +551,7 @@ class EpsClient:
             multipart=multipart,
             slug=slug,
             financial=bool(endpoint.get("financial")),
+            retry_safe=bool(endpoint.get("retrySafe", endpoint["method"] == "GET")),
             client_ref_id=client_ref_id,
             initiator_id=merged.get("initiator_id"),
         )
@@ -554,15 +560,15 @@ class EpsClient:
         """Sign and send one endpoint call, returning the decoded response envelope.
 
         Validates first (raises :class:`EpsError`, nothing sent), then sends. A
-        GET whose outcome is indeterminate is retried; a non-GET never is -- on a
-        ``financial`` endpoint it is followed by a Transaction Inquiry on its
+        ``retrySafe`` endpoint whose outcome is indeterminate is retried; any
+        other never is -- on a ``financial`` endpoint it is followed by a Transaction Inquiry on its
         ``client_ref_id`` and raised as :class:`EpsIndeterminateError`. Otherwise
         raises :class:`EpsHttpError` on a non-2xx response and
         :class:`urllib.error.URLError` on a transport failure. A body that is
         not JSON is an error, never a silent ``{}``. See docs/sdk-golden-vector.md.
         """
         target = self.resolve_target(slug, params)
-        attempts = self.retries + 1 if target.method == "GET" else 1
+        attempts = self.retries + 1 if target.retry_safe else 1
         attempt = 0
         while True:
             attempt += 1
@@ -574,8 +580,8 @@ class EpsClient:
                 if attempt < attempts:
                     self._backoff(attempt)
                     continue
-                # Never re-send a non-GET: that is how a customer is debited
-                # twice. Ask EPS what happened to the ref instead, if there is
+                # Never re-send an unsafe call: that is how a customer is
+                # debited twice. Ask EPS what happened to the ref instead, if there is
                 # one to ask by.
                 if (
                     self.auto_status_check
@@ -595,13 +601,11 @@ class EpsClient:
     def _indeterminate(
         self, target: Target, cause: BaseException
     ) -> EpsIndeterminateError:
-        """One inquiry by ``client_ref_id:<ref>``; its own failure is reported,
+        """One inquiry by ``client_ref_id=<ref>``; its own failure is reported,
         never allowed to mask the original one."""
         status_check: Any = None
         status_check_error: Optional[BaseException] = None
-        params: Dict[str, Any] = {
-            "transaction-reference": f"client_ref_id:{target.client_ref_id}"
-        }
+        params: Dict[str, Any] = {"client_ref_id": target.client_ref_id}
         if target.initiator_id is not None:
             params["initiator_id"] = target.initiator_id
         try:

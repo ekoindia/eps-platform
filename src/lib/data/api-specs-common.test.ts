@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ApiParam, ApiSpec } from "./api-specs-common";
+import { getDocumentedSpecs } from "./docs-registry";
 import {
 	assertParamFormats,
 	assertResponseTypeSlugs,
+	assertSemantics,
+	semanticBadges,
 	buildMultipartPayload,
 	buildSampleRequest,
 	COMMON_REQUEST_PARAMS,
@@ -436,5 +439,148 @@ describe("assertParamFormats", () => {
 	it("checks the inherited common params too", () => {
 		// client_ref_id carries format "client-ref" from the commons.
 		expect(() => assertParamFormats([spec({ id: "a" })])).not.toThrow();
+	});
+});
+
+describe("assertSemantics", () => {
+	it("passes read-only and writing specs labelled consistently", () => {
+		expect(() =>
+			assertSemantics([
+				spec({
+					id: "lookup",
+					semantics: { readOnly: true, idempotent: true, billable: true },
+				}),
+				spec({
+					id: "transfer",
+					semantics: {
+						readOnly: false,
+						idempotent: false,
+						billable: true,
+						sideEffects: ["moves-money"],
+					},
+				}),
+			]),
+		).not.toThrow();
+	});
+
+	it("names every spec that has no semantics", () => {
+		expect(() =>
+			assertSemantics([spec({ id: "a" }), spec({ id: "b" })]),
+		).toThrow(/"a" has no semantics[\s\S]*"b" has no semantics/);
+	});
+
+	it("throws when a read-only spec lists side effects", () => {
+		expect(() =>
+			assertSemantics([
+				spec({
+					id: "x",
+					semantics: {
+						readOnly: true,
+						idempotent: true,
+						billable: false,
+						sideEffects: ["sends-otp"],
+					},
+				}),
+			]),
+		).toThrow(/"x" is readOnly but lists sideEffects/);
+	});
+
+	it("throws when a writing spec lists no side effects", () => {
+		expect(() =>
+			assertSemantics([
+				spec({
+					id: "y",
+					semantics: { readOnly: false, idempotent: false, billable: false },
+				}),
+			]),
+		).toThrow(/"y" is not readOnly but lists no sideEffects/);
+	});
+
+	it("passes for every documented spec", () => {
+		expect(() => assertSemantics(getDocumentedSpecs())).not.toThrow();
+	});
+});
+
+describe("semanticBadges", () => {
+	const labels = (over: Partial<ApiSpec>) =>
+		semanticBadges(spec(over)).map((b) => b.label);
+
+	it("is empty for an unlabelled spec", () => {
+		expect(labels({})).toEqual([]);
+	});
+
+	it("labels a free lookup read-only; retry safety is implied", () => {
+		expect(
+			labels({
+				semantics: { readOnly: true, idempotent: true, billable: false },
+			}),
+		).toEqual(["Read-only"]);
+	});
+
+	it("shows the price instead of Billable, and never retry on money", () => {
+		expect(
+			labels({
+				semantics: { readOnly: true, idempotent: true, billable: true },
+			}),
+		).toEqual(["Read-only", "Billable"]); // no price known → fallback
+		expect(
+			labels({
+				financial: true,
+				semantics: {
+					readOnly: false,
+					idempotent: false,
+					billable: true,
+					sideEffects: ["moves-money"],
+				},
+			}),
+		).toEqual(["Moves money", "Billable"]);
+	});
+
+	it("uses the price badge when a price is given", () => {
+		const price = {
+			label: "₹1.20 + GST / verification",
+			hint: "h",
+			href: "/pricing",
+		};
+		expect(
+			semanticBadges(
+				spec({
+					semantics: { readOnly: true, idempotent: true, billable: true },
+				}),
+				price,
+			).map((b) => b.label),
+		).toEqual(["Read-only", "₹1.20 + GST / verification"]);
+	});
+
+	it("shows Safe to retry only on a state-changing call that allows it", () => {
+		expect(
+			labels({
+				semantics: {
+					readOnly: false,
+					idempotent: true,
+					billable: false,
+					sideEffects: ["deactivates"],
+				},
+			}),
+		).toEqual(["Deactivates", "Safe to retry"]);
+	});
+
+	it("adds Earns commission in its own tone", () => {
+		const badges = semanticBadges(
+			spec({
+				semantics: {
+					readOnly: false,
+					idempotent: false,
+					billable: false,
+					sideEffects: ["moves-money"],
+				},
+			}),
+			undefined,
+			{ label: "Earns commission", hint: "h", href: "/pricing" },
+		);
+		expect(badges.map((b) => [b.label, b.tone])).toEqual([
+			["Moves money", "caution"],
+			["Earns commission", "earning"],
+		]);
 	});
 });

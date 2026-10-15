@@ -3,20 +3,20 @@ Get the current status of a transaction using either Eko's TID or your own
 financial transaction types (fund transfer, BBPS, AePS settlement, NEFT, and
 more).
 
-The transaction reference goes in the URL path. Pass an Eko **TID as-is**; to
-look up by your **`client_ref_id`, prefix it** with `client_ref_id:`:
-- By TID — `/tools/reference/transaction/<TID>`
-- By client_ref_id — `/tools/reference/transaction/client_ref_id:<your client_ref_id>`
+Pass the reference as a query parameter — either Eko's **`tid`** or your
+**`client_ref_id`**. If you send both, the TID takes precedence:
+- By TID — `/tools/reference/transaction?tid=<TID>`
+- By client_ref_id — `/tools/reference/transaction?client_ref_id=<your client_ref_id>`
 
 > [!NOTE]
 > **Examples**
 >
 > To check the status of a transaction using TID `2886601782`, call
-> `/tools/reference/transaction/2886601782`.
+> `/tools/reference/transaction?tid=2886601782`.
 >
 > If you never received Eko's TID (say, due to a network timeout) but sent your
 > own unique reference `ORD2026000123`, look it up with
-> `/tools/reference/transaction/client_ref_id:ORD2026000123`.
+> `/tools/reference/transaction?client_ref_id=ORD2026000123`.
 
 > [!WARNING]
 > **Transaction timeout**

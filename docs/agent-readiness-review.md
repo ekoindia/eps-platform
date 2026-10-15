@@ -36,7 +36,7 @@ Everything here is **portal-side** unless marked **[core]**: wire behaviour or f
 | 1 Discovery | 🟡 | `llms.txt`, `.md` twins, `/agent/*` bundle, OpenAPI, CORS `*` all live. Nothing under `/.well-known/`; `/ai-sitemap.xml` and every `.well-known` path return **200 + HTML SPA shell** (soft-404, worse than a 404 for a scanner); `/llms-full.txt` is an alias of the index; no `<link>` to OpenAPI/bundle in HTML `<head>`. |
 | 2 Documentation | ✅ | 112/113 descriptions, **345/345 params described**, **903/903 response fields described**, 112 sample responses, `bestFor`, `responseTypes.next` routing, 4 branching recipes. Weak spots: 44 specs with no `errorScenarios`, terse MCP tool descriptions. |
 | 3 Authentication | 🟡 | HMAC fully specified with a published, unit-tested test vector; `get_signing_snippet` (6 languages); secret-free `debug_auth`; zero-signup public sandbox keypair. But OpenAPI **deliberately has no `securitySchemes`** so scanners/generators see an unauthenticated API; clock-skew tolerance unpublished. |
-| 4 Semantics | ❌ | **No `readOnly` / `idempotent` / `billable` / side-effect field in `ApiSpec`.** Only `financial?` (11 specs). Safety knowledge lives solely in a hand-written map inside the transact MCP. |
+| 4 Semantics | ✅ | `ApiSpec.semantics` labels all 84 documented specs and the build fails on a missing label (3.1). Emitted everywhere (3.2–3.4, 2026-10-15): bundle, OpenAPI `x-eko-semantics`, SDK `retrySafe`, transact MCP annotations, docs badges. |
 | 5 Schema | 🟡 | Response schemas have real nested `properties`. But the OpenAPI param serializer **drops `format`/`pattern`, `enum`, `min`/`max`, `maxLength`**; source data has 0 enums; no `components`/`$ref` (envelope repeated per op → 830 KB file); no `required` arrays. |
 | 6 Error recovery | 🟡 | Two-level status model documented; field-level `invalid_params`; `responseTypes.next`; SDKs classify 429/5xx/timeout as *indeterminate* and auto-inquire for financial calls — better than the article's baseline. But: no retryable/category metadata; docs contradicted each other (fixed in this pass, §6); transact MCP collapses HTTP and validation errors into `UPSTREAM_ERROR`; business failures look like success. |
 | 7 Runtime safety | ❌ | **No rate limits published anywhere.** `client_ref_id` optional, dedupe semantics unknown, mislabelled "idempotency" in two places (fixed). No `Retry-After` sent or honoured. Transact MCP exposes only non-financial verification tools — correct for now, no gating design for money tools yet. |
@@ -111,7 +111,7 @@ Format per row: what works → gap (with code location) → fix → owner → pr
 - Every transact tool description says "Each successful call is billed per EPS pricing."
 
 **Gaps**
-- `ApiSpec` (`src/lib/data/api-specs-common.ts:135-227`) has **no read-only / idempotent / billable / side-effect field**. The MCP's `SIDE_EFFECTS` map is the only place this knowledge exists, so OpenAPI, SDKs, docs and the bundle cannot show it, and it drifts silently when a spec changes.
+- ~~`ApiSpec` has no read-only / idempotent / billable / side-effect field~~ — fixed 2026-10-15 (3.1): `semantics` on every documented spec, enforced by `assertSemantics`; values in [semantics-review-sheet.md](semantics-review-sheet.md). Still true until 3.2–3.4 ship: The MCP's `SIDE_EFFECTS` map is the only place this knowledge exists, so OpenAPI, SDKs, docs and the bundle cannot show it, and it drifts silently when a spec changes.
 - `financial` is not emitted into OpenAPI at all (only `x-docs-slug` is, probe §9).
 - `destructiveHint` never set (MCP default for non-read-only is `true`).
 - DMT prose called `client_ref_id` "for idempotency" (`api-specs.ts:1049, 1101`) — the opposite of the actual contract (fresh value per attempt; safety comes from inquire-before-retry). Fixed (§6.5).
@@ -179,6 +179,10 @@ api-specs.ts ──► docs pages + .md twins      full (description, params, re
              ──► mock server                 scenario selector was keyed on response_status_id (fixed, §6.2)
 ```
 
+_Update 2026-10-15 (3.1–3.4): behaviour labels now reach every surface above — `semantics` in the bundle and context MCP, `x-eko-semantics` / `x-eko-financial` in OpenAPI, `retrySafe` in `sdk-surface.json`, transact MCP hints derived from data (hand map deleted), docs badges._
+
+> ✅ **Fixed 2026-10-15:** commit 7996d7b8 moved Transaction Inquiry from `/tools/reference/transaction/{transaction-reference}` to `/tools/reference/transaction` with `tid` / `client_ref_id` query params, but all five SDKs kept sending `transaction-reference=client_ref_id:<ref>` when reconciling an indeterminate financial call. They now send `client_ref_id=<ref>` (plus `initiator_id`), with order-independent tests per SDK and the golden vector updated. The endpoint's description page and the DMT `client_ref_id` descriptions were also moved to the query form. Two inactive specs still carry the old path: `bbps-transaction-status` (disabled) and `qr-transaction-inquiry` (QR product disabled).
+
 Rule of thumb from the article applied here: **anything only a human can read (prose) is lost to one surface or another.** Every fix below moves a fact from prose into a field.
 
 ## 6. Done in this pass (2026-10-08) — doc-consistency fixes
@@ -221,10 +225,10 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 
 | Step | What | Impact | Effort | Risk / notes |
 |---|---|---|---|---|
-| 3.1 | `ApiSpec.semantics: { readOnly, idempotent, billable, sideEffect? }` — explicit on every spec; build fails when missing; no inference from method or `financial` | Foundation for 3.2–3.4; mode 4 | M–L (113 values, product review) | wrong label is worse than none — review sheet first |
-| 3.2 | Transact MCP annotations derived from `semantics`; delete `SIDE_EFFECTS` map; `destructiveHint` from `sideEffect`, `openWorldHint` separate | No drift between data and hints | S | depends 3.1; hints are advisory, hosts may ignore |
-| 3.3 | Emit `x-eko-semantics` + `x-eko-financial` in OpenAPI; `semantics` in bundle + `sdk-surface.json`; SDKs may retry non-GET **only when `idempotent: true`** | Safe retries, never on money | S | depends 3.1 |
-| 3.4 | Docs badge (Read-only · Billable · Money-moving · Sends OTP) on endpoint page and `.md` twin | Humans and agents see it | S | depends 3.1 |
+| ✅ 3.1 | **Done 2026-10-15.** `ApiSpec.semantics: { readOnly, idempotent, billable, sideEffects? }` on all 84 documented specs; `assertSemantics` in `buildAgentBundle` fails the build on a missing or inconsistent label; no inference from method or `financial`. Specs of disabled products (PPI, QR, CMS, customer-management) stay unlabelled until re-enabled. Signed-off values: [semantics-review-sheet.md](semantics-review-sheet.md); the 9 DMT-Levin rows are by analogy and await review | Foundation for 3.2–3.4; mode 4 | M–L | review also corrected pricing: `ip`, IFSC and DigiLocker rows, DMT add-on fees |
+| ✅ 3.2 | **Done 2026-10-15.** Transact MCP annotations derived from `semantics`; delete `SIDE_EFFECTS` map; `destructiveHint` from `sideEffect`, `openWorldHint` separate | No drift between data and hints | S | depends 3.1; hints are advisory, hosts may ignore |
+| ✅ 3.3 | **Done 2026-10-15.** `retrySafe` = idempotent && !billable && !moves-money && !financial (`isRetrySafe`), so 2 billable GETs stop retrying and 2 idempotent free PUTs start. Emit `x-eko-semantics` + `x-eko-financial` in OpenAPI; `semantics` in bundle + `sdk-surface.json`; SDKs may retry non-GET **only when `idempotent: true`** | Safe retries, never on money | S | depends 3.1 |
+| ✅ 3.4 | **Done 2026-10-15.** Docs badge (Read-only · Moves money · Sends OTP · Deactivates · Billable · Safe to retry) on endpoint page and `.md` twin, from `semanticBadges` | Humans and agents see it | S | depends 3.1 |
 
 ### Phase 4 — Error recovery & runtime safety
 

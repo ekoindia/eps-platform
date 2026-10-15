@@ -26,7 +26,15 @@ export interface SdkEndpoint {
 	/** Money-moving endpoint: an indeterminate failure is followed by a status
 	 * check on the `client_ref_id` before the error is surfaced. */
 	financial?: boolean;
+	/** Safe to re-send after an indeterminate outcome (idempotent, not billable,
+	 * moves no money). Absent in older surfaces: then only a GET is retried. */
+	retrySafe?: boolean;
 }
+
+/** Retry budget applies only to endpoints the surface marks `retrySafe`;
+ * without the flag (older surface), fall back to "GET only". */
+const isRetrySafe = (endpoint: SdkEndpoint): boolean =>
+	endpoint.retrySafe ?? endpoint.method === "GET";
 
 /** Cross-realm-safe Blob check (covers File, which extends Blob). */
 const isBlob = (value: unknown): value is Blob =>
@@ -234,12 +242,13 @@ const decodeJsonOrNull = (raw: string): unknown => {
 
 /** Per-attempt budget, matching the 30s every other EPS SDK defaults to. */
 const DEFAULT_TIMEOUT_MS = 30_000;
-/** Extra attempts for a GET that ended indeterminate. */
+/** Extra attempts for a `retrySafe` call that ended indeterminate. */
 const DEFAULT_RETRIES = 2;
 /** Backoff base: attempt n waits a random slice of min(base × 2^(n-1), 2s). */
 const DEFAULT_RETRY_BASE_DELAY_MS = 200;
 const MAX_RETRY_DELAY_MS = 2_000;
-/** Generic status-check endpoint, keyed by TID or `client_ref_id:<ref>`. */
+/** Generic status-check endpoint: `GET /tools/reference/transaction`, keyed by
+ * a `tid` or `client_ref_id` query param. */
 const INQUIRY_SLUG = "transaction-inquiry";
 
 interface Surface {
@@ -310,9 +319,10 @@ export interface EpsClientOptions {
 	 * name so the two can never be confused. Applies per attempt. Per-call
 	 * cancellation signals are not supported yet. */
 	timeoutMs?: number;
-	/** Extra attempts for a GET whose outcome was indeterminate (timeout,
-	 * transport failure, HTTP 429/5xx). Default 2 — three tries in all. Non-GET
-	 * calls are never retried. Set 0 to disable. */
+	/** Extra attempts for a `retrySafe` endpoint whose outcome was
+	 * indeterminate (timeout, transport failure, HTTP 429/5xx). Default 2 —
+	 * three tries in all. Billable, money-moving or non-idempotent calls are
+	 * never retried. Set 0 to disable. */
 	retries?: number;
 	/** Backoff base in milliseconds: attempt n waits a random slice of
 	 * min(base × 2^(n-1), 2000). Default 200; 0 retries immediately (tests). */
@@ -384,10 +394,11 @@ export class EpsClient {
 	/**
 	 * Sign and send one endpoint call, returning the decoded response envelope.
 	 *
-	 * Validates first (throws `EpsError`, nothing sent), then sends. A GET whose
-	 * outcome is indeterminate is retried; a non-GET never is — on a `financial`
-	 * endpoint it is followed by a Transaction Inquiry on its `client_ref_id`
-	 * and thrown as `EpsIndeterminateError`. See docs/sdk-golden-vector.md.
+	 * Validates first (throws `EpsError`, nothing sent), then sends. A
+	 * `retrySafe` endpoint whose outcome is indeterminate is retried; any other
+	 * never is — on a `financial` endpoint it is followed by a Transaction
+	 * Inquiry on its `client_ref_id` and thrown as `EpsIndeterminateError`.
+	 * See docs/sdk-golden-vector.md.
 	 */
 	async call<T = unknown>(
 		slug: string,
@@ -397,7 +408,7 @@ export class EpsClient {
 			slug,
 			params,
 		);
-		const attempts = endpoint.method === "GET" ? this.retries + 1 : 1;
+		const attempts = isRetrySafe(endpoint) ? this.retries + 1 : 1;
 		for (let attempt = 1; ; attempt++) {
 			try {
 				return (await this.send(endpoint, target)) as T;
@@ -407,7 +418,7 @@ export class EpsClient {
 					await this.backoff(attempt);
 					continue;
 				}
-				// Never re-send a non-GET: that is how a customer is debited twice.
+				// Never re-send an unsafe call: that is how a customer is debited twice.
 				// Ask EPS what happened to the ref instead, if there is one to ask by.
 				if (
 					this.autoStatusCheck &&
@@ -435,7 +446,7 @@ export class EpsClient {
 		if (delay > 0) await new Promise((r) => setTimeout(r, delay));
 	}
 
-	/** One inquiry by `client_ref_id:<ref>`; its own failure is reported, never
+	/** One inquiry by `client_ref_id=<ref>`; its own failure is reported, never
 	 * allowed to mask the original one. */
 	private async indeterminate(
 		slug: string,
@@ -447,7 +458,7 @@ export class EpsClient {
 		let statusCheckError: unknown = null;
 		try {
 			statusCheck = await this.call(INQUIRY_SLUG, {
-				"transaction-reference": `client_ref_id:${clientRefId}`,
+				client_ref_id: clientRefId,
 				...(initiatorId !== undefined && { initiator_id: initiatorId }),
 			});
 		} catch (err) {

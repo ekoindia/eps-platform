@@ -8,6 +8,7 @@ import type {
 	AgentBundle,
 	ApiParam,
 	ApiResponseType,
+	SideEffect,
 } from "./bundle-types.js";
 
 /** One generated transactional tool. `slug` is the EPS endpoint slug consumed
@@ -22,9 +23,12 @@ export interface ToolDef {
 		properties: Record<string, Record<string, unknown>>;
 		required: string[];
 	};
+	/** Derived from the endpoint's `semantics`; idempotent/destructive hints
+	 * are set only when the tool is not read-only (MCP spec). */
 	annotations: {
 		readOnlyHint: boolean;
 		idempotentHint?: boolean;
+		destructiveHint?: boolean;
 		openWorldHint: true;
 	};
 	/** Documented `response_type_id` values with the slug to call next; used to
@@ -76,23 +80,68 @@ const EXECUTOR_HEADER_NAMES = new Set([
  * being provided by the model on every call. */
 export const IDENTITY_PARAMS = new Set(["initiator_id", "user_code"]);
 
+/** How each declared side effect reads in a tool description. */
+export const SIDE_EFFECT_TEXT: Record<SideEffect, string> = {
+	"moves-money":
+		"moves real money (a transfer, refund or live ₹1 penny-drop) and cannot be undone",
+	"sends-otp": "sends an OTP SMS to the given mobile number",
+	"consumes-otp": "consumes the OTP and advances the verification session",
+	creates: "creates a record",
+	updates: "updates an existing record",
+	deactivates: "deactivates a service",
+	enqueues: "enqueues an async batch job",
+	"opens-session": "opens a short-lived consent session",
+};
+
+/** Side effects that make a call destructive in MCP terms. */
+const DESTRUCTIVE: ReadonlySet<SideEffect> = new Set([
+	"moves-money",
+	"deactivates",
+]);
+
 /**
- * Endpoints with real side effects (money movement, SMS, sessions, batch
- * enqueues) mapped to what they actually do. Everything else in the exposed
- * set is a pure lookup. Billing alone does NOT make a tool side-effecting —
- * every call is billed; that stays a description concern. These get
- * `readOnlyHint: false` + `idempotentHint: false` and an honest description
- * instead of "Read-only verification".
+ * MCP annotations + the description's behaviour sentence, both derived from
+ * the endpoint's `semantics` (the single source of truth — no hand map). A
+ * bundle without semantics (one baked before 2026-10-15, e.g. via
+ * EPS_BUNDLE_URL) is treated as unknown, never as read-only: hosts then gate
+ * the tool like any state-changing one.
+ *
+ * @param api - one exposed endpoint from the bundle.
  */
-export const SIDE_EFFECTS: Record<string, string> = {
-	"bank-account-verification":
-		"Performs a live, non-refundable ₹1 penny-drop to the target account",
-	"bulk-bank-account-verification":
-		"Enqueues an async penny-drop verification batch",
-	"pan-bulk-verify": "Enqueues an async PAN verification batch",
-	"mobile-otp-send": "Sends an OTP SMS to the target mobile number",
-	"mobile-otp-verify": "Consumes the OTP and advances the verification session",
-	"digilocker-create-url": "Creates a DigiLocker consent session",
+export const behaviourOf = (
+	api: AgentApiDetail,
+): { annotations: ToolDef["annotations"]; sentence: string } => {
+	const where = `via Eko EPS (${api.method} ${api.path})`;
+	const sem = api.semantics;
+	if (!sem)
+		return {
+			annotations: {
+				readOnlyHint: false,
+				idempotentHint: false,
+				destructiveHint: true,
+				openWorldHint: true,
+			},
+			sentence: `Side effects undeclared; treat as state-changing ${where}.`,
+		};
+	const billing = sem.billable
+		? "Each successful call is billed per EPS pricing."
+		: "Not billed.";
+	if (sem.readOnly)
+		return {
+			annotations: { readOnlyHint: true, openWorldHint: true },
+			sentence: `Read-only lookup ${where}. ${billing}`,
+		};
+	const effects = sem.sideEffects ?? [];
+	const text = effects.map((e) => SIDE_EFFECT_TEXT[e]).join("; ");
+	return {
+		annotations: {
+			readOnlyHint: false,
+			idempotentHint: sem.idempotent,
+			destructiveHint: effects.some((e) => DESTRUCTIVE.has(e)),
+			openWorldHint: true,
+		},
+		sentence: `${text.charAt(0).toUpperCase()}${text.slice(1)} ${where}. ${billing}`,
+	};
 };
 
 /** One-sentence chaining hints for multi-step flows, appended to descriptions
@@ -231,15 +280,8 @@ export const buildToolDefs = (bundle: AgentBundle): ToolDef[] =>
 		for (const p of topLevel)
 			properties[p.name] = paramToJsonSchema(p, childrenOf(p));
 		const required = topLevel.filter((p) => p.required).map((p) => p.name);
-		const sideEffect = SIDE_EFFECTS[api.slug];
-		const description = [
-			api.summary,
-			sideEffect
-				? `${sideEffect} via Eko EPS (${api.method} ${api.path}).`
-				: `Read-only verification via Eko EPS (${api.method} ${api.path}).`,
-			"Each successful call is billed per EPS pricing.",
-			FLOW_GUIDANCE[api.slug],
-		]
+		const { annotations, sentence } = behaviourOf(api);
+		const description = [api.summary, sentence, FLOW_GUIDANCE[api.slug]]
 			.filter(Boolean)
 			.join(" ");
 		return {
@@ -249,13 +291,6 @@ export const buildToolDefs = (bundle: AgentBundle): ToolDef[] =>
 			description,
 			inputSchema: { type: "object", properties, required },
 			responseTypes: api.responseTypes ?? [],
-			annotations: {
-				readOnlyHint: !sideEffect,
-				// Meaningful only when readOnlyHint is false (MCP spec); every
-				// side-effecting call here does something new (new penny-drop,
-				// new SMS, new batch, new session).
-				...(sideEffect && { idempotentHint: false }),
-				openWorldHint: true,
-			},
+			annotations,
 		};
 	});

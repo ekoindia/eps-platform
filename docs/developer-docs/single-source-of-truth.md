@@ -42,6 +42,9 @@ export interface ApiSpec {
 	docsUrl?: string;
 	sourceDoc?: string;
 	financial?: boolean;                     // uses the financial response envelope
+	semantics?: ApiSemantics;                // readOnly / idempotent / billable /
+	                                         // sideEffects — REQUIRED for active
+	                                         // products (assertSemantics at build)
 	extraRequestParams: ApiParam[];          // API-specific params; a same-named
 	                                         // entry OVERRIDES a common param
 	omitCommonParams?: string[];             // drop a common param when N/A

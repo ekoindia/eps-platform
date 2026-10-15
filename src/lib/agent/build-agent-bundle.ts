@@ -36,6 +36,7 @@ import {
 	resolveRequestParams,
 	resolveResponseFields,
 	assertParamFormats,
+	assertSemantics,
 } from "@/lib/data/api-specs-common";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import { docHrefForSlug, docsHref } from "@/lib/data/docs-registry";
@@ -87,6 +88,7 @@ const apiDetail = (spec: ApiSpec): AgentApiDetail => ({
 	bestFor: spec.bestFor,
 	docsUrl: `${SITE_URL}${docHrefForSlug(spec.slug) ?? docsHref()}`,
 	financial: spec.financial,
+	semantics: spec.semantics,
 	trxnTypeId: spec.trxnTypeId,
 	epsProductCode: spec.epsProductCode,
 	uatUnavailable: spec.uatUnavailable,
@@ -257,6 +259,7 @@ export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
 	assertRecipeSlugs(RECIPES, documentedSlugs);
 	assertResponseTypeSlugs(specs, documentedSlugs);
 	assertParamFormats(specs);
+	assertSemantics(specs);
 
 	const topics = buildTopics();
 	const apis = specs.map(apiDetail);

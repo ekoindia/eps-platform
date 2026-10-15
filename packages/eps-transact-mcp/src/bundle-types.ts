@@ -86,12 +86,40 @@ export interface AgentApiIndexEntry {
 	relevance?: string;
 }
 
+/** What a call does beyond returning data (mirror of the website's
+ * `SideEffect`). `moves-money` and `deactivates` are destructive. */
+export type SideEffect =
+	| "moves-money"
+	| "sends-otp"
+	| "consumes-otp"
+	| "creates"
+	| "updates"
+	| "deactivates"
+	| "enqueues"
+	| "opens-session";
+
+/** Behaviour labels (mirror of the website's `ApiSemantics`). */
+export interface ApiSemantics {
+	/** Changes nothing at Eko, the bank or any third party. */
+	readOnly: boolean;
+	/** A repeat with the same arguments causes no further state change. */
+	idempotent: boolean;
+	/** Eko charges a per-call fee. */
+	billable: boolean;
+	/** Absent when readOnly; at least one entry otherwise. */
+	sideEffects?: SideEffect[];
+}
+
 /** Full per-endpoint detail (the `api/<slug>.json` slice). */
 export interface AgentApiDetail extends AgentApiIndexEntry {
 	description?: string;
 	bestFor?: string;
 	docsUrl: string;
 	financial?: boolean;
+	/** Behaviour labels: read-only / idempotent / billable / side effects. Set
+	 * on every documented endpoint; absent only in bundles built before
+	 * 2026-10-15 — treat absence as unknown, never as read-only. */
+	semantics?: ApiSemantics;
 	/** Eko internal transaction-type id (`trxn_type_id`), when known. */
 	trxnTypeId?: number;
 	/** Eko EPS product code (`eps_product_code`), when known. */

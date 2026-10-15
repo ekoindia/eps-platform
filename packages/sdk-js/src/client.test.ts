@@ -658,6 +658,32 @@ describe("retry and status check", () => {
 		expect(f).toHaveBeenCalledTimes(1);
 	});
 
+	it("billable GET (retrySafe: false) is never retried", async () => {
+		const f = vi.fn(async () => http(503));
+		await expect(
+			make(f).call("get-ifsc-details", {
+				initiator_id: "9962981729",
+				ifsc: "SBIN0000001",
+			}),
+		).rejects.toBeInstanceOf(EpsHttpError);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("idempotent free PUT (retrySafe: true) is retried", async () => {
+		const f = vi
+			.fn()
+			.mockResolvedValueOnce(http(503))
+			.mockResolvedValueOnce(ok());
+		await expect(
+			make(f).call("deactivate-user-service", {
+				initiator_id: "9962981729",
+				user_code: "20810200",
+				service_code: "43",
+			}),
+		).resolves.toEqual({ status: 0 });
+		expect(f).toHaveBeenCalledTimes(2);
+	});
+
 	it("POST: is never retried", async () => {
 		const f = vi.fn(async () => http(500));
 		await expect(make(f).call("pan-lite", PAN)).rejects.toBeInstanceOf(
@@ -688,9 +714,11 @@ describe("retry and status check", () => {
 			`EPS request for "dmt-initiate-transfer" with client_ref_id "${ref}" has no confirmed outcome.`,
 		);
 		expect(f).toHaveBeenCalledTimes(2);
-		expect(urlOf(f, 1)).toContain(
-			`/tools/reference/transaction/client_ref_id%3A${ref}?initiator_id=9962981729`,
-		);
+		const inquiryUrl = new URL(urlOf(f, 1));
+		expect(inquiryUrl.pathname).toMatch(/\/tools\/reference\/transaction$/);
+		expect(inquiryUrl.searchParams.get("client_ref_id")).toBe(ref);
+		expect(inquiryUrl.searchParams.get("initiator_id")).toBe("9962981729");
+		expect(inquiryUrl.searchParams.has("transaction-reference")).toBe(false);
 		expect(f.mock.calls[1][1].method).toBe("GET");
 	});
 
@@ -706,7 +734,9 @@ describe("retry and status check", () => {
 		expect(err.clientRefId).toBe("MY-REF");
 		expect(err.status).toBeNull();
 		expect(err.cause).toBeInstanceOf(TypeError);
-		expect(urlOf(f, 1)).toContain("client_ref_id%3AMY-REF");
+		expect(new URL(urlOf(f, 1)).searchParams.get("client_ref_id")).toBe(
+			"MY-REF",
+		);
 	});
 
 	it("a failing inquiry (its GET retries exhausted) lands on statusCheckError, never masking the cause", async () => {

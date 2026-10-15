@@ -129,6 +129,142 @@ export interface RelatedLink {
 // ---------------------------------------------------------------------------
 
 /**
+ * What a call does to the world beyond returning data. Destructive ones
+ * (`moves-money`, `deactivates`) drive MCP `destructiveHint`.
+ */
+export type SideEffect =
+	/** Debits or credits real money: transfers, refunds, settlements, ₹1 penny-drops. Destructive. */
+	| "moves-money"
+	/** Delivers an OTP / SMS to a person. */
+	| "sends-otp"
+	/** Uses up an OTP or advances a verification session. */
+	| "consumes-otp"
+	/** Creates a record: sender, recipient, user, settlement account. */
+	| "creates"
+	/** Changes an existing record: KYC, activation, daily auth. */
+	| "updates"
+	/** Turns a service off. Destructive. */
+	| "deactivates"
+	/** Starts an async batch job. */
+	| "enqueues"
+	/** Issues a short-lived URL or consent session. */
+	| "opens-session";
+
+/**
+ * Machine-readable behaviour of one endpoint. Set explicitly per spec, never
+ * inferred from `method` or `financial` (a POST lookup is read-only; AePS
+ * balance enquiry is read-only yet not idempotent — single-use PID). Values were signed off
+ * in `docs/semantics-review-sheet.md`.
+ */
+export interface ApiSemantics {
+	/** Changes nothing at Eko, the bank or any third party (logging and billing aside). */
+	readOnly: boolean;
+	/** Repeating the call with the same arguments causes no further state change.
+	 * Billing is NOT counted here — see {@link billable}. `true` only with evidence:
+	 * a wrong `true` invites a retry that duplicates a side effect. */
+	idempotent: boolean;
+	/** Eko debits your account a per-call charge. Commission you EARN (AePS, BBPS) is not a charge. */
+	billable: boolean;
+	/** Empty / absent when {@link readOnly}; at least one entry otherwise. */
+	sideEffects?: SideEffect[];
+}
+
+/**
+ * Whether a client may automatically re-send a call whose outcome is unknown
+ * (timeout, 429, 5xx). Only when a repeat changes nothing more, costs nothing
+ * more and moves no money. `financial` calls are excluded: they reconcile via
+ * Transaction Inquiry instead. The one place this rule lives — SDKs read the
+ * result as `retrySafe` from `sdk-surface.json`.
+ * @param semantics - The endpoint's behaviour labels
+ * @param financial - The endpoint's `financial` flag
+ */
+export const isRetrySafe = (
+	semantics: ApiSemantics,
+	financial = false,
+): boolean =>
+	semantics.idempotent &&
+	!semantics.billable &&
+	!financial &&
+	!(semantics.sideEffects ?? []).includes("moves-money");
+
+/** One behaviour badge shown on an endpoint's docs page and `.md` twin. */
+export interface SemanticBadge {
+	label: string;
+	/** One-sentence explanation (tooltip / markdown gloss). */
+	hint: string;
+	/** `positive` = harmless (read-only); `caution` = never blindly repeat;
+	 * `earning` = income for the partner (commission), styled apart from cost. */
+	tone: "positive" | "neutral" | "caution" | "earning";
+	/** Optional link, e.g. the pricing calculator line for a price badge. */
+	href?: string;
+}
+
+/**
+ * Behaviour badges for an endpoint, derived from its `semantics` (+ the retry
+ * rule). Shared by the docs page and the markdown twin so they cannot
+ * disagree. Empty when the spec is unlabelled.
+ *
+ * - A billable call shows its price instead of a bare "Billable" (falls back
+ *   to "Billable" only if no price is known — `spec-prices.test.ts` forbids that).
+ * - "Safe to retry" appears only on calls that change state yet can be
+ *   re-sent. On a read-only call it is implied, or deliberately absent: a
+ *   paid lookup bills again (its price badge says so) and a read-only
+ *   non-idempotent call (AePS balance enquiry) uses a single-use biometric block.
+ * - A call that earns the partner a commission gets an "Earns commission"
+ *   badge (its own tone, so income never reads as a cost).
+ * @param spec - The endpoint spec
+ * @param price - The endpoint's price, from `specPrice(spec.id)`
+ * @param commission - The endpoint's commission, from `specCommission(spec.id)`
+ */
+export const semanticBadges = (
+	spec: Pick<ApiSpec, "semantics" | "financial">,
+	price?: { label: string; hint: string; href: string },
+	commission?: { label: string; hint: string; href: string },
+): SemanticBadge[] => {
+	const sem = spec.semantics;
+	if (!sem) return [];
+	const effects = sem.sideEffects ?? [];
+	const badges: (SemanticBadge | false)[] = [
+		sem.readOnly && {
+			label: "Read-only",
+			hint: "Changes nothing; only returns data.",
+			tone: "positive",
+		},
+		effects.includes("moves-money") && {
+			label: "Moves money",
+			hint: "Moves real money and cannot be undone. After a timeout, confirm the outcome before ever re-sending.",
+			tone: "caution",
+		},
+		effects.includes("sends-otp") && {
+			label: "Sends OTP",
+			hint: "Sends an SMS to the customer; repeating the call sends another.",
+			tone: "caution",
+		},
+		effects.includes("deactivates") && {
+			label: "Deactivates",
+			hint: "Turns a service off for the user.",
+			tone: "caution",
+		},
+		sem.billable &&
+			(price
+				? { ...price, tone: "neutral" }
+				: {
+						label: "Billable",
+						hint: "Each successful call is charged per EPS pricing.",
+						tone: "neutral",
+					}),
+		commission !== undefined && { ...commission, tone: "earning" },
+		!sem.readOnly &&
+			isRetrySafe(sem, spec.financial) && {
+				label: "Safe to retry",
+				hint: "A call that timed out can be re-sent with the same arguments.",
+				tone: "neutral",
+			},
+	];
+	return badges.filter((b): b is SemanticBadge => b !== false);
+};
+
+/**
  * One REST API. Common pieces (auth headers, common request params, response
  * envelope, error-code table) are inherited via the resolvers below and MUST
  * NOT be duplicated here. Declare only what is unique to this endpoint.
@@ -185,6 +321,12 @@ export interface ApiSpec {
 	group?: string;
 	bestFor?: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";
+	/** Behaviour labels (read-only / idempotent / billable / side effects).
+	 * REQUIRED for every spec of an active product — enforced at build time by
+	 * {@link assertSemantics} over the documented set. Optional in the type only
+	 * because specs of disabled products stay unlabelled until the product is
+	 * re-enabled and reviewed. */
+	semantics?: ApiSemantics;
 	/** Relative path; full URL = environment baseUrl + path. */
 	path: string;
 	/**
@@ -585,6 +727,31 @@ export const assertParamFormats = (specs: ApiSpec[]): void => {
 				);
 			}
 		}
+	}
+};
+
+/**
+ * Throws, naming every offending spec, if a spec has no `semantics`, a
+ * read-only spec lists side effects, or a writing spec lists none. Runs at
+ * build time over the documented set via `build-agent-bundle.ts`, so
+ * re-enabling a disabled product fails the build until its specs are labelled.
+ * @param specs - The documented specs (`getDocumentedSpecs()`)
+ */
+export const assertSemantics = (specs: ApiSpec[]): void => {
+	const problems = specs.flatMap((spec): string[] => {
+		const sem = spec.semantics;
+		if (!sem) return [`"${spec.id}" has no semantics`];
+		const effects = sem.sideEffects?.length ?? 0;
+		if (sem.readOnly && effects > 0)
+			return [`"${spec.id}" is readOnly but lists sideEffects`];
+		if (!sem.readOnly && effects === 0)
+			return [`"${spec.id}" is not readOnly but lists no sideEffects`];
+		return [];
+	});
+	if (problems.length > 0) {
+		throw new Error(
+			`api-specs: semantics invalid (see docs/semantics-review-sheet.md):\n  ${problems.join("\n  ")}`,
+		);
 	}
 };
 

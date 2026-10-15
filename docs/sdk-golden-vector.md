@@ -201,20 +201,28 @@ the request: a transport failure, the per-attempt timeout, HTTP 429, or any
 body is not JSON is decisive too. A cancelled context (Go) or an interrupted
 thread (Java) stops everything — no retry, no inquiry.
 
-**GET** — the same request is re-sent up to `retries` extra times (default 2,
+Which calls may be re-sent is **data, not method**: each surface endpoint
+carries `retrySafe`, computed once by `isRetrySafe` in
+`src/lib/data/api-specs-common.ts` (idempotent, not billable, moves no money,
+not `financial`). A surface without the flag (built before 2026-10-15) falls
+back to "GET only". So two billable GETs (`get-ifsc-details`,
+`digilocker-verification-status`) are never re-sent, while two idempotent free
+PUTs (`activate-aeps-fingpay`, `deactivate-user-service`) are.
+
+**`retrySafe`** — the same request is re-sent up to `retries` extra times (default 2,
 three tries in all). Attempt `n` first sleeps a random slice of
 `min(base × 2^(n-1), 2s)` (full jitter; base default 200 ms). Every attempt is
 **re-signed** with a fresh `secret-key-timestamp`; only the merged params (and
 so the ref, if any) are fixed across attempts.
 
-**Non-GET** — never retried: re-sending a debit is how a customer is charged
-twice. If the endpoint is `financial` in the surface **and** the call carries a
+**Not `retrySafe`** — never retried: re-sending a debit is how a customer is
+charged twice, and re-sending a paid lookup bills it twice. If the endpoint is `financial` in the surface **and** the call carries a
 `client_ref_id`, the SDK makes one Transaction Inquiry:
 
 ```
-GET transaction-inquiry
-    transaction-reference = "client_ref_id:" + <the call's ref>
-    initiator_id          = <the initiator the call resolved>
+GET transaction-inquiry          (GET /tools/reference/transaction)
+    client_ref_id = <the call's ref>
+    initiator_id  = <the initiator the call resolved>
 ```
 
 The inquiry goes through the ordinary GET path, so it has the GET retry budget
@@ -269,7 +277,7 @@ POST that omits `client_ref_id`. Every suite pins the exact request counts:
 | GET: 400                                                    | 1        | typed HTTP error, no retry                                      |
 | GET with `retries` = 0: 500                                 | 1        | typed HTTP error                                                |
 | non-financial POST: 500                                     | 1        | typed HTTP error, no inquiry                                    |
-| financial POST: 502, inquiry 200                            | 2        | indeterminate error; `status` 502; `statusCheck` = inquiry envelope; inquiry URL contains `client_ref_id:<ref>` and `initiator_id`; the inquiry is a GET |
+| financial POST: 502, inquiry 200                            | 2        | indeterminate error; `status` 502; `statusCheck` = inquiry envelope; inquiry URL is `/tools/reference/transaction` with query `client_ref_id=<ref>` and `initiator_id`, and no `transaction-reference`; the inquiry is a GET |
 | financial POST: transport failure, supplied ref, inquiry 200 | 2       | indeterminate error; `status` null; `clientRefId` is the supplied value |
 | financial POST: 500, inquiry 503 every attempt              | 1 + 3    | indeterminate error; `statusCheck` null; `statusCheckError` is the 503; cause is the 500 |
 | financial POST: 401                                         | 1        | typed HTTP error, no inquiry                                    |

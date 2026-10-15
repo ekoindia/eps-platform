@@ -11,7 +11,7 @@ final class EpsClient
      */
     public const MULTIPART_JSON_FIELD = 'form-data';
 
-    /** Generic status-check endpoint, keyed by TID or `client_ref_id:<ref>`. */
+    /** Generic status-check endpoint (`GET /tools/reference/transaction`), keyed by a `tid` or `client_ref_id` query param. */
     private const INQUIRY_SLUG = 'transaction-inquiry';
     /** Backoff cap in milliseconds. */
     private const MAX_RETRY_DELAY_MS = 2000;
@@ -34,8 +34,9 @@ final class EpsClient
         // Per-attempt budget in SECONDS, matching Python's `timeout=30.0`.
         // Node names its knob `timeoutMs` because it is milliseconds there.
         private float $timeout = 30.0,
-        // Extra attempts for a GET whose outcome was indeterminate (timeout,
-        // transport failure, HTTP 429/5xx). Non-GET calls are never retried.
+        // Extra attempts for a `retrySafe` endpoint whose outcome was
+        // indeterminate (timeout, transport failure, HTTP 429/5xx). Billable,
+        // money-moving or non-idempotent calls are never retried.
         private int $retries = 2,
         // Backoff base in seconds: attempt n waits a random slice of
         // min(base × 2^(n-1), 2s). 0 retries immediately (tests).
@@ -201,7 +202,7 @@ final class EpsClient
      * `form-data` JSON field plus CURLFile values) for file-upload endpoints.
      * Exposed for testing; `call()` builds on it.
      *
-     * @return array{url: string, body: string|array|null, method: string, multipart: bool, slug: string, financial: bool, clientRefId: ?string, initiatorId: mixed}
+     * @return array{url: string, body: string|array|null, method: string, multipart: bool, slug: string, financial: bool, retrySafe: bool, clientRefId: ?string, initiatorId: mixed}
      * @throws \InvalidArgumentException On an unknown slug, a missing required param, a type mismatch or a bad value.
      * @throws \JsonException When a multipart endpoint's non-file params cannot be JSON-encoded.
      */
@@ -321,6 +322,8 @@ final class EpsClient
             'multipart' => $multipart,
             'slug' => $slug,
             'financial' => (bool) ($endpoint['financial'] ?? false),
+            // Older surfaces lack `retrySafe`: then only a GET is retried.
+            'retrySafe' => (bool) ($endpoint['retrySafe'] ?? $endpoint['method'] === 'GET'),
             'clientRefId' => $clientRefId,
             'initiatorId' => $params['initiator_id'] ?? null,
         ];
@@ -375,8 +378,9 @@ final class EpsClient
     /**
      * Sign and send one endpoint call, returning the decoded response envelope.
      *
-     * Validates first (throws, nothing sent), then sends. A GET whose outcome is
-     * indeterminate is retried; a non-GET never is — on a `financial` endpoint
+     * Validates first (throws, nothing sent), then sends. A `retrySafe`
+     * endpoint whose outcome is indeterminate is retried; any other never is
+     * — on a `financial` endpoint
      * it is followed by a Transaction Inquiry on its `client_ref_id` and thrown
      * as EpsIndeterminateException. See docs/sdk-golden-vector.md.
      *
@@ -390,7 +394,7 @@ final class EpsClient
     public function call(string $slug, array $params = []): array
     {
         $target = $this->resolveTarget($slug, $params);
-        $attempts = $target['method'] === 'GET' ? $this->retries + 1 : 1;
+        $attempts = $target['retrySafe'] ? $this->retries + 1 : 1;
         for ($attempt = 1; ; $attempt++) {
             try {
                 return $this->send($target);
@@ -429,14 +433,14 @@ final class EpsClient
     }
 
     /**
-     * One inquiry by `client_ref_id:<ref>`; its own failure is reported, never
+     * One inquiry by `client_ref_id=<ref>`; its own failure is reported, never
      * allowed to mask the original one.
      */
     private function indeterminate(array $target, \Throwable $cause): EpsIndeterminateException
     {
         $statusCheck = null;
         $statusCheckError = null;
-        $params = ['transaction-reference' => 'client_ref_id:' . $target['clientRefId']];
+        $params = ['client_ref_id' => $target['clientRefId']];
         if ($target['initiatorId'] !== null) $params['initiator_id'] = $target['initiatorId'];
         try {
             $statusCheck = $this->call(self::INQUIRY_SLUG, $params);

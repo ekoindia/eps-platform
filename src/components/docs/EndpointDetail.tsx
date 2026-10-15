@@ -2,12 +2,18 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { API_AUTH_DOCS_URL, API_ENVIRONMENTS } from "@/lib/data/api-auth";
 import { recipeHref, recipesForSpec } from "@/lib/data/api-recipes";
-import type { ApiParam, ApiSpec } from "@/lib/data/api-specs-common";
+import type {
+	ApiParam,
+	ApiSpec,
+	SemanticBadge,
+} from "@/lib/data/api-specs-common";
 import {
 	resolveHeaders,
 	resolveRequestParams,
+	semanticBadges,
 } from "@/lib/data/api-specs-common";
 import { resolveDescription } from "@/lib/data/endpoint-descriptions";
+import { specCommission, specPrice } from "@/lib/data/spec-prices";
 import { cn } from "@/lib/utils";
 import { Callout } from "./Callout";
 import { HttpMethodTag } from "./HttpMethodTag";
@@ -143,6 +149,65 @@ const RequestSection = ({
 	);
 };
 
+/** Pastel fill per badge tone; small type keeps tags apart from body text. */
+const BADGE_TONE: Record<SemanticBadge["tone"], string> = {
+	positive:
+		"border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
+	caution:
+		"border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
+	earning:
+		"border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300",
+	neutral: "border-border bg-muted/40 text-muted-foreground",
+};
+
+/**
+ * Behaviour badges (Read-only, Moves money, price, Earns commission, …) from the
+ * spec's `semantics`, price and commission. Each hint is visible to screen readers
+ * and as a tooltip; price and commission badges link to their calculator. Nothing
+ * renders for an unlabelled spec.
+ */
+const SemanticBadges = ({ spec }: { spec: ApiSpec }) => {
+	const badges = semanticBadges(
+		spec,
+		specPrice(spec.id),
+		specCommission(spec.id),
+	);
+	if (badges.length === 0) return null;
+	return (
+		<ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Endpoint behaviour">
+			{badges.map((badge) => {
+				const body = (
+					<>
+						{badge.label}
+						<span className="sr-only">: {badge.hint}</span>
+					</>
+				);
+				return (
+					<li
+						key={badge.label}
+						title={badge.hint}
+						className={cn(
+							"rounded-full border px-2 py-px text-[11px] font-medium leading-4",
+							BADGE_TONE[badge.tone],
+						)}
+					>
+						{badge.href ? (
+							<Link
+								to={badge.href}
+								className="underline-offset-2 hover:underline"
+							>
+								{body}
+							</Link>
+						) : (
+							body
+						)}
+					</li>
+				);
+			})}
+		</ul>
+	);
+};
+
 /**
  * Middle-pane renderer for an API endpoint. Everything is derived from the
  * shared resolvers over `api-specs.ts` — no data is duplicated here. Request
@@ -176,6 +241,7 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 					<HttpMethodTag method={spec.method} />
 					<span className="break-all text-foreground/70">{spec.path}</span>
 				</div>
+				<SemanticBadges spec={spec} />
 			</header>
 
 			{spec.uatUnavailable && (

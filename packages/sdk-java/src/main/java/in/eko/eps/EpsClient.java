@@ -53,12 +53,15 @@ public final class EpsClient {
 
 	/** Per-attempt budget, matching every other EPS SDK. */
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
-	/** Extra attempts for a GET that ended indeterminate. */
+	/** Extra attempts for a retry-safe call that ended indeterminate. */
 	private static final int DEFAULT_RETRIES = 2;
 	/** Backoff base: attempt n waits a random slice of min(base × 2^(n-1), 2s). */
 	private static final Duration DEFAULT_RETRY_BASE_DELAY = Duration.ofMillis(200);
 	private static final long MAX_RETRY_DELAY_MS = 2_000;
-	/** Generic status-check endpoint, keyed by TID or {@code client_ref_id:<ref>}. */
+	/**
+	 * Generic status-check endpoint ({@code GET /tools/reference/transaction}), keyed by a {@code tid}
+	 * or {@code client_ref_id} query param.
+	 */
 	private static final String INQUIRY_SLUG = "transaction-inquiry";
 	/** Spec types whose values are scalars the value checks can stringify. */
 	private static final Set<String> SCALAR_TYPES = Set.of("string", "number", "integer", "boolean");
@@ -107,7 +110,8 @@ public final class EpsClient {
 	/**
 	 * The request never produced a response: an I/O failure (DNS, connect, TLS) or the per-attempt
 	 * timeout. The outcome is unknown, which is what separates it from the other {@link
-	 * EpsException} cases — a GET is retried, a financial POST is followed by a status check.
+	 * EpsException} cases — a retry-safe call is retried, a financial POST is followed by a status
+	 * check.
 	 */
 	public static final class EpsTransportException extends EpsException {
 		EpsTransportException(String message, Throwable cause) {
@@ -195,7 +199,17 @@ public final class EpsClient {
 			String path,
 			List<Param> params,
 			List<String> requiredParams,
-			boolean financial) {}
+			boolean financial,
+			Boolean retrySafe) {
+
+		/**
+		 * Safe to re-send after an indeterminate outcome (idempotent, not billable, moves no money).
+		 * Older surfaces lack the flag: then only a GET is retried.
+		 */
+		boolean isRetrySafe() {
+			return retrySafe != null ? retrySafe : "GET".equals(method);
+		}
+	}
 
 	private record Environment(String id, String baseUrl) {}
 
@@ -346,8 +360,9 @@ public final class EpsClient {
 		}
 
 		/**
-		 * Extra attempts for a GET whose outcome was indeterminate (timeout, transport failure, HTTP
-		 * 429/5xx). Default 2 — three tries in all. Non-GET calls are never retried. 0 disables.
+		 * Extra attempts for a {@code retrySafe} endpoint whose outcome was indeterminate (timeout,
+		 * transport failure, HTTP 429/5xx). Default 2 — three tries in all. Billable, money-moving or
+		 * non-idempotent calls are never retried. 0 disables.
 		 */
 		public Builder retries(int v) {
 			this.retries = v;
@@ -716,8 +731,9 @@ public final class EpsClient {
 	/**
 	 * Sign and send one endpoint call, returning the decoded response envelope.
 	 *
-	 * <p>Validates first (throws {@link EpsException}, nothing sent), then sends. A GET whose outcome
-	 * is indeterminate is retried; a non-GET never is — on a {@code financial} endpoint it is
+	 * <p>Validates first (throws {@link EpsException}, nothing sent), then sends. A {@code
+	 * retrySafe} endpoint whose outcome is indeterminate is retried; any other never is — on a
+	 * {@code financial} endpoint it is
 	 * followed by a Transaction Inquiry on its {@code client_ref_id} and thrown as {@link
 	 * EpsIndeterminateException}. An interrupted thread stops everything: no retry, no inquiry. See
 	 * docs/sdk-golden-vector.md.
@@ -729,7 +745,7 @@ public final class EpsClient {
 	 */
 	public Map<String, Object> call(String slug, Map<String, Object> params) {
 		Target target = resolveTarget(slug, params);
-		int attempts = "GET".equals(target.method()) ? retries + 1 : 1;
+		int attempts = endpointFor(slug).isRetrySafe() ? retries + 1 : 1;
 		for (int attempt = 1; ; attempt++) {
 			try {
 				return send(target);
@@ -739,7 +755,7 @@ public final class EpsClient {
 					backoff(attempt);
 					continue;
 				}
-				// Never re-send a non-GET: that is how a customer is debited twice. Ask
+				// Never re-send an unsafe call: that is how a customer is debited twice. Ask
 				// EPS what happened to the ref instead, if there is one to ask by.
 				if (autoStatusCheck && target.financial() && target.clientRefId() != null) {
 					throw indeterminate(target, e);
@@ -763,12 +779,12 @@ public final class EpsClient {
 	}
 
 	/**
-	 * One inquiry by {@code client_ref_id:<ref>}; its own failure is reported, never allowed to mask
+	 * One inquiry by {@code client_ref_id=<ref>}; its own failure is reported, never allowed to mask
 	 * the original one.
 	 */
 	private EpsIndeterminateException indeterminate(Target target, EpsException cause) {
 		Map<String, Object> params = new LinkedHashMap<>();
-		params.put("transaction-reference", "client_ref_id:" + target.clientRefId());
+		params.put("client_ref_id", target.clientRefId());
 		if (target.initiatorId() != null) params.put("initiator_id", target.initiatorId());
 		Map<String, Object> statusCheck = null;
 		Throwable statusCheckError = null;
