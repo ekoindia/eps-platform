@@ -658,6 +658,32 @@ describe("retry and status check", () => {
 		expect(f).toHaveBeenCalledTimes(1);
 	});
 
+	it("billable GET (retrySafe: false) is never retried", async () => {
+		const f = vi.fn(async () => http(503));
+		await expect(
+			make(f).call("get-ifsc-details", {
+				initiator_id: "9962981729",
+				ifsc: "SBIN0000001",
+			}),
+		).rejects.toBeInstanceOf(EpsHttpError);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("idempotent free PUT (retrySafe: true) is retried", async () => {
+		const f = vi
+			.fn()
+			.mockResolvedValueOnce(http(503))
+			.mockResolvedValueOnce(ok());
+		await expect(
+			make(f).call("deactivate-user-service", {
+				initiator_id: "9962981729",
+				user_code: "20810200",
+				service_code: "43",
+			}),
+		).resolves.toEqual({ status: 0 });
+		expect(f).toHaveBeenCalledTimes(2);
+	});
+
 	it("POST: is never retried", async () => {
 		const f = vi.fn(async () => http(500));
 		await expect(make(f).call("pan-lite", PAN)).rejects.toBeInstanceOf(

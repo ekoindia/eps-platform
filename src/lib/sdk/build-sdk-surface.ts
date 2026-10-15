@@ -9,6 +9,7 @@ import type {
 } from "@/lib/agent/agent-bundle-types";
 import type { ApiErrorCode } from "@/lib/data/api-error-codes";
 import { formatPatterns } from "@/lib/data/api-formats";
+import { isRetrySafe } from "@/lib/data/api-specs-common";
 
 /** A single request param exposed to SDKs for local validation. `type` is the
  * spec type (string | number | integer | boolean); other types pass unchecked. */
@@ -38,6 +39,10 @@ export interface SdkEndpoint {
 	/** Money-moving endpoint: on an indeterminate failure the SDK inquires by
 	 * `client_ref_id` before surfacing the error. Omitted when false. */
 	financial?: boolean;
+	/** May the SDK auto-retry an indeterminate outcome? From `isRetrySafe`
+	 * (idempotent, not billable, no money, not financial). Omitted when the
+	 * endpoint has no semantics; SDKs then fall back to "GET only". */
+	retrySafe?: boolean;
 }
 
 export interface SdkSurface {
@@ -74,6 +79,9 @@ export const buildSdkSurface = (bundle: AgentBundle): SdkSurface => ({
 			params,
 			requiredParams: params.filter((p) => p.required).map((p) => p.name),
 			...(a.financial && { financial: true }),
+			...(a.semantics && {
+				retrySafe: isRetrySafe(a.semantics, a.financial),
+			}),
 		};
 	}),
 	errorCodes: bundle.topics.errors.codes,

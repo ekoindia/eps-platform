@@ -170,6 +170,24 @@ export interface ApiSemantics {
 }
 
 /**
+ * Whether a client may automatically re-send a call whose outcome is unknown
+ * (timeout, 429, 5xx). Only when a repeat changes nothing more, costs nothing
+ * more and moves no money. `financial` calls are excluded: they reconcile via
+ * Transaction Inquiry instead. The one place this rule lives — SDKs read the
+ * result as `retrySafe` from `sdk-surface.json`.
+ * @param semantics - The endpoint's behaviour labels
+ * @param financial - The endpoint's `financial` flag
+ */
+export const isRetrySafe = (
+	semantics: ApiSemantics,
+	financial = false,
+): boolean =>
+	semantics.idempotent &&
+	!semantics.billable &&
+	!financial &&
+	!(semantics.sideEffects ?? []).includes("moves-money");
+
+/**
  * One REST API. Common pieces (auth headers, common request params, response
  * envelope, error-code table) are inherited via the resolvers below and MUST
  * NOT be duplicated here. Declare only what is unique to this endpoint.

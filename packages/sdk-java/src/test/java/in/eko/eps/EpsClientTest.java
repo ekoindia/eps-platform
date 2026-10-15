@@ -813,6 +813,29 @@ class EpsClientTest {
 		}
 
 		@Test
+		void billableGetNotRetried() {
+			Scripted t = new Scripted(Step.http(503));
+			assertThrows(
+					EpsClient.EpsHttpException.class,
+					() ->
+							fast(t)
+									.call(
+											"get-ifsc-details",
+											Map.of("initiator_id", "9962981729", "ifsc", "SBIN0000001")));
+			assertEquals(1, t.sent.size());
+		}
+
+		@Test
+		void retrySafePutIsRetried() {
+			Scripted t = new Scripted(Step.http(503), Step.ok());
+			fast(t)
+					.call(
+							"deactivate-user-service",
+							Map.of("initiator_id", "9962981729", "user_code", "20810200", "service_code", "43"));
+			assertEquals(2, t.sent.size());
+		}
+
+		@Test
 		void postNeverRetried() {
 			Scripted t = new Scripted(Step.http(500));
 			assertThrows(EpsClient.EpsHttpException.class, () -> fast(t).call("pan-lite", PAN));

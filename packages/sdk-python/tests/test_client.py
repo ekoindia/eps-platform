@@ -515,6 +515,26 @@ class RetryAndStatusCheck(unittest.TestCase):
                 fast(retries=0).call(*GET)
         self.assertEqual(len(t.requests), 1)
 
+    def test_billable_get_not_retried(self):
+        t = Transport(_http(503))
+        with patched(t):
+            with self.assertRaises(EpsHttpError):
+                fast().call(
+                    "get-ifsc-details",
+                    {"initiator_id": "9962981729", "ifsc": "SBIN0000001"},
+                )
+        self.assertEqual(len(t.requests), 1)
+
+    def test_retry_safe_put_is_retried(self):
+        t = Transport(_http(503), _response(b'{"status":0}'))
+        with patched(t):
+            out = fast().call(
+                "deactivate-user-service",
+                {"initiator_id": "9962981729", "user_code": "20810200", "service_code": "43"},
+            )
+        self.assertEqual(out, {"status": 0})
+        self.assertEqual(len(t.requests), 2)
+
     def test_post_never_retried(self):
         t = Transport(_http(500))
         with patched(t):

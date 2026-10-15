@@ -47,7 +47,7 @@ const MultipartJSONField = "form-data"
 const defaultTimeout = 30 * time.Second
 
 const (
-	// defaultRetries is the extra attempts for a GET that ended indeterminate.
+	// defaultRetries is the extra attempts for a RetrySafe call that ended indeterminate.
 	defaultRetries = 2
 	// defaultRetryBaseDelay: attempt n waits a random slice of min(base × 2^(n-1), 2s).
 	defaultRetryBaseDelay = 200 * time.Millisecond
@@ -96,6 +96,10 @@ type Endpoint struct {
 	// Financial marks a money-moving endpoint: an indeterminate failure is
 	// followed by a status check on the client_ref_id before the error surfaces.
 	Financial bool `json:"financial,omitempty"`
+	// RetrySafe marks an endpoint that may be re-sent after an indeterminate
+	// outcome (idempotent, not billable, moves no money). nil in older
+	// surfaces: then only a GET is retried.
+	RetrySafe *bool `json:"retrySafe,omitempty"`
 }
 
 type environment struct {
@@ -239,10 +243,10 @@ type Config struct {
 	UserCode    string
 	// HTTPClient defaults to a client with a 30s per-attempt timeout.
 	HTTPClient *http.Client
-	// Retries is the number of extra attempts for a GET whose outcome was
-	// indeterminate (timeout, transport failure, HTTP 429/5xx). nil means the
-	// default of 2 — three tries in all; point at 0 to disable. Non-GET calls
-	// are never retried.
+	// Retries is the number of extra attempts for a RetrySafe endpoint whose
+	// outcome was indeterminate (timeout, transport failure, HTTP 429/5xx). nil
+	// means the default of 2 — three tries in all; point at 0 to disable.
+	// Billable, money-moving or non-idempotent calls are never retried.
 	Retries *int
 	// RetryBaseDelay is the backoff base: attempt n waits a random slice of
 	// min(base × 2^(n-1), 2s). Zero means the default of 200ms.
@@ -465,6 +469,9 @@ type Target struct {
 	Slug      string
 	// Financial marks a money-moving endpoint (surface "financial").
 	Financial bool
+	// RetrySafe allows re-sending after an indeterminate outcome (surface
+	// "retrySafe", falling back to "GET only" when the surface lacks it).
+	RetrySafe bool
 	// ClientRefID is the ref this non-GET call carries (generated or supplied);
 	// empty on GET or when the endpoint omits the param.
 	ClientRefID string
@@ -689,8 +696,12 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		Multipart:   isMultipart,
 		Slug:        slug,
 		Financial:   endpoint.Financial,
+		RetrySafe:   endpoint.Method == http.MethodGet,
 		ClientRefID: clientRefID,
 		InitiatorID: merged["initiator_id"],
+	}
+	if endpoint.RetrySafe != nil {
+		target.RetrySafe = *endpoint.RetrySafe
 	}
 	switch {
 	case endpoint.Method == http.MethodGet:
@@ -725,8 +736,9 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 // Call signs and sends one endpoint call, returning the decoded response
 // envelope.
 //
-// It validates first (an error, nothing sent), then sends. A GET whose outcome
-// is indeterminate is retried; a non-GET never is — on a financial endpoint it
+// It validates first (an error, nothing sent), then sends. A RetrySafe endpoint
+// whose outcome is indeterminate is retried; any other never is — on a
+// financial endpoint it
 // is followed by a Transaction Inquiry on its client_ref_id and returned as
 // *IndeterminateError. Otherwise a non-2xx response yields *HTTPError, a
 // transport failure *TransportError, and a body that is not JSON is an error,
@@ -738,7 +750,7 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 		return nil, err
 	}
 	attempts := 1
-	if target.Method == http.MethodGet {
+	if target.RetrySafe {
 		attempts = c.retries + 1
 	}
 	for attempt := 1; ; attempt++ {
@@ -755,7 +767,7 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 			}
 			continue
 		}
-		// Never re-send a non-GET: that is how a customer is debited twice. Ask
+		// Never re-send an unsafe call: that is how a customer is debited twice. Ask
 		// EPS what happened to the ref instead, if there is one to ask by.
 		if c.autoStatusCheck && target.Financial && target.ClientRefID != "" {
 			return nil, c.indeterminate(ctx, target, err)

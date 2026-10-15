@@ -735,6 +735,25 @@ func TestCancelledContextStopsRetrying(t *testing.T) {
 	}
 }
 
+func TestBillableGetNotRetried(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(503)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "get-ifsc-details",
+		map[string]any{"initiator_id": "9962981729", "ifsc": "SBIN0000001"})
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want *HTTPError after 1", err, len(tr.requests))
+	}
+}
+
+func TestRetrySafePutIsRetried(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(503), withBody(`{"status":0}`)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "deactivate-user-service",
+		map[string]any{"initiator_id": "9962981729", "user_code": "20810200", "service_code": "43"})
+	if err != nil || len(tr.requests) != 2 {
+		t.Errorf("err = %v after %d requests, want success after 2", err, len(tr.requests))
+	}
+}
+
 func TestPostNeverRetried(t *testing.T) {
 	tr := &scripted{steps: []step{httpStep(500)}}
 	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", panParams)
