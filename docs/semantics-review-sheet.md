@@ -55,7 +55,7 @@ Proposed retry rule for 3.3: an SDK may auto-retry a call only when `idempotent 
 
 | Finding | Spec | Status |
 |---|---|---|
-| `financial: true`, but the description says no money moves and the sample response has no `tx_status` | `aeps-fingpay-balance-enquiry`, `aeps-fingpay-mini-statement` | Open. Dropping the flag changes the docs envelope and SDK auto-inquiry, so it is a separate fix |
+| `financial: true`, but the description says no money moves and the sample response has no `tx_status` | `aeps-fingpay-balance-enquiry`, `aeps-fingpay-mini-statement` | Resolved 2026-10-15: flag dropped (docs show the common envelope, no SDK auto-inquiry, no try-it double-click). Idempotent set to ❌ so `isRetrySafe` stays false: each call spends a single-use biometric PID block |
 | Moves money and returns a fee, but `financial` is unset | `ppi-digikhata-load-wallet` | Deferred with PPI |
 | `financial: true` on a URL generator | `cms-get-url` | Deferred with CMS |
 | GET with its own price row | `pan-bulk-status` | Resolved: free, row removed (74386e75) |
@@ -67,7 +67,7 @@ Proposed retry rule for 3.3: an SDK may auto-retry a call only when `idempotent 
 |---|---|
 | Specs labelled | 84 |
 | Read-only | 50 |
-| Idempotent | 52 |
+| Idempotent | 50 |
 | Billable | 35 |
 | Moves money | 9 |
 | Sends an OTP | 9 |
@@ -117,8 +117,8 @@ Grouped by product in `API_SPECS` order. Legend: ✅ true · ❌ false · 💰 s
 | `aeps-fingpay-daily-auth` | PUT | ❌ | ❌ | ❌ | updates | H | Unlocks the agent for the day; PID single-use |
 | `aeps-fingpay-cash-withdrawal-otp` | POST | ❌ | ❌ | ❌ | sends-otp | H |  |
 | `aeps-fingpay-cash-withdrawal` 💰 | POST | ❌ | ❌ | ❌ | moves-money | H | Partner EARNS commission (payments-pricing), not a charge |
-| `aeps-fingpay-balance-enquiry` 💰 | POST | ✅ | ✅ | ❌ |  | M | ⚠ flagged financial but moves no money (own description). No price row |
-| `aeps-fingpay-mini-statement` 💰 | POST | ✅ | ✅ | ❌ |  | M | ⚠ flagged financial, moves no money. Earns ₹0.75 commission |
+| `aeps-fingpay-balance-enquiry` | POST | ✅ | ❌ | ❌ |  | M | Not financial (no `tx_status`). Not idempotent: single-use PID block. No price row |
+| `aeps-fingpay-mini-statement` | POST | ✅ | ❌ | ❌ |  | M | Not financial (no `tx_status`). Not idempotent: single-use PID block. Earns ₹0.75 commission |
 | `aeps-add-settlement-account` | POST | ❌ | ❌ | ❌ | creates, moves-money | M | Free to you; Eko does a real ₹1 penny-drop and bears the cost. Max 3 per agent |
 | `aeps-get-settlement-accounts` | GET | ✅ | ✅ | ❌ |  | H |  |
 | `aeps-initiate-settlement` 💰 | POST | ❌ | ❌ | ✅ | moves-money | M | Response returns a fee |

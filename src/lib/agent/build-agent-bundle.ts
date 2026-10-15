@@ -88,6 +88,7 @@ const apiDetail = (spec: ApiSpec): AgentApiDetail => ({
 	bestFor: spec.bestFor,
 	docsUrl: `${SITE_URL}${docHrefForSlug(spec.slug) ?? docsHref()}`,
 	financial: spec.financial,
+	semantics: spec.semantics,
 	trxnTypeId: spec.trxnTypeId,
 	epsProductCode: spec.epsProductCode,
 	uatUnavailable: spec.uatUnavailable,

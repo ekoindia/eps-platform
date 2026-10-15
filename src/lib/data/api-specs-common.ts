@@ -153,7 +153,7 @@ export type SideEffect =
 /**
  * Machine-readable behaviour of one endpoint. Set explicitly per spec, never
  * inferred from `method` or `financial` (a POST lookup is read-only; AePS
- * balance enquiry is `financial` but moves no money). Values were signed off
+ * balance enquiry is read-only yet not idempotent — single-use PID). Values were signed off
  * in `docs/semantics-review-sheet.md`.
  */
 export interface ApiSemantics {

@@ -132,14 +132,17 @@ const childrenToObject = (children?: ResponseField[]): Json => {
 	return { properties };
 };
 
-/** `x-eko-*` extensions for a spec's internal codes + UAT availability;
- * unset fields are omitted. */
+/** `x-eko-*` extensions for a spec's internal codes, UAT availability,
+ * money-envelope flag and behaviour labels (`x-eko-semantics`: readOnly /
+ * idempotent / billable / sideEffects); unset fields are omitted. */
 const ekoCodeExtensions = (spec: ApiSpec): Json =>
 	Object.fromEntries(
 		Object.entries({
 			"x-eko-trxn-type-id": spec.trxnTypeId,
 			"x-eko-product-code": spec.epsProductCode,
 			"x-eko-uat-unavailable": spec.uatUnavailable,
+			"x-eko-financial": spec.financial,
+			"x-eko-semantics": spec.semantics,
 		}).filter(([, value]) => value !== undefined),
 	);
 

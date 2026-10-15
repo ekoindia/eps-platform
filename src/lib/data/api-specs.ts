@@ -2893,13 +2893,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Agent-assisted balance checks for rural customers without smartphone or internet access",
 		method: "POST",
-		semantics: { readOnly: true, idempotent: true, billable: false },
+		// Not idempotent: each call carries a single-use biometric PID block, so a
+		// repeat can't reuse it (keeps `isRetrySafe` false — no SDK auto-retry).
+		semantics: { readOnly: true, idempotent: false, billable: false },
 		path: "/customer/collection/aeps-fingpay/balance-enquiry/{customer_id}",
 		trxnTypeId: 346,
 		epsProductCode: 330,
 		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-		financial: true,
 		extraRequestParams: [
 			{
 				name: "user_code",
@@ -3154,13 +3155,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
 		method: "POST",
-		semantics: { readOnly: true, idempotent: true, billable: false },
+		// Not idempotent: each call carries a single-use biometric PID block, so a
+		// repeat can't reuse it (keeps `isRetrySafe` false — no SDK auto-retry).
+		semantics: { readOnly: true, idempotent: false, billable: false },
 		path: "/customer/collection/aeps-fingpay/mini-statement/{customer_id}",
 		trxnTypeId: 497,
 		epsProductCode: 469,
 		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-		financial: true,
 		extraRequestParams: [
 			{
 				name: "user_code",

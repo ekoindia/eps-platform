@@ -58,6 +58,13 @@ describe("buildSdkSurface", () => {
 			surface.endpoints.find((e) => e.slug === slug)!;
 		expect(bySlug("bbps-pay-bill").financial).toBe(true);
 		expect(bySlug("dmt-get-sender")).not.toHaveProperty("financial");
+		// AePS enquiries move no money and return no `tx_status`.
+		expect(bySlug("aeps-fingpay-balance-enquiry")).not.toHaveProperty(
+			"financial",
+		);
+		expect(bySlug("aeps-fingpay-mini-statement")).not.toHaveProperty(
+			"financial",
+		);
 		expect(surface.endpoints.filter((e) => e.financial).length).toBe(
 			bundle.apis.filter((a) => a.financial).length,
 		);

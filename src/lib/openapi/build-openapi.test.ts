@@ -409,3 +409,17 @@ describe("multipart request bodies", () => {
 		expect(example).toHaveProperty("pan_card");
 	});
 });
+
+describe("behaviour extensions", () => {
+	it("puts x-eko-semantics on every operation and x-eko-financial on money ones", () => {
+		const ops = allOperations().map(({ op }) => op as Record<string, unknown>);
+		for (const op of ops)
+			expect(op["x-eko-semantics"], String(op.operationId)).toBeDefined();
+		const transfer = ops.find((op) => op.operationId === "dmtInitiateTransfer");
+		expect(transfer?.["x-eko-financial"]).toBe(true);
+		expect(transfer?.["x-eko-semantics"]).toMatchObject({
+			readOnly: false,
+			sideEffects: ["moves-money"],
+		});
+	});
+});
