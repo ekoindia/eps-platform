@@ -129,6 +129,47 @@ export interface RelatedLink {
 // ---------------------------------------------------------------------------
 
 /**
+ * What a call does to the world beyond returning data. Destructive ones
+ * (`moves-money`, `deactivates`) drive MCP `destructiveHint`.
+ */
+export type SideEffect =
+	/** Debits or credits real money: transfers, refunds, settlements, ₹1 penny-drops. Destructive. */
+	| "moves-money"
+	/** Delivers an OTP / SMS to a person. */
+	| "sends-otp"
+	/** Uses up an OTP or advances a verification session. */
+	| "consumes-otp"
+	/** Creates a record: sender, recipient, user, settlement account. */
+	| "creates"
+	/** Changes an existing record: KYC, activation, daily auth. */
+	| "updates"
+	/** Turns a service off. Destructive. */
+	| "deactivates"
+	/** Starts an async batch job. */
+	| "enqueues"
+	/** Issues a short-lived URL or consent session. */
+	| "opens-session";
+
+/**
+ * Machine-readable behaviour of one endpoint. Set explicitly per spec, never
+ * inferred from `method` or `financial` (a POST lookup is read-only; AePS
+ * balance enquiry is `financial` but moves no money). Values were signed off
+ * in `docs/semantics-review-sheet.md`.
+ */
+export interface ApiSemantics {
+	/** Changes nothing at Eko, the bank or any third party (logging and billing aside). */
+	readOnly: boolean;
+	/** Repeating the call with the same arguments causes no further state change.
+	 * Billing is NOT counted here — see {@link billable}. `true` only with evidence:
+	 * a wrong `true` invites a retry that duplicates a side effect. */
+	idempotent: boolean;
+	/** Eko debits your account a per-call charge. Commission you EARN (AePS, BBPS) is not a charge. */
+	billable: boolean;
+	/** Empty / absent when {@link readOnly}; at least one entry otherwise. */
+	sideEffects?: SideEffect[];
+}
+
+/**
  * One REST API. Common pieces (auth headers, common request params, response
  * envelope, error-code table) are inherited via the resolvers below and MUST
  * NOT be duplicated here. Declare only what is unique to this endpoint.
@@ -185,6 +226,12 @@ export interface ApiSpec {
 	group?: string;
 	bestFor?: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";
+	/** Behaviour labels (read-only / idempotent / billable / side effects).
+	 * REQUIRED for every spec of an active product — enforced at build time by
+	 * {@link assertSemantics} over the documented set. Optional in the type only
+	 * because specs of disabled products stay unlabelled until the product is
+	 * re-enabled and reviewed. */
+	semantics?: ApiSemantics;
 	/** Relative path; full URL = environment baseUrl + path. */
 	path: string;
 	/**
@@ -585,6 +632,31 @@ export const assertParamFormats = (specs: ApiSpec[]): void => {
 				);
 			}
 		}
+	}
+};
+
+/**
+ * Throws, naming every offending spec, if a spec has no `semantics`, a
+ * read-only spec lists side effects, or a writing spec lists none. Runs at
+ * build time over the documented set via `build-agent-bundle.ts`, so
+ * re-enabling a disabled product fails the build until its specs are labelled.
+ * @param specs - The documented specs (`getDocumentedSpecs()`)
+ */
+export const assertSemantics = (specs: ApiSpec[]): void => {
+	const problems = specs.flatMap((spec): string[] => {
+		const sem = spec.semantics;
+		if (!sem) return [`"${spec.id}" has no semantics`];
+		const effects = sem.sideEffects?.length ?? 0;
+		if (sem.readOnly && effects > 0)
+			return [`"${spec.id}" is readOnly but lists sideEffects`];
+		if (!sem.readOnly && effects === 0)
+			return [`"${spec.id}" is not readOnly but lists no sideEffects`];
+		return [];
+	});
+	if (problems.length > 0) {
+		throw new Error(
+			`api-specs: semantics invalid (see docs/semantics-review-sheet.md):\n  ${problems.join("\n  ")}`,
+		);
 	}
 };
 

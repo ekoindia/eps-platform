@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { ApiParam, ApiSpec } from "./api-specs-common";
+import { getDocumentedSpecs } from "./docs-registry";
 import {
 	assertParamFormats,
 	assertResponseTypeSlugs,
+	assertSemantics,
 	buildMultipartPayload,
 	buildSampleRequest,
 	COMMON_REQUEST_PARAMS,
@@ -436,5 +438,64 @@ describe("assertParamFormats", () => {
 	it("checks the inherited common params too", () => {
 		// client_ref_id carries format "client-ref" from the commons.
 		expect(() => assertParamFormats([spec({ id: "a" })])).not.toThrow();
+	});
+});
+
+describe("assertSemantics", () => {
+	it("passes read-only and writing specs labelled consistently", () => {
+		expect(() =>
+			assertSemantics([
+				spec({
+					id: "lookup",
+					semantics: { readOnly: true, idempotent: true, billable: true },
+				}),
+				spec({
+					id: "transfer",
+					semantics: {
+						readOnly: false,
+						idempotent: false,
+						billable: true,
+						sideEffects: ["moves-money"],
+					},
+				}),
+			]),
+		).not.toThrow();
+	});
+
+	it("names every spec that has no semantics", () => {
+		expect(() =>
+			assertSemantics([spec({ id: "a" }), spec({ id: "b" })]),
+		).toThrow(/"a" has no semantics[\s\S]*"b" has no semantics/);
+	});
+
+	it("throws when a read-only spec lists side effects", () => {
+		expect(() =>
+			assertSemantics([
+				spec({
+					id: "x",
+					semantics: {
+						readOnly: true,
+						idempotent: true,
+						billable: false,
+						sideEffects: ["sends-otp"],
+					},
+				}),
+			]),
+		).toThrow(/"x" is readOnly but lists sideEffects/);
+	});
+
+	it("throws when a writing spec lists no side effects", () => {
+		expect(() =>
+			assertSemantics([
+				spec({
+					id: "y",
+					semantics: { readOnly: false, idempotent: false, billable: false },
+				}),
+			]),
+		).toThrow(/"y" is not readOnly but lists no sideEffects/);
+	});
+
+	it("passes for every documented spec", () => {
+		expect(() => assertSemantics(getDocumentedSpecs())).not.toThrow();
 	});
 });

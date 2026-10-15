@@ -70,6 +70,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Checking sender registration status before starting a DMT transaction.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/dmt-fino/sender/{customer_id}",
 		trxnTypeId: 100,
 		epsProductCode: 96,
@@ -283,6 +284,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "First-time sender registration in the DMT flow.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["creates"],
+		},
 		path: "/customer/payment/dmt-fino/sender/{customer_id}",
 		trxnTypeId: 110,
 		epsProductCode: 106,
@@ -400,6 +407,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "KYC upgrade for new senders to raise monthly transfer limits.",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["updates", "sends-otp"],
+		},
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/otp",
 		trxnTypeId: 810,
 		epsProductCode: 750,
@@ -522,6 +535,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Completing sender eKYC after biometric capture.",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["consumes-otp", "updates"],
+		},
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/otp/verify",
 		trxnTypeId: 812,
 		epsProductCode: 752,
@@ -627,6 +646,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Listing a sender's saved beneficiaries before initiating a transfer.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/recipients",
 		trxnTypeId: 82,
 		epsProductCode: 80,
@@ -823,6 +843,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Adding a new beneficiary before a first-time transfer.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["creates"],
+		},
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/recipient",
 		trxnTypeId: 74,
 		epsProductCode: 72,
@@ -968,6 +994,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Pre-authorising a DMT transfer by triggering OTP dispatch to the sender.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["sends-otp"],
+		},
 		path: "/customer/payment/dmt-fino/otp",
 		trxnTypeId: 811,
 		epsProductCode: 751,
@@ -1073,6 +1105,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Executing the actual money transfer — the only money-debit step in the DMT flow.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["moves-money"],
+		},
 		path: "/customer/payment/dmt-fino",
 		trxnTypeId: 81,
 		epsProductCode: 79,
@@ -1385,6 +1423,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Platforms onboarding BC agents and CSPs to offer AePS services for the first time",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: true,
+			billable: false,
+			sideEffects: ["updates"],
+		},
 		path: "/admin/network/agent/{user_code}/aeps-fingpay/activate",
 		trxnTypeId: 383,
 		epsProductCode: 364,
@@ -1588,6 +1632,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Populating the shop-type dropdown before onboarding an agent for AePS Fingpay",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/user/collection/aeps-fingpay/get-Mcc-Category",
 		trxnTypeId: 798,
 		epsProductCode: 739,
@@ -1666,6 +1711,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Populating the state dropdown for the agent address before AePS Fingpay onboarding",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/user/collection/aeps-fingpay/get-states",
 		trxnTypeId: 799,
 		epsProductCode: 740,
@@ -1748,6 +1794,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Initial one-time KYC setup for newly activated AePS Fingpay agents",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["sends-otp"],
+		},
 		path: "/user/collection/aeps-fingpay/kyc/otp",
 		trxnTypeId: 540,
 		epsProductCode: 512,
@@ -1858,6 +1910,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Completing OTP validation during initial one-time agent eKYC",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["consumes-otp"],
+		},
 		path: "/user/collection/aeps-fingpay/kyc/otp/verify",
 		trxnTypeId: 542,
 		epsProductCode: 514,
@@ -1995,6 +2053,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["updates"],
+		},
 		path: "/user/collection/aeps-fingpay/kyc/biometric",
 		trxnTypeId: 543,
 		epsProductCode: 515,
@@ -2127,6 +2191,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Agent-side automation to trigger the daily biometric KYC at session start before serving AePS customers",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["updates"],
+		},
 		path: "/user/collection/aeps-fingpay/kyc/biometric/daily",
 		trxnTypeId: 594,
 		epsProductCode: 565,
@@ -2273,6 +2343,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"BC agents and CSPs pre-authorising AePS cash withdrawals above ₹5,000",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["sends-otp"],
+		},
 		path: "/customer/collection/aeps-fingpay/cash-withdrawal/otp/{customer_id}",
 		trxnTypeId: 851,
 		epsProductCode: 784,
@@ -2387,6 +2463,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["moves-money"],
+		},
 		path: "/customer/collection/aeps-fingpay/cash-withdrawl/{customer_id}",
 		trxnTypeId: 345,
 		epsProductCode: 329,
@@ -2811,6 +2893,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Agent-assisted balance checks for rural customers without smartphone or internet access",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/collection/aeps-fingpay/balance-enquiry/{customer_id}",
 		trxnTypeId: 346,
 		epsProductCode: 330,
@@ -3071,6 +3154,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/collection/aeps-fingpay/mini-statement/{customer_id}",
 		trxnTypeId: 497,
 		epsProductCode: 469,
@@ -3337,6 +3421,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Registering an agent's settlement bank account before payout.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["creates", "moves-money"],
+		},
 		path: "/user/payment/aeps/settlement/account",
 		trxnTypeId: 399,
 		epsProductCode: 380,
@@ -3440,6 +3530,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Choosing a settlement account and checking unsettled funds.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/user/payment/aeps/settlement/accounts",
 		trxnTypeId: 391,
 		epsProductCode: 372,
@@ -3545,6 +3636,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Settling collected AePS funds to an agent's bank account.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["moves-money"],
+		},
 		path: "/user/payment/aeps/settlement",
 		trxnTypeId: 392,
 		epsProductCode: 373,
@@ -3730,6 +3827,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Populating a category picker UI before letting the user choose a biller.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/bbps/categories",
 		trxnTypeId: 844,
 		epsProductCode: 782,
@@ -3837,6 +3935,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Populating a state filter when displaying biller lists to end users.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/bbps/locations",
 		trxnTypeId: 844,
 		epsProductCode: 782,
@@ -3930,6 +4029,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Building a biller selection UI and determining which operators support a live bill fetch.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/bbps/operators",
 		trxnTypeId: 844,
 		epsProductCode: 782,
@@ -4087,6 +4187,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Rendering a dynamic bill payment form with correct validation for each biller.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/bbps/operator/{operator_id}/parameters",
 		trxnTypeId: 844,
 		epsProductCode: 782,
@@ -4240,6 +4341,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Populating the district picker for UPPCL electricity bill payments.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/bbps/operators/190/district-discome",
 		trxnTypeId: 849,
 		epsProductCode: 783,
@@ -4333,6 +4435,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Resolving operator and circle before fetching recharge plans.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator",
 		trxnTypeId: 648,
 		epsProductCode: 608,
@@ -4405,6 +4508,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Showing the customer the available recharge packs before submitting the recharge.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator/plans",
 		trxnTypeId: 650,
 		epsProductCode: 610,
@@ -4562,6 +4666,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Showing the customer their outstanding bill amount and due date before confirming payment.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/bbps/bill",
 		trxnTypeId: 280,
 		epsProductCode: 265,
@@ -4786,6 +4891,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Executing utility bill payments and prepaid recharges for end customers.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["moves-money"],
+		},
 		path: "/customer/payment/bbps",
 		trxnTypeId: 63,
 		epsProductCode: 62,
@@ -6225,6 +6336,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Resolving a PAN number to its registered name when no name or DOB is available",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/fetch-pan",
 		trxnTypeId: 1013,
 		epsProductCode: 790,
@@ -6315,6 +6427,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "H",
 		bestFor: "Basic PAN status checks and quick KYC pre-screening",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/pan-lite",
 		trxnTypeId: 814,
 		epsProductCode: 754,
@@ -6482,6 +6595,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"KYC workflows needing richer identity attributes and verified registered name",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/pan-advanced",
 		trxnTypeId: 817,
 		epsProductCode: 757,
@@ -6713,6 +6827,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"High-volume PAN verification with async processing (employee on-boarding, batch KYC)",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["enqueues"],
+		},
 		path: "/tools/kyc/pan/bulk",
 		trxnTypeId: 818,
 		epsProductCode: 758,
@@ -6793,6 +6913,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Fetching individual PAN results after submitting a batch to the Bulk PAN Verification API.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/tools/kyc/pan/bulk/status",
 		trxnTypeId: 819,
 		epsProductCode: 759,
@@ -6973,6 +7094,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Checking DMT Levin sender registration and remaining limits before starting a transaction.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/profile/{customer_id}/dmt-levin",
 		uatUnavailable: true,
 		extraRequestParams: [
@@ -7187,6 +7309,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "First-time sender registration in the DMT Levin flow.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["creates", "sends-otp"],
+		},
 		path: "/customer/account/{customer_id}/dmt-levin",
 		uatUnavailable: true,
 		extraRequestParams: [
@@ -7281,6 +7409,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"DMT Levin sender onboarding flows that require Aadhaar number validation as a step before completing identity verification.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["sends-otp"],
+		},
 		path: "/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp",
 		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/validate-aadhar-levin",
@@ -7371,6 +7505,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Completing OTP-based Aadhaar validation in the DMT Levin sender onboarding flow.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["consumes-otp", "updates"],
+		},
 		path: "/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp/verify",
 		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/validate-otp-levin",
@@ -7502,6 +7642,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Completing DMT Levin sender registration with biometric eKYC.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["updates"],
+		},
 		path: "/customer/account/{customer_id}/dmt-levin/ekyc",
 		uatUnavailable: true,
 		extraRequestParams: [
@@ -7567,6 +7713,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Listing a DMT Levin sender's saved beneficiaries before initiating a transfer.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/customer/payment/dmt-levin/sender/{customer_id}/recipients",
 		uatUnavailable: true,
 		extraRequestParams: [
@@ -7816,6 +7963,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Adding a new beneficiary before a first-time DMT Levin transfer.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["creates", "updates"],
+		},
 		path: "/customer/payment/dmt-levin/sender/{customer_id}/recipient",
 		uatUnavailable: true,
 		extraRequestParams: [
@@ -7965,6 +8118,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Pre-authorising a DMT Levin transfer by triggering OTP dispatch to the sender.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["sends-otp"],
+		},
 		path: "/customer/payment/dmt-levin/otp",
 		uatUnavailable: true,
 		extraRequestParams: [
@@ -8049,6 +8208,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Executing the actual money transfer — the only money-debit step in the DMT Levin flow.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["moves-money"],
+		},
 		path: "/customer/payment/dmt-levin",
 		uatUnavailable: true,
 		financial: true,
@@ -11270,6 +11435,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "H",
 		bestFor: "Adding a new agent/retailer to your EPS network.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["creates"],
+		},
 		path: "/user/network/eps-agent",
 		trxnTypeId: 378,
 		epsProductCode: 359,
@@ -11380,6 +11551,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Enabling a new service on an existing agent before their first transaction on it",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["updates"],
+		},
 		path: "/admin/network/agent/{user_code}/service/{service_code}/activate",
 		trxnTypeId: 384,
 		epsProductCode: 365,
@@ -11447,6 +11624,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Suspending a service on an agent without removing them from your network",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: true,
+			billable: false,
+			sideEffects: ["deactivates"],
+		},
 		path: "/admin/network/agent/{user_code}/service/{service_code}/deactivate",
 		docsUrl: "https://developers.eko.in/reference/deactivate-service-for-user",
 		extraRequestParams: [
@@ -11488,6 +11671,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Auditing which services are active for an agent.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/user/account/services",
 		trxnTypeId: 496,
 		epsProductCode: 468,
@@ -11609,6 +11793,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Discovering service codes before activating a service.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/tools/catalog/service-codes",
 		docsUrl: "https://developers.eko.in/reference/service-codes",
 		extraRequestParams: [],
@@ -11680,6 +11865,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Checking an agent's wallet/settlement balance.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/user/account/balance/{customer_id}",
 		trxnTypeId: 9,
 		epsProductCode: 9,
@@ -12049,6 +12235,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "H",
 		bestFor: "Reconciling a transaction whose response timed out.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/tools/reference/transaction",
 		trxnTypeId: 98,
 		epsProductCode: 94,
@@ -12165,6 +12352,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Obtaining the refund OTP before initiating a refund.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["sends-otp"],
+		},
 		path: "/customer/payment/refund/{tid}/otp",
 		trxnTypeId: 144,
 		epsProductCode: 135,
@@ -12211,6 +12404,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Completing the refund of a failed cash-out transaction.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["moves-money"],
+		},
 		path: "/customer/payment/refund/{tid}",
 		trxnTypeId: 83,
 		epsProductCode: 81,
@@ -12325,6 +12524,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			"Returns a list of all banks. Use the [Get Bank Details API](./get-bank-details) to get additional information about a bank.\n\nThe bank list is returned under `param_attributes.list_elements`, not under `data`. Each bank carries its account-number rules and Eko `bank_id` in a `dependent_params` name/value list — look entries up by `name`, not by position.",
 		relevance: "L",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/tools/reference/banks",
 		trxnTypeId: 155,
 		epsProductCode: 144,
@@ -12474,6 +12674,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "L",
 		bestFor: "Resolving an Eko bank_id before adding a recipient.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/tools/reference/bank",
 		trxnTypeId: 163,
 		epsProductCode: 151,
@@ -12569,6 +12770,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "L",
 		bestFor: "Validating an IFSC and resolving its bank/branch.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/reference/banks/ifsc",
 		trxnTypeId: 161,
 		epsProductCode: 149,
@@ -12648,6 +12850,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"KYC flows that use DigiLocker for government-issued document verification, avoiding manual document uploads.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["opens-session"],
+		},
 		path: "/tools/kyc/digilocker",
 		trxnTypeId: 821,
 		epsProductCode: 761,
@@ -12744,6 +12952,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Fetching verified identity details from DigiLocker after Aadhaar consent, for use in KYC records and onboarding.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/digilocker/document",
 		trxnTypeId: 823,
 		epsProductCode: 763,
@@ -12958,6 +13167,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Polling for consent completion before fetching the full document data.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/digilocker/status",
 		trxnTypeId: 822,
 		epsProductCode: 762,
@@ -13102,6 +13312,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Businesses that disburse funds and need to confirm both account existence and the registered account holder name before transferring money.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["moves-money"],
+		},
 		path: "/tools/kyc/bank-account/sync",
 		trxnTypeId: 839,
 		epsProductCode: 777,
@@ -13255,6 +13471,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Onboarding and payout pre-checks that need the registered account holder name without debiting ₹1.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/bank-acc-verify-pennyless",
 		trxnTypeId: 1019,
 		epsProductCode: 796,
@@ -13345,6 +13562,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Platforms processing hundreds to thousands of bank account verifications in one go, where results can be retrieved asynchronously.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["enqueues", "moves-money"],
+		},
 		path: "/tools/kyc/bank-account/bulk",
 		trxnTypeId: 834,
 		epsProductCode: 773,
@@ -13484,6 +13707,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Fetching individual account results after submitting a batch to the Bulk Bank Account Verification API.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/tools/kyc/bank-account/bulk/status",
 		trxnTypeId: 835,
 		epsProductCode: 774,
@@ -13646,6 +13870,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Vendor and merchant onboarding flows, KYB pipelines, B2B compliance checks, and any workflow that needs to confirm a business's GST registration status before issuing payouts or onboarding a counterparty.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/gstin",
 		trxnTypeId: 815,
 		epsProductCode: 755,
@@ -13998,6 +14223,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"KYB and compliance workflows that need to discover all GST registrations of a business from a single PAN — particularly useful for multi-state vendors, pan-India merchant networks, and supplier due diligence.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/gstin-with-pan",
 		trxnTypeId: 820,
 		epsProductCode: 760,
@@ -14124,6 +14350,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Pre-payment UPI ID validation, bulk payout verification, and assisted-payment flows where the agent must confirm the payee before sending funds.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/customer/payment/upi/validate-vpa",
 		trxnTypeId: 744,
 		epsProductCode: 687,
@@ -14263,6 +14490,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Businesses that onboard drivers, delivery agents, or any user whose identity needs to be confirmed against a government-issued driving license.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/driving-license",
 		trxnTypeId: 826,
 		epsProductCode: 765,
@@ -14647,6 +14875,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Mobility platforms, logistics companies, fleet operators, motor insurers, vehicle finance and lending platforms, used-car marketplaces.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/vehicle-rc",
 		trxnTypeId: 824,
 		epsProductCode: 764,
@@ -15304,6 +15533,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Organizations that need to confirm employment history, tenure, and PF filing status digitally — without manual document collection.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/advance-employment",
 		trxnTypeId: 830,
 		epsProductCode: 769,
@@ -15858,6 +16088,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Cross-checking customer-provided addresses against GPS-derived data for onboarding, KYC, and fraud prevention.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/reverse-geocoding",
 		trxnTypeId: 832,
 		epsProductCode: 771,
@@ -16009,6 +16240,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Businesses that need to verify Indian voter identity documents (EPIC) as part of KYC, onboarding, or fraud-prevention pipelines.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/voter-id",
 		trxnTypeId: 827,
 		epsProductCode: 766,
@@ -16302,6 +16534,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Employee BGV, travel-platform KYC, fintech onboarding, and immigration-assistance workflows that need structured passport data from the government source.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/passport",
 		trxnTypeId: 828,
 		epsProductCode: 767,
@@ -16430,6 +16663,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"KYB and corporate due-diligence workflows that need authoritative MCA data on a company before onboarding or credit decisioning.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/cin",
 		trxnTypeId: 829,
 		epsProductCode: 768,
@@ -16626,6 +16860,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Fintech, lending, e-commerce, and SaaS platforms that need real-time IP intelligence for fraud prevention and geo-compliance.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/ip",
 		trxnTypeId: 831,
 		epsProductCode: 770,
@@ -16755,6 +16990,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Cross-document name validation — PAN vs Aadhaar, bank account holder vs GST trade name, and any KYC or KYB workflow that needs to tolerate Indian naming variations without manual review.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/name-match",
 		trxnTypeId: 833,
 		epsProductCode: 772,
@@ -16864,6 +17100,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Lending platforms, NBFCs, and compliance teams that need an instant, automated ITR filing signal for a PAN holder during credit assessment or onboarding.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/itr-compliance",
 		trxnTypeId: 1021,
 		epsProductCode: 798,
@@ -17034,6 +17271,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Corporate KYB and director due-diligence workflows that need real-time validation of a Director Identification Number against authoritative MCA records before onboarding or credit decisioning.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/din-verification",
 		trxnTypeId: 1025,
 		epsProductCode: 802,
@@ -17155,6 +17393,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Fleet operators, logistics and delivery platforms, motor insurers, gig-worker onboarding platforms, and used-vehicle marketplaces that need automated, real-time challan status checks.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/e-challan",
 		trxnTypeId: 1036,
 		epsProductCode: 813,
@@ -17375,6 +17614,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"User onboarding flows, registration fraud prevention, contact-database cleaning, and any scenario where an invalid or dummy email address would cause downstream failures or fraud.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/check-email",
 		trxnTypeId: 1032,
 		epsProductCode: 809,
@@ -17533,6 +17773,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Food delivery and aggregator platforms, e-commerce marketplaces, and compliance teams that need to confirm a vendor or restaurant holds a valid, active FSSAI license before onboarding or order fulfilment.",
 		method: "POST",
+		semantics: { readOnly: true, idempotent: true, billable: true },
 		path: "/tools/kyc/fetch-fssai",
 		trxnTypeId: 1024,
 		epsProductCode: 801,
@@ -17678,6 +17919,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Confirming a customer owns a mobile number before onboarding, payouts, or any OTP-gated transaction.",
 		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: true,
+			sideEffects: ["sends-otp"],
+		},
 		path: "/tools/kyc/mobile/otp",
 		trxnTypeId: 553,
 		epsProductCode: 525,
@@ -17761,6 +18008,12 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Confirming a customer-entered OTP and obtaining a short-lived proof token for OTP-gated transactions.",
 		method: "PUT",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["consumes-otp"],
+		},
 		path: "/tools/kyc/mobile/otp/verify",
 		trxnTypeId: 555,
 		epsProductCode: 527,
@@ -17873,6 +18126,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Server-to-server proof that a mobile OTP was verified recently, before honouring an OTP-gated action.",
 		method: "GET",
+		semantics: { readOnly: true, idempotent: true, billable: false },
 		path: "/tools/kyc/mobile/otp/validate-token",
 		trxnTypeId: 1061,
 		epsProductCode: 829,
