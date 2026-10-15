@@ -11276,14 +11276,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/onboard-user-new",
 		extraRequestParams: [
 			{
-				name: "pan_number",
-				type: "string",
-				format: "pan",
-				required: true,
-				description: "PAN card number of the agent.",
-				example: "ABCDE1234F",
-			},
-			{
 				name: "mobile",
 				type: "string",
 				required: true,
@@ -11295,14 +11287,22 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description: "First name of the agent.",
-				example: "Ramesh",
+				example: "Test",
 			},
 			{
 				name: "last_name",
 				type: "string",
 				required: true,
 				description: "Last name of the agent.",
-				example: "Kumar",
+				example: "User",
+			},
+			{
+				name: "pan_number",
+				type: "string",
+				format: "pan",
+				required: true,
+				description: "PAN card number of the agent.",
+				example: "ABCPV1234D",
 			},
 			{
 				name: "email",
@@ -11411,6 +11411,28 @@ const ALL_API_SPECS: ApiSpec[] = [
 			response_type_id: 0,
 			data: {},
 		},
+		errorScenarios: [
+			{
+				scenario: "Service already activated",
+				statusCode: 200,
+				example: {
+					status: 1295,
+					response_status_id: 1,
+					response_type_id: 1295,
+					message: "This service already exist for the user code",
+					data: {
+						service_status_desc: "",
+						user_code: "",
+						initiator_id: "",
+						name: "",
+						service_status: "",
+						service_code: "",
+						ifsc: "",
+						virtual_account_number: "",
+					},
+				},
+			},
+		],
 	},
 	{
 		id: "deactivate-user-service",
@@ -11658,24 +11680,24 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "M",
 		bestFor: "Checking an agent's wallet/settlement balance.",
 		method: "GET",
-		path: "/user/account/balance",
+		path: "/user/account/balance/{customer_id}",
 		trxnTypeId: 9,
 		epsProductCode: 9,
-		docsUrl: "https://developers.eko.in/reference/wallet-balance",
+		docsUrl: "https://developers.eko.in/reference/wallet-balance/",
 		extraRequestParams: [
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description: "Registered mobile number for the wallet.",
+				example: "9962981729",
+			},
 			{
 				name: "customer_id_type",
 				type: "string",
 				required: true,
 				description: "Identifier type. Fixed value: mobile_number.",
 				example: "mobile_number",
-			},
-			{
-				name: "customer_id",
-				type: "string",
-				required: true,
-				description: "Registered mobile number for the wallet.",
-				example: "9910028267",
 			},
 		],
 		responseData: [
@@ -12027,18 +12049,28 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "H",
 		bestFor: "Reconciling a transaction whose response timed out.",
 		method: "GET",
-		path: "/tools/reference/transaction/{transaction-reference}",
+		path: "/tools/reference/transaction",
 		trxnTypeId: 98,
 		epsProductCode: 94,
 		docsUrl: "https://developers.eko.in/reference/transaction-inquiry",
 		extraRequestParams: [
 			{
-				name: "transaction-reference",
+				name: "tid",
+				label: "Eko TID",
 				type: "string",
-				required: true,
+				required: false,
 				description:
-					"Eko TID or your `client_ref_id` that identifies the transaction. Pass a TID as-is; to look up by `client_ref_id`, prefix it — e.g. `client_ref_id:ORD2026000123`.",
-				example: "12971397",
+					"Eko TID that identifies the transaction. You must pass either this or your `client_ref_id`. If both are passed, Eko's TID takes precedence.",
+				example: "12839273",
+			},
+			{
+				name: "client_ref_id",
+				label: "Client Reference ID",
+				type: "string",
+				required: false,
+				description:
+					"Your `client_ref_id` that identifies the transaction. You must pass either this or Eko's `tid`.",
+				example: "28392661538393994551",
 			},
 		],
 		responseData: [
@@ -12096,27 +12128,29 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 		],
 		sampleSuccessResponse: {
-			response_type_id: 1472,
-			data: {
-				bank_ref_num: "8761099407",
-				account: "234243534",
-				fee: "5.0",
-				client_ref_id: "Settlemet7206123420",
-				gst: "0.76",
-				sender_name: "Flipkart",
-				timestamp: "2019-11-01 17:50:44",
-				ifsc: "SBIN0000001",
-				beneficiary_account_type: 1,
-				txstatus_desc: "Success",
-				tx_status: "0",
-				tid: "12971397",
-				amount: "1045.0",
-				payment_mode: 5,
-				recipient_name: "Virender Singh",
-			},
-			message: "Sucess! Enquiry success.",
 			status: 0,
 			response_status_id: 0,
+			response_type_id: 70,
+			message: "Transaction details fetched successfully",
+			data: {
+				tx_status: "3",
+				amount: "1000.0",
+				txstatus_desc: "Refund Pending",
+				fee: "150.0",
+				channel: "",
+				branch: "",
+				gst_benefit: "",
+				tid: "12839273",
+				tx_desc: "Indo-Nepal Money Transfer",
+				allow_retry: "0",
+				service_tax: "",
+				currency: "INR",
+				pipe: "",
+				customer_id: "7777777777",
+				bank_ref_num: "1111187250183230",
+				recipient_id: 1157,
+				timestamp: "2018-10-01 17:09:54",
+			},
 		},
 	},
 	{
@@ -12288,7 +12322,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		slug: "get-banks",
 		summary: "Fetch a list of all banks.",
 		description:
-			"Returns a list of all banks. Use the [Get Bank Details API](./get-bank-details) to get additional information about a bank.",
+			"Returns a list of all banks. Use the [Get Bank Details API](./get-bank-details) to get additional information about a bank.\n\nThe bank list is returned under `param_attributes.list_elements`, not under `data`. Each bank carries its account-number rules and Eko `bank_id` in a `dependent_params` name/value list — look entries up by `name`, not by position.",
 		relevance: "L",
 		method: "GET",
 		path: "/tools/reference/banks",
@@ -12296,8 +12330,137 @@ const ALL_API_SPECS: ApiSpec[] = [
 		epsProductCode: 144,
 		docsUrl: "https://developers.eko.in/reference/get-bank-list",
 		extraRequestParams: [],
-		responseData: [],
-		sampleSuccessResponse: {},
+		responseTypes: [
+			{
+				id: 398,
+				meaning: "Bank list returned successfully",
+			},
+		],
+		responseData: [
+			{
+				name: "param_attributes",
+				type: "object",
+				description: "Container for the returned list.",
+				children: [
+					{
+						name: "list_elements",
+						type: "array",
+						description: "Array of banks.",
+						imp: true,
+						children: [
+							{
+								name: "label",
+								type: "string",
+								description: "Bank display name.",
+								example: "State Bank of India",
+							},
+							{
+								name: "value",
+								type: "string",
+								description:
+									"Eko bank code — pass as `bank_code` to Get Bank Details.",
+								imp: true,
+								example: "SBIN",
+							},
+							{
+								name: "dependent_params",
+								type: "array",
+								description:
+									"Bank-specific attributes as `name`/`value` pairs. Known names: `account` (account-number length rules), `ifsc_required` (1 = IFSC must be sent with the account), `varifiable` (1 = account verification available; key spelled as returned), `bank_id` (Eko bank identifier), `is_face_auth_available`, `is_iris_auth_available` (1 = supported).",
+								children: [
+									{
+										name: "name",
+										type: "string",
+										description: "Attribute name.",
+										example: "bank_id",
+									},
+									{
+										name: "value",
+										type: "number",
+										description:
+											"Attribute value. Absent on the `account` entry.",
+										example: 108,
+									},
+									{
+										name: "length_min",
+										type: "number",
+										description:
+											"Minimum account-number length. Only on the `account` entry.",
+										example: 11,
+									},
+									{
+										name: "length_max",
+										type: "number",
+										description:
+											"Maximum account-number length. Only on the `account` entry.",
+										example: 13,
+									},
+									{
+										name: "pattern_error",
+										type: "string",
+										description:
+											"Validation message to show for an invalid account number. Optional; only on the `account` entry.",
+										example: "Please enter a valid 11-digit SBI account number",
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			param_attributes: {
+				list_elements: [
+					{
+						dependent_params: [
+							{
+								pattern_error:
+									"Please enter a valid 11-digit SBI account number",
+								name: "account",
+								length_max: 13,
+								length_min: 11,
+							},
+							{ name: "ifsc_required", value: 0 },
+							{ name: "varifiable", value: 1 },
+							{ name: "bank_id", value: 108 },
+							{ name: "is_face_auth_available", value: 0 },
+							{ name: "is_iris_auth_available", value: 0 },
+						],
+						label: "State Bank of India",
+						value: "SBIN",
+					},
+					{
+						dependent_params: [
+							{ name: "account", length_max: 16, length_min: 16 },
+							{ name: "ifsc_required", value: 0 },
+							{ name: "varifiable", value: 1 },
+							{ name: "bank_id", value: 11 },
+							{ name: "is_face_auth_available", value: 0 },
+							{ name: "is_iris_auth_available", value: 0 },
+						],
+						label: "Punjab National Bank",
+						value: "PUNB",
+					},
+					{
+						dependent_params: [
+							{ name: "account", length_max: 16, length_min: 14 },
+							{ name: "ifsc_required", value: 0 },
+							{ name: "varifiable", value: 1 },
+							{ name: "bank_id", value: 2 },
+							{ name: "is_face_auth_available", value: 0 },
+							{ name: "is_iris_auth_available", value: 0 },
+						],
+						label: "Bank of Baroda",
+						value: "BARB",
+					},
+				],
+			},
+			response_type_id: 398,
+			message: "Success! Total Banks found in the System",
+			status: 0,
+		},
 	},
 	{
 		id: "get-bank-details",
@@ -12311,7 +12474,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "L",
 		bestFor: "Resolving an Eko bank_id before adding a recipient.",
 		method: "GET",
-		path: "/tools/reference/bank/{bank_code}",
+		path: "/tools/reference/bank",
 		trxnTypeId: 163,
 		epsProductCode: 151,
 		docsUrl: "https://developers.eko.in/reference/bank-details",
@@ -12406,7 +12569,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		relevance: "L",
 		bestFor: "Validating an IFSC and resolving its bank/branch.",
 		method: "GET",
-		path: "/tools/reference/banks/ifsc/{ifsc}",
+		path: "/tools/reference/banks/ifsc",
 		trxnTypeId: 161,
 		epsProductCode: 149,
 		docsUrl: "https://developers.eko.in/reference/get-ifsc-details",
@@ -12417,7 +12580,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				format: "ifsc",
 				required: true,
 				description: "IFSC code of the bank branch.",
-				example: "IOBA0002248",
+				example: "HDFC0000001",
 			},
 		],
 		responseData: [
@@ -16701,9 +16864,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Lending platforms, NBFCs, and compliance teams that need an instant, automated ITR filing signal for a PAN holder during credit assessment or onboarding.",
 		method: "POST",
-		path: "/tools/kyc/touras/itr-compliance",
+		path: "/tools/kyc/itr-compliance",
 		trxnTypeId: 1021,
 		epsProductCode: 798,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/itr-compliance",
 		sourceDoc:
 			"https://docs.touras.in/verification-suite?pageId=ITR-Compliance",
@@ -16870,9 +17034,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Corporate KYB and director due-diligence workflows that need real-time validation of a Director Identification Number against authoritative MCA records before onboarding or credit decisioning.",
 		method: "POST",
-		path: "/tools/kyc/touras/din-verification",
+		path: "/tools/kyc/din-verification",
 		trxnTypeId: 1025,
 		epsProductCode: 802,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/din-verification",
 		sourceDoc: "https://docs.touras.in/verification-suite?pageId=DIN",
 		extraRequestParams: [
@@ -16990,9 +17155,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Fleet operators, logistics and delivery platforms, motor insurers, gig-worker onboarding platforms, and used-vehicle marketplaces that need automated, real-time challan status checks.",
 		method: "POST",
-		path: "/tools/kyc/touras/e-challan",
+		path: "/tools/kyc/e-challan",
 		trxnTypeId: 1036,
 		epsProductCode: 813,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/e-challan",
 		sourceDoc:
 			"https://docs.touras.in/verification-suite?pageId=Vehicle-Challan",
@@ -17209,9 +17375,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"User onboarding flows, registration fraud prevention, contact-database cleaning, and any scenario where an invalid or dummy email address would cause downstream failures or fraud.",
 		method: "POST",
-		path: "/tools/kyc/touras/check-email",
+		path: "/tools/kyc/check-email",
 		trxnTypeId: 1032,
 		epsProductCode: 809,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/email-check",
 		sourceDoc:
 			"https://docs.touras.in/verification-suite?pageId=Email_verification",
@@ -17366,9 +17533,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Food delivery and aggregator platforms, e-commerce marketplaces, and compliance teams that need to confirm a vendor or restaurant holds a valid, active FSSAI license before onboarding or order fulfilment.",
 		method: "POST",
-		path: "/tools/kyc/touras/fetch-fssai",
+		path: "/tools/kyc/fetch-fssai",
 		trxnTypeId: 1024,
 		epsProductCode: 801,
+		uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fssai-verification",
 		sourceDoc: "https://docs.touras.in/verification-suite?pageId=FSSAI",
 		extraRequestParams: [
