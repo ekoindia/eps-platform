@@ -96,7 +96,7 @@ try {
 } catch (EpsClient.EpsIndeterminateException e) {
     // e.clientRefId — persist it; ((Map<?,?>) e.statusCheck.get("data")).get("tx_status"):
     // "0" success, "1" fail, "2" awaited. Inquire again later with
-    // client.call("transaction-inquiry", Map.of("transaction-reference", "client_ref_id:" + e.clientRefId));
+    // client.call("transaction-inquiry", Map.of("client_ref_id", e.clientRefId));
 }
 ```
 

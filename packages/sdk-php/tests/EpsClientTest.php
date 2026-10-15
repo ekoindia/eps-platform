@@ -533,10 +533,11 @@ final class EpsClientTest extends TestCase
                 $e->getMessage()
             );
             $this->assertCount(2, $t->requests);
-            $this->assertStringContainsString(
-                "/tools/reference/transaction/client_ref_id%3A$ref?initiator_id=9962981729",
-                $t->url(1)
-            );
+            $inquiry = $t->url(1);
+            $this->assertStringContainsString('/tools/reference/transaction?', $inquiry);
+            $this->assertStringContainsString("client_ref_id=$ref", $inquiry);
+            $this->assertStringContainsString('initiator_id=9962981729', $inquiry);
+            $this->assertStringNotContainsString('transaction-reference', $inquiry);
             $this->assertSame('GET', $t->requests[1]['target']['method']);
         }
     }
@@ -551,7 +552,7 @@ final class EpsClientTest extends TestCase
             $this->assertSame('MY-REF', $e->clientRefId);
             $this->assertNull($e->status);
             $this->assertInstanceOf(EpsTransportException::class, $e->getPrevious());
-            $this->assertStringContainsString('client_ref_id%3AMY-REF', $t->url(1));
+            $this->assertStringContainsString('client_ref_id=MY-REF', $t->url(1));
         }
     }
 

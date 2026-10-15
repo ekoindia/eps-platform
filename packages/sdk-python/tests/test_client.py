@@ -9,6 +9,7 @@ import io
 import json
 import unittest
 import urllib.error
+import urllib.parse
 from pathlib import Path
 from unittest import mock
 
@@ -562,10 +563,12 @@ class RetryAndStatusCheck(unittest.TestCase):
             "has no confirmed outcome.",
         )
         self.assertEqual(len(t.requests), 2)
-        self.assertIn(
-            f"/tools/reference/transaction/client_ref_id%3A{ref}?initiator_id=9962981729",
-            t.url(1),
-        )
+        inquiry = urllib.parse.urlsplit(t.url(1))
+        query = urllib.parse.parse_qs(inquiry.query)
+        self.assertTrue(inquiry.path.endswith("/tools/reference/transaction"))
+        self.assertEqual(query["client_ref_id"], [ref])
+        self.assertEqual(query["initiator_id"], ["9962981729"])
+        self.assertNotIn("transaction-reference", query)
         self.assertEqual(t.requests[1].get_method(), "GET")
 
     def test_financial_post_transport_failure_reuses_supplied_ref(self):
@@ -576,7 +579,7 @@ class RetryAndStatusCheck(unittest.TestCase):
         self.assertEqual(ctx.exception.client_ref_id, "MY-REF")
         self.assertIsNone(ctx.exception.status)
         self.assertIsInstance(ctx.exception.__cause__, urllib.error.URLError)
-        self.assertIn("client_ref_id%3AMY-REF", t.url(1))
+        self.assertIn("client_ref_id=MY-REF", t.url(1))
 
     def test_failing_inquiry_lands_on_status_check_error(self):
         t = Transport(_http(500), _http(503))

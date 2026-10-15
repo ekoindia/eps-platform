@@ -58,7 +58,10 @@ public final class EpsClient {
 	/** Backoff base: attempt n waits a random slice of min(base × 2^(n-1), 2s). */
 	private static final Duration DEFAULT_RETRY_BASE_DELAY = Duration.ofMillis(200);
 	private static final long MAX_RETRY_DELAY_MS = 2_000;
-	/** Generic status-check endpoint, keyed by TID or {@code client_ref_id:<ref>}. */
+	/**
+	 * Generic status-check endpoint ({@code GET /tools/reference/transaction}), keyed by a {@code tid}
+	 * or {@code client_ref_id} query param.
+	 */
 	private static final String INQUIRY_SLUG = "transaction-inquiry";
 	/** Spec types whose values are scalars the value checks can stringify. */
 	private static final Set<String> SCALAR_TYPES = Set.of("string", "number", "integer", "boolean");
@@ -776,12 +779,12 @@ public final class EpsClient {
 	}
 
 	/**
-	 * One inquiry by {@code client_ref_id:<ref>}; its own failure is reported, never allowed to mask
+	 * One inquiry by {@code client_ref_id=<ref>}; its own failure is reported, never allowed to mask
 	 * the original one.
 	 */
 	private EpsIndeterminateException indeterminate(Target target, EpsException cause) {
 		Map<String, Object> params = new LinkedHashMap<>();
-		params.put("transaction-reference", "client_ref_id:" + target.clientRefId());
+		params.put("client_ref_id", target.clientRefId());
 		if (target.initiatorId() != null) params.put("initiator_id", target.initiatorId());
 		Map<String, Object> statusCheck = null;
 		Throwable statusCheckError = null;

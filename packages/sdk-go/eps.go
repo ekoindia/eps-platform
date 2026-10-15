@@ -52,8 +52,9 @@ const (
 	// defaultRetryBaseDelay: attempt n waits a random slice of min(base × 2^(n-1), 2s).
 	defaultRetryBaseDelay = 200 * time.Millisecond
 	maxRetryDelay         = 2 * time.Second
-	// inquirySlug is the generic status-check endpoint, keyed by TID or
-	// "client_ref_id:<ref>".
+	// inquirySlug is the generic status-check endpoint
+	// (GET /tools/reference/transaction), keyed by a tid or client_ref_id
+	// query param.
 	inquirySlug = "transaction-inquiry"
 )
 
@@ -795,10 +796,10 @@ func (c *Client) backoff(ctx context.Context, attempt int) error {
 	}
 }
 
-// indeterminate runs one inquiry by "client_ref_id:<ref>"; its own failure is
+// indeterminate runs one inquiry by client_ref_id=<ref>; its own failure is
 // reported, never allowed to mask the original one.
 func (c *Client) indeterminate(ctx context.Context, target *Target, cause error) *IndeterminateError {
-	params := map[string]any{"transaction-reference": "client_ref_id:" + target.ClientRefID}
+	params := map[string]any{"client_ref_id": target.ClientRefID}
 	if target.InitiatorID != nil {
 		params["initiator_id"] = target.InitiatorID
 	}

@@ -220,9 +220,9 @@ charged twice, and re-sending a paid lookup bills it twice. If the endpoint is `
 `client_ref_id`, the SDK makes one Transaction Inquiry:
 
 ```
-GET transaction-inquiry
-    transaction-reference = "client_ref_id:" + <the call's ref>
-    initiator_id          = <the initiator the call resolved>
+GET transaction-inquiry          (GET /tools/reference/transaction)
+    client_ref_id = <the call's ref>
+    initiator_id  = <the initiator the call resolved>
 ```
 
 The inquiry goes through the ordinary GET path, so it has the GET retry budget
@@ -277,7 +277,7 @@ POST that omits `client_ref_id`. Every suite pins the exact request counts:
 | GET: 400                                                    | 1        | typed HTTP error, no retry                                      |
 | GET with `retries` = 0: 500                                 | 1        | typed HTTP error                                                |
 | non-financial POST: 500                                     | 1        | typed HTTP error, no inquiry                                    |
-| financial POST: 502, inquiry 200                            | 2        | indeterminate error; `status` 502; `statusCheck` = inquiry envelope; inquiry URL contains `client_ref_id:<ref>` and `initiator_id`; the inquiry is a GET |
+| financial POST: 502, inquiry 200                            | 2        | indeterminate error; `status` 502; `statusCheck` = inquiry envelope; inquiry URL is `/tools/reference/transaction` with query `client_ref_id=<ref>` and `initiator_id`, and no `transaction-reference`; the inquiry is a GET |
 | financial POST: transport failure, supplied ref, inquiry 200 | 2       | indeterminate error; `status` null; `clientRefId` is the supplied value |
 | financial POST: 500, inquiry 503 every attempt              | 1 + 3    | indeterminate error; `statusCheck` null; `statusCheckError` is the 503; cause is the 500 |
 | financial POST: 401                                         | 1        | typed HTTP error, no inquiry                                    |

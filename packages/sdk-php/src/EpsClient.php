@@ -11,7 +11,7 @@ final class EpsClient
      */
     public const MULTIPART_JSON_FIELD = 'form-data';
 
-    /** Generic status-check endpoint, keyed by TID or `client_ref_id:<ref>`. */
+    /** Generic status-check endpoint (`GET /tools/reference/transaction`), keyed by a `tid` or `client_ref_id` query param. */
     private const INQUIRY_SLUG = 'transaction-inquiry';
     /** Backoff cap in milliseconds. */
     private const MAX_RETRY_DELAY_MS = 2000;
@@ -433,14 +433,14 @@ final class EpsClient
     }
 
     /**
-     * One inquiry by `client_ref_id:<ref>`; its own failure is reported, never
+     * One inquiry by `client_ref_id=<ref>`; its own failure is reported, never
      * allowed to mask the original one.
      */
     private function indeterminate(array $target, \Throwable $cause): EpsIndeterminateException
     {
         $statusCheck = null;
         $statusCheckError = null;
-        $params = ['transaction-reference' => 'client_ref_id:' . $target['clientRefId']];
+        $params = ['client_ref_id' => $target['clientRefId']];
         if ($target['initiatorId'] !== null) $params['initiator_id'] = $target['initiatorId'];
         try {
             $statusCheck = $this->call(self::INQUIRY_SLUG, $params);

@@ -790,8 +790,11 @@ func TestFinancialPost5xxInquiresAndReturnsIndeterminate(t *testing.T) {
 		t.Fatalf("sent %d requests, want 2", len(tr.requests))
 	}
 	inq := tr.requests[1]
-	if inq.Method != http.MethodGet || !strings.Contains(inq.URL.String(),
-		"/tools/reference/transaction/client_ref_id:"+ref+"?initiator_id=9962981729") {
+	q := inq.URL.Query()
+	if inq.Method != http.MethodGet ||
+		!strings.HasSuffix(inq.URL.Path, "/tools/reference/transaction") ||
+		q.Get("client_ref_id") != ref || q.Get("initiator_id") != "9962981729" ||
+		q.Has("transaction-reference") {
 		t.Errorf("inquiry = %s %s, want GET transaction-inquiry by client_ref_id", inq.Method, inq.URL)
 	}
 }
@@ -811,7 +814,7 @@ func TestFinancialPostTransportFailureReusesSuppliedRef(t *testing.T) {
 	if !errors.As(ind.Err, &te) {
 		t.Errorf("Err = %v, want the *TransportError cause", ind.Err)
 	}
-	if !strings.Contains(tr.requests[1].URL.String(), "client_ref_id:MY-REF") {
+	if tr.requests[1].URL.Query().Get("client_ref_id") != "MY-REF" {
 		t.Errorf("inquiry url = %s, want the supplied ref", tr.requests[1].URL)
 	}
 }

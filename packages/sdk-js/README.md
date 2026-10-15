@@ -41,7 +41,7 @@ try {
 	if (err instanceof EpsIndeterminateError) {
 		// err.clientRefId — persist it; err.statusCheck?.data.tx_status:
 		// "0" success, "1" fail, "2" awaited. Inquire again later with
-		// client.call("transaction-inquiry", { "transaction-reference": `client_ref_id:${err.clientRefId}` })
+		// client.call("transaction-inquiry", { client_ref_id: err.clientRefId })
 	}
 }
 ```

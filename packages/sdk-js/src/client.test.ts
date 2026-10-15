@@ -714,9 +714,11 @@ describe("retry and status check", () => {
 			`EPS request for "dmt-initiate-transfer" with client_ref_id "${ref}" has no confirmed outcome.`,
 		);
 		expect(f).toHaveBeenCalledTimes(2);
-		expect(urlOf(f, 1)).toContain(
-			`/tools/reference/transaction/client_ref_id%3A${ref}?initiator_id=9962981729`,
-		);
+		const inquiryUrl = new URL(urlOf(f, 1));
+		expect(inquiryUrl.pathname).toMatch(/\/tools\/reference\/transaction$/);
+		expect(inquiryUrl.searchParams.get("client_ref_id")).toBe(ref);
+		expect(inquiryUrl.searchParams.get("initiator_id")).toBe("9962981729");
+		expect(inquiryUrl.searchParams.has("transaction-reference")).toBe(false);
 		expect(f.mock.calls[1][1].method).toBe("GET");
 	});
 
@@ -732,7 +734,9 @@ describe("retry and status check", () => {
 		expect(err.clientRefId).toBe("MY-REF");
 		expect(err.status).toBeNull();
 		expect(err.cause).toBeInstanceOf(TypeError);
-		expect(urlOf(f, 1)).toContain("client_ref_id%3AMY-REF");
+		expect(new URL(urlOf(f, 1)).searchParams.get("client_ref_id")).toBe(
+			"MY-REF",
+		);
 	});
 
 	it("a failing inquiry (its GET retries exhausted) lands on statusCheckError, never masking the cause", async () => {

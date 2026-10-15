@@ -50,7 +50,8 @@ _DEFAULT_RETRIES = 2
 #: Backoff base in seconds: attempt n waits a random slice of min(base * 2**(n-1), 2s).
 _DEFAULT_RETRY_BASE_DELAY = 0.2
 _MAX_RETRY_DELAY = 2.0
-#: Generic status-check endpoint, keyed by TID or ``client_ref_id:<ref>``.
+#: Generic status-check endpoint (``GET /tools/reference/transaction``), keyed
+#: by a ``tid`` or ``client_ref_id`` query param.
 _INQUIRY_SLUG = "transaction-inquiry"
 
 _NUMBER_RE = re.compile(r"^-?\d+(\.\d+)?$")
@@ -600,13 +601,11 @@ class EpsClient:
     def _indeterminate(
         self, target: Target, cause: BaseException
     ) -> EpsIndeterminateError:
-        """One inquiry by ``client_ref_id:<ref>``; its own failure is reported,
+        """One inquiry by ``client_ref_id=<ref>``; its own failure is reported,
         never allowed to mask the original one."""
         status_check: Any = None
         status_check_error: Optional[BaseException] = None
-        params: Dict[str, Any] = {
-            "transaction-reference": f"client_ref_id:{target.client_ref_id}"
-        }
+        params: Dict[str, Any] = {"client_ref_id": target.client_ref_id}
         if target.initiator_id is not None:
             params["initiator_id"] = target.initiator_id
         try:

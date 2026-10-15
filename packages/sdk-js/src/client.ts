@@ -247,7 +247,8 @@ const DEFAULT_RETRIES = 2;
 /** Backoff base: attempt n waits a random slice of min(base × 2^(n-1), 2s). */
 const DEFAULT_RETRY_BASE_DELAY_MS = 200;
 const MAX_RETRY_DELAY_MS = 2_000;
-/** Generic status-check endpoint, keyed by TID or `client_ref_id:<ref>`. */
+/** Generic status-check endpoint: `GET /tools/reference/transaction`, keyed by
+ * a `tid` or `client_ref_id` query param. */
 const INQUIRY_SLUG = "transaction-inquiry";
 
 interface Surface {
@@ -445,7 +446,7 @@ export class EpsClient {
 		if (delay > 0) await new Promise((r) => setTimeout(r, delay));
 	}
 
-	/** One inquiry by `client_ref_id:<ref>`; its own failure is reported, never
+	/** One inquiry by `client_ref_id=<ref>`; its own failure is reported, never
 	 * allowed to mask the original one. */
 	private async indeterminate(
 		slug: string,
@@ -457,7 +458,7 @@ export class EpsClient {
 		let statusCheckError: unknown = null;
 		try {
 			statusCheck = await this.call(INQUIRY_SLUG, {
-				"transaction-reference": `client_ref_id:${clientRefId}`,
+				client_ref_id: clientRefId,
 				...(initiatorId !== undefined && { initiator_id: initiatorId }),
 			});
 		} catch (err) {

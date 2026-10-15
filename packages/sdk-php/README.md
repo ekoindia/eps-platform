@@ -44,7 +44,7 @@ try {
 } catch (EpsIndeterminateException $e) {
     // $e->clientRefId — persist it; $e->statusCheck['data']['tx_status']:
     // "0" success, "1" fail, "2" awaited. Inquire again later with
-    // $client->call('transaction-inquiry', ['transaction-reference' => "client_ref_id:{$e->clientRefId}"]);
+    // $client->call('transaction-inquiry', ['client_ref_id' => $e->clientRefId]);
 }
 ```
 

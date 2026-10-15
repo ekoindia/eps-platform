@@ -73,7 +73,7 @@ try:
 except EpsIndeterminateError as err:
     # err.client_ref_id — persist it; err.status_check["data"]["tx_status"]:
     # "0" success, "1" fail, "2" awaited. Inquire again later with
-    # client.call("transaction-inquiry", {"transaction-reference": f"client_ref_id:{err.client_ref_id}"})
+    # client.call("transaction-inquiry", {"client_ref_id": err.client_ref_id})
     ...
 ```
 

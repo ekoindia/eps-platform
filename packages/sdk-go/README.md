@@ -87,7 +87,7 @@ var ind *eps.IndeterminateError
 if errors.As(err, &ind) {
 	// ind.ClientRefID — persist it; ind.StatusCheck["data"].(map[string]any)["tx_status"]:
 	// "0" success, "1" fail, "2" awaited. Inquire again later with
-	// client.Call(ctx, "transaction-inquiry", map[string]any{"transaction-reference": "client_ref_id:" + ind.ClientRefID})
+	// client.Call(ctx, "transaction-inquiry", map[string]any{"client_ref_id": ind.ClientRefID})
 }
 ```
 

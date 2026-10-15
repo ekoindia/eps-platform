@@ -864,10 +864,11 @@ class EpsClientTest {
 			assertEquals(2, t.sent.size());
 			HttpRequest inq = t.sent.get(1).request();
 			assertEquals("GET", inq.method());
-			assertTrue(
-					inq.uri().toString().contains(
-							"/tools/reference/transaction/client_ref_id%3A" + ref + "?initiator_id=9962981729"),
-					inq.uri().toString());
+			String uri = inq.uri().toString();
+			assertTrue(inq.uri().getPath().endsWith("/tools/reference/transaction"), uri);
+			assertTrue(uri.contains("client_ref_id=" + ref), uri);
+			assertTrue(uri.contains("initiator_id=9962981729"), uri);
+			assertFalse(uri.contains("transaction-reference"), uri);
 		}
 
 		@Test
@@ -880,7 +881,7 @@ class EpsClientTest {
 			assertEquals("MY-REF", e.clientRefId);
 			assertNull(e.status);
 			assertTrue(e.getCause() instanceof EpsClient.EpsTransportException);
-			assertTrue(t.sent.get(1).request().uri().toString().contains("client_ref_id%3AMY-REF"));
+			assertTrue(t.sent.get(1).request().uri().toString().contains("client_ref_id=MY-REF"));
 		}
 
 		@Test
