@@ -104,7 +104,7 @@ export async function buildDmtSheet(
 		"New senders registered / month",
 		50,
 		[0, data.maxVolume],
-		`KYC ₹${dmt.senderKycFee} + GST = ₹${dmt.senderKycInclGst.toFixed(2)} each`,
+		`KYC ₹${dmt.senderKycFee.toFixed(2)} each (incl. GST)`,
 	);
 	const recipientsRow = inputRow(
 		"New recipients added / month",
@@ -220,7 +220,7 @@ export async function buildDmtSheet(
 	);
 	const kycRow = valueRow(
 		"Less: sender KYC charges",
-		`-B${sendersRow}*${dmt.senderKycInclGst}`,
+		`-B${sendersRow}*${dmt.senderKycFee}`,
 		{ numFmt: INR_FORMAT },
 	);
 	const verifyRow = valueRow(

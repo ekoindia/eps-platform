@@ -118,7 +118,6 @@ async function loadPricingData(
 		dmt: {
 			rows: dmtMod.dmtRateCardRows(),
 			senderKycFee: dmtMod.DMT_SENDER_KYC_FEE,
-			senderKycInclGst: dmtMod.dmtSenderKycInclGst(),
 			recipientVerifyFee: dmtMod.DMT_RECIPIENT_VERIFY_FEE,
 			customerFeePct: dmtMod.DMT_CUSTOMER_FEE_PCT,
 			customerFeeMin: dmtMod.DMT_CUSTOMER_FEE_MIN,

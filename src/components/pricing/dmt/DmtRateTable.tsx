@@ -15,7 +15,6 @@ import {
 	DMT_SENDER_KYC_FEE,
 	EKO_DMT_CHARGE,
 	dmtRateCardRows,
-	dmtSenderKycInclGst,
 } from "@/lib/data/dmt-pricing";
 import { TDS_RATE } from "@/lib/data/payments-pricing";
 import { formatINRRate } from "@/lib/utils";
@@ -96,10 +95,10 @@ export const DmtRateTable = () => {
 					representative amounts, not bands. Below ₹1,000 the sender fee floors
 					at {formatINRRate(DMT_CUSTOMER_FEE_MIN)}, so commission is flat at{" "}
 					{formatINRRate(rows[0].grossCommission)}. Sender KYC{" "}
-					{formatINRRate(DMT_SENDER_KYC_FEE)} + GST (
-					{formatINRRate(dmtSenderKycInclGst())}) applies once per new sender;
-					recipient account verification {formatINRRate(DMT_RECIPIENT_VERIFY_FEE)}{" "}
-					(incl. GST) once per new recipient.
+					{formatINRRate(DMT_SENDER_KYC_FEE)} (incl. GST) applies once per new
+					sender; recipient account verification{" "}
+					{formatINRRate(DMT_RECIPIENT_VERIFY_FEE)} (incl. GST) once per new
+					recipient.
 				</p>
 			</FadeIn>
 		</div>

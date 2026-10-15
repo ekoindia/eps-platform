@@ -33,7 +33,6 @@ import {
 	DMT_SENDER_KYC_FEE,
 	EKO_DMT_CHARGE,
 	dmtRateCardRows,
-	dmtSenderKycInclGst,
 } from "@/lib/data/dmt-pricing";
 import {
 	CB_BANKS,
@@ -95,7 +94,6 @@ describe("renderPricingXlsx", () => {
 			dmt: {
 				rows: dmtRateCardRows(),
 				senderKycFee: DMT_SENDER_KYC_FEE,
-				senderKycInclGst: dmtSenderKycInclGst(),
 				recipientVerifyFee: DMT_RECIPIENT_VERIFY_FEE,
 				customerFeePct: DMT_CUSTOMER_FEE_PCT,
 				customerFeeMin: DMT_CUSTOMER_FEE_MIN,
@@ -448,7 +446,7 @@ describe("renderPricingXlsx", () => {
 				if (f) formulas.push(f);
 			});
 			const joined = formulas.join(" | ");
-			expect(joined).toContain(`*${dmtSenderKycInclGst()}`);
+			expect(joined).toContain(`*${DMT_SENDER_KYC_FEE}`);
 			expect(joined).toContain(`*${DMT_RECIPIENT_VERIFY_FEE}`);
 			expect(joined).toContain('="Yes"'); // recovery toggle
 		});

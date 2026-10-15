@@ -520,7 +520,7 @@ export const PRICING_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "Are the listed prices inclusive of GST?",
-		a: "No. All listed rates are **exclusive of GST**, which is charged at 18%. The [calculator](/pricing) lets you toggle the total between GST-inclusive and GST-exclusive views. Add your GST number in the [console section](/console) for GST-compliant invoices (Login to console > Manage My Account > E-Invoice / GST).",
+		a: "Verification API rates are **exclusive of GST**, which is charged at 18%. DMT fees and charges are the exception: they are GST-inclusive. The [calculator](/pricing) lets you toggle the total between GST-inclusive and GST-exclusive views. Add your GST number in the [console section](/console) for GST-compliant invoices (Login to console > Manage My Account > E-Invoice / GST).",
 	},
 	{
 		q: "Am I charged for failed verifications?",

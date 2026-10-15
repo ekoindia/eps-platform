@@ -58,8 +58,8 @@ describe("renderPricingMarkdown", () => {
 		expect(md).toContain("### Reverse Charge Mechanism (RCM)");
 		expect(md).toContain('RCM option set to "YES"');
 		expect(md).toContain("₹7.12"); // 18% of the ₹39.57 commission
-		expect(md).toContain("₹12.98"); // sender KYC incl. GST
-		expect(md).toContain("₹3.25"); // recipient account verification
+		expect(md).toContain("₹11.00"); // sender KYC incl. GST
+		expect(md).toContain("₹3.54"); // recipient account verification
 		expect(md).toContain("debited from your wallet");
 	});
 

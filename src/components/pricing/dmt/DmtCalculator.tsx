@@ -15,7 +15,7 @@ import {
 	DMT_RECIPIENT_VERIFY_FEE,
 	calcDmtQuote,
 	clampDmtAmount,
-	dmtSenderKycInclGst,
+	DMT_SENDER_KYC_FEE,
 	serializeDmtInput,
 	type DmtInput,
 } from "@/lib/data/dmt-pricing";
@@ -273,7 +273,7 @@ export const DmtCalculator = () => {
 					<>
 						<LedgerRow
 							label="Sender KYC charges"
-							note={`${quote.input.newSendersPerMonth} × ${formatINRRate(dmtSenderKycInclGst())}`}
+							note={`${quote.input.newSendersPerMonth} × ${formatINRRate(DMT_SENDER_KYC_FEE)}`}
 							value={`−${formatINR(quote.senderKycCost, 0)}`}
 							tone="muted"
 						/>
@@ -418,7 +418,7 @@ export const DmtCalculator = () => {
 								>
 									New senders / month
 									<span className="block text-[11px] text-muted-foreground/70">
-										KYC {formatINRRate(dmtSenderKycInclGst())} each (incl. GST)
+										KYC {formatINRRate(DMT_SENDER_KYC_FEE)} each (incl. GST)
 									</span>
 								</label>
 								<Input
@@ -439,6 +439,7 @@ export const DmtCalculator = () => {
 									New recipients / month
 									<span className="block text-[11px] text-muted-foreground/70">
 										Account check {formatINRRate(DMT_RECIPIENT_VERIFY_FEE)} each
+										(incl. GST)
 									</span>
 								</label>
 								<Input

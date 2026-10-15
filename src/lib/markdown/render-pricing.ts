@@ -32,7 +32,6 @@ import {
 	EKO_DMT_CHARGE,
 	calcDmtTxn,
 	dmtRateCardRows,
-	dmtSenderKycInclGst,
 } from "@/lib/data/dmt-pricing";
 import {
 	CB_BANKS,
@@ -165,9 +164,9 @@ export function renderPricingMarkdown(): string {
 		`DMT commission is notified under reverse charge: the GST on your commission is paid to the government by Eko, not collected and remitted by you. Raise your invoice to Eko with the **RCM option set to "YES"** and no GST line on it. On the ${formatAmount(dmtExample.amount)} example the RCM amount is ${formatRate(dmtExample.rcmGst)} (${Math.round(GST_RATE * 100)}% of ${formatRate(dmtExample.grossCommission)}). Confirm the treatment for your own registration with your accountant.`,
 		h3("Other DMT charges"),
 		bulletList([
-			`Sender KYC: ${formatAmount(DMT_SENDER_KYC_FEE)} + GST (${formatRate(dmtSenderKycInclGst())}), charged once per newly registered sender.`,
+			`Sender KYC: ${formatRate(DMT_SENDER_KYC_FEE)} (incl. GST), charged once per newly registered sender.`,
 			`Recipient bank account verification: ${formatRate(DMT_RECIPIENT_VERIFY_FEE)} (incl. GST), charged once per new recipient — not per transfer.`,
-			"Both are debited from your wallet; you may recover them from your customer in your own app.",
+			"Both are debited from your wallet, are the same for every DMT provider (Fino, Levin), and you may recover them from your customer in your own app.",
 			`Maximum transfer amount: ${formatAmount(DMT_MAX_TXN_AMOUNT)} per transaction.`,
 		]),
 	);

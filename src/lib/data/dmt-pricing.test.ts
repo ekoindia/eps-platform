@@ -9,7 +9,7 @@ import {
 	DMT_RECIPIENT_VERIFY_FEE,
 	dmtMaxCommission,
 	dmtRateCardRows,
-	dmtSenderKycInclGst,
+	DMT_SENDER_KYC_FEE,
 	EKO_DMT_CHARGE,
 } from "@/lib/data/dmt-pricing";
 import { TDS_RATE } from "@/lib/data/payments-pricing";
@@ -121,20 +121,20 @@ describe("calcDmtQuote", () => {
 
 	it("debits sender KYC and recipient verification from the wallet", () => {
 		const quote = calcDmtQuote(base);
-		expect(dmtSenderKycInclGst()).toBe(12.98); // ₹11 + 18% GST
-		expect(quote.senderKycCost).toBe(649); // 50 × 12.98
-		expect(quote.recipientVerifyCost).toBe(260); // 80 × 3.25, already incl. GST
-		expect(DMT_RECIPIENT_VERIFY_FEE).toBe(3.25);
-		expect(quote.addOnCost).toBe(909);
-		expect(quote.monthlyTakeHome).toBe(17_113.2);
+		expect(DMT_SENDER_KYC_FEE).toBe(11); // already incl. GST
+		expect(quote.senderKycCost).toBe(550); // 50 × 11
+		expect(quote.recipientVerifyCost).toBe(283.2); // 80 × 3.54, already incl. GST
+		expect(DMT_RECIPIENT_VERIFY_FEE).toBe(3.54);
+		expect(quote.addOnCost).toBe(833.2);
+		expect(quote.monthlyTakeHome).toBe(17_189);
 	});
 
 	// The wallet debit happens whether or not the partner passes the charge on;
 	// recovery is an offsetting credit, never a suppressed cost.
 	it("models recovery as a credit without hiding the debit", () => {
 		const quote = calcDmtQuote({ ...base, recoverChargesFromCustomer: true });
-		expect(quote.addOnCost).toBe(909);
-		expect(quote.recoveredFromCustomer).toBe(909);
+		expect(quote.addOnCost).toBe(833.2);
+		expect(quote.recoveredFromCustomer).toBe(833.2);
 		expect(quote.monthlyTakeHome).toBe(quote.monthlyNetCommission);
 	});
 

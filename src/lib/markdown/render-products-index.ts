@@ -27,7 +27,6 @@ import {
 	DMT_SENDER_KYC_FEE,
 	EKO_DMT_CHARGE,
 	dmtRateCardRows,
-	dmtSenderKycInclGst,
 } from "@/lib/data/dmt-pricing";
 import { docsHref } from "@/lib/data/docs-registry";
 import {
@@ -185,7 +184,7 @@ const dmtSenderNotes = [
 	`Sender transaction fee: ${DMT_CUSTOMER_FEE_PCT * 100}% of the amount, minimum ${formatRate(DMT_CUSTOMER_FEE_MIN)} — INCLUSIVE of GST; nothing is added on top.`,
 	`Eko charge: ${formatRate(EKO_DMT_CHARGE)} per transaction, deducted from the fee's taxable value.`,
 	`Reverse Charge Mechanism applies: Eko pays the GST on your commission. Invoice Eko with RCM = "YES" and no GST line.`,
-	`Sender KYC: ${formatAmount(DMT_SENDER_KYC_FEE)} + GST (${formatRate(dmtSenderKycInclGst())}) once per new sender; recipient account verification ${formatRate(DMT_RECIPIENT_VERIFY_FEE)} (incl. GST) once per new recipient. Both debited from your wallet.`,
+	`Sender KYC: ${formatRate(DMT_SENDER_KYC_FEE)} (incl. GST) once per new sender; recipient account verification ${formatRate(DMT_RECIPIENT_VERIFY_FEE)} (incl. GST) once per new recipient. Both debited from your wallet.`,
 	`Maximum transaction amount: ${formatAmount(DMT_MAX_TXN_AMOUNT)}.`,
 ];
 
