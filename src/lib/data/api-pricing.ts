@@ -240,6 +240,15 @@ export const PRICED_APIS: PricedApi[] = [
 
 	// Bank Account
 	{
+		id: "bank-ifsc",
+		name: "Bank Search by IFSC",
+		shortName: "IFSC Lookup",
+		productId: "bank-info",
+		group: "Bank Account",
+		tiers: [{ upTo: null, rate: 1 }],
+		unitLabel: "per lookup",
+	},
+	{
 		id: "bank-pennyless",
 		name: "Bank Account Verification (Pennyless)",
 		shortName: "Pennyless",
@@ -367,13 +376,26 @@ export const PRICED_APIS: PricedApi[] = [
 		tiers: [{ upTo: null, rate: 7.8 }],
 		unitLabel: "per download",
 	},
+	// Create URL is free; the document fetch and each status check are billed.
 	{
-		id: "digilocker-create-url",
-		name: "DigiLocker (Create URL)",
+		id: "digilocker-get-document",
+		name: "DigiLocker (Get Document)",
+		shortName: "Get Document",
 		productId: "digilocker",
 		group: "Identity Documents",
 		tiers: [{ upTo: null, rate: 2.5 }],
-		unitLabel: "per request",
+		unitLabel: "per document",
+	},
+	{
+		id: "digilocker-verification-status",
+		name: "DigiLocker (Verification Status)",
+		shortName: "Status Check",
+		productId: "digilocker",
+		group: "Identity Documents",
+		tiers: [{ upTo: null, rate: 2.5 }],
+		unitLabel: "per check",
+		// Companion call of Get Document: one integration, one setup fee.
+		setupFee: 0,
 	},
 	{
 		id: "name-match",
@@ -439,6 +461,14 @@ export const PRICED_APIS: PricedApi[] = [
 		productId: "geocoding",
 		group: "Data & Utility",
 		tiers: [{ upTo: null, rate: 3.6 }],
+		unitLabel: "per lookup",
+	},
+	{
+		id: "ip",
+		name: "IP Verification",
+		productId: "ip",
+		group: "Data & Utility",
+		tiers: [{ upTo: null, rate: 2.5 }],
 		unitLabel: "per lookup",
 	},
 
