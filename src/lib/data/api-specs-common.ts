@@ -187,6 +187,83 @@ export const isRetrySafe = (
 	!financial &&
 	!(semantics.sideEffects ?? []).includes("moves-money");
 
+/** One behaviour badge shown on an endpoint's docs page and `.md` twin. */
+export interface SemanticBadge {
+	label: string;
+	/** One-sentence explanation (tooltip / markdown gloss). */
+	hint: string;
+	/** `positive` = harmless (read-only); `caution` = never blindly repeat;
+	 * `earning` = income for the partner (commission), styled apart from cost. */
+	tone: "positive" | "neutral" | "caution" | "earning";
+	/** Optional link, e.g. the pricing calculator line for a price badge. */
+	href?: string;
+}
+
+/**
+ * Behaviour badges for an endpoint, derived from its `semantics` (+ the retry
+ * rule). Shared by the docs page and the markdown twin so they cannot
+ * disagree. Empty when the spec is unlabelled.
+ *
+ * - A billable call shows its price instead of a bare "Billable" (falls back
+ *   to "Billable" only if no price is known — `spec-prices.test.ts` forbids that).
+ * - "Safe to retry" appears only on calls that change state yet can be
+ *   re-sent. On a read-only call it is implied, or deliberately absent: a
+ *   paid lookup bills again (its price badge says so) and a read-only
+ *   non-idempotent call (AePS balance enquiry) uses a single-use biometric block.
+ * - A call that earns the partner a commission gets an "Earns commission"
+ *   badge (its own tone, so income never reads as a cost).
+ * @param spec - The endpoint spec
+ * @param price - The endpoint's price, from `specPrice(spec.id)`
+ * @param commission - The endpoint's commission, from `specCommission(spec.id)`
+ */
+export const semanticBadges = (
+	spec: Pick<ApiSpec, "semantics" | "financial">,
+	price?: { label: string; hint: string; href: string },
+	commission?: { label: string; hint: string; href: string },
+): SemanticBadge[] => {
+	const sem = spec.semantics;
+	if (!sem) return [];
+	const effects = sem.sideEffects ?? [];
+	const badges: (SemanticBadge | false)[] = [
+		sem.readOnly && {
+			label: "Read-only",
+			hint: "Changes nothing; only returns data.",
+			tone: "positive",
+		},
+		effects.includes("moves-money") && {
+			label: "Moves money",
+			hint: "Moves real money and cannot be undone. After a timeout, confirm the outcome before ever re-sending.",
+			tone: "caution",
+		},
+		effects.includes("sends-otp") && {
+			label: "Sends OTP",
+			hint: "Sends an SMS to the customer; repeating the call sends another.",
+			tone: "caution",
+		},
+		effects.includes("deactivates") && {
+			label: "Deactivates",
+			hint: "Turns a service off for the user.",
+			tone: "caution",
+		},
+		sem.billable &&
+			(price
+				? { ...price, tone: "neutral" }
+				: {
+						label: "Billable",
+						hint: "Each successful call is charged per EPS pricing.",
+						tone: "neutral",
+					}),
+		commission !== undefined && { ...commission, tone: "earning" },
+		!sem.readOnly &&
+			isRetrySafe(sem, spec.financial) && {
+				label: "Safe to retry",
+				hint: "A call that timed out can be re-sent with the same arguments.",
+				tone: "neutral",
+			},
+	];
+	return badges.filter((b): b is SemanticBadge => b !== false);
+};
+
 /**
  * One REST API. Common pieces (auth headers, common request params, response
  * envelope, error-code table) are inherited via the resolvers below and MUST

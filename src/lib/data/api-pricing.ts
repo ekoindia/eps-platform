@@ -59,6 +59,12 @@ export interface PricedApi {
 	isBulk?: boolean;
 	/** Optional footnote shown alongside the API */
 	notes?: string;
+	/**
+	 * Id of the documented endpoint (`ApiSpec.id`) this row prices. Drives the
+	 * price badge on that endpoint's docs page and the billable ↔ priced check
+	 * in `spec-prices.test.ts`. Omit for an API with no documented endpoint yet.
+	 */
+	specId?: string;
 }
 
 /** A bundle of APIs whose combined one-time setup fee is discounted. */
@@ -205,6 +211,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// PAN
 	{
 		id: "pan-fetch",
+		specId: "pan-fetch",
 		name: "Fetch PAN Details",
 		shortName: "Fetch PAN",
 		productId: "pan",
@@ -213,6 +220,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "pan-lite",
+		specId: "pan-lite",
 		name: "PAN Verification (Lite)",
 		shortName: "PAN Lite",
 		productId: "pan",
@@ -222,6 +230,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "pan-advanced",
+		specId: "pan-advanced",
 		name: "PAN Verification (Advanced)",
 		shortName: "PAN Advanced",
 		productId: "pan",
@@ -230,6 +239,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "pan-bulk",
+		specId: "pan-bulk-verify",
 		name: "Bulk PAN Verification",
 		shortName: "Bulk PAN",
 		productId: "pan",
@@ -241,6 +251,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// Bank Account
 	{
 		id: "bank-ifsc",
+		specId: "get-ifsc-details",
 		name: "Bank Search by IFSC",
 		shortName: "IFSC Lookup",
 		productId: "bank-info",
@@ -250,6 +261,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "bank-pennyless",
+		specId: "bank-account-verification-pennyless",
 		name: "Bank Account Verification (Pennyless)",
 		shortName: "Pennyless",
 		productId: "bank",
@@ -258,6 +270,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "bank-pennydrop",
+		specId: "bank-account-verification",
 		name: "Bank Account Verification (Pennydrop)",
 		shortName: "Pennydrop",
 		productId: "bank",
@@ -267,6 +280,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "bank-bulk",
+		specId: "bulk-bank-account-verification",
 		name: "Bulk Bank Account Verification",
 		shortName: "Bulk Account Verification",
 		productId: "bank",
@@ -278,6 +292,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// UPI
 	{
 		id: "upi-vpa",
+		specId: "upi-validate-vpa",
 		name: "UPI ID (VPA) Verification",
 		shortName: "VPA Verify",
 		productId: "upi",
@@ -297,6 +312,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// GST & Business
 	{
 		id: "gst-basic",
+		specId: "verify-gstin",
 		name: "GST Verification (Basic)",
 		shortName: "GST Basic",
 		productId: "gst",
@@ -305,6 +321,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "gst-fetch-by-pan",
+		specId: "gstin-with-pan",
 		name: "Fetch GST with PAN",
 		shortName: "GST by PAN",
 		productId: "gst",
@@ -320,6 +337,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "cin",
+		specId: "cin",
 		name: "CIN Verification",
 		productId: "cin",
 		group: "GST & Business",
@@ -327,6 +345,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "din",
+		specId: "din-verification",
 		name: "DIN Verification",
 		productId: "din",
 		group: "GST & Business",
@@ -334,6 +353,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "fssai",
+		specId: "fetch-fssai",
 		name: "FSSAI License Verification",
 		productId: "fssai",
 		group: "GST & Business",
@@ -341,6 +361,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "itr-compliance",
+		specId: "itr-compliance",
 		name: "ITR Compliance Check",
 		productId: "itr",
 		group: "GST & Business",
@@ -350,6 +371,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// Identity Documents
 	{
 		id: "dl",
+		specId: "driving-license",
 		name: "Driving Licence Verification",
 		productId: "dl",
 		group: "Identity Documents",
@@ -357,6 +379,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "voter-id",
+		specId: "voter-id",
 		name: "Voter ID Verification",
 		productId: "voter-id",
 		group: "Identity Documents",
@@ -364,6 +387,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "passport-application",
+		specId: "passport-application",
 		name: "Passport Application Validation",
 		productId: "passport-application",
 		group: "Identity Documents",
@@ -379,6 +403,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// Create URL is free; the document fetch and each status check are billed.
 	{
 		id: "digilocker-get-document",
+		specId: "digilocker-get-document",
 		name: "DigiLocker (Get Document)",
 		shortName: "Get Document",
 		productId: "digilocker",
@@ -388,6 +413,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "digilocker-verification-status",
+		specId: "digilocker-verification-status",
 		name: "DigiLocker (Verification Status)",
 		shortName: "Status Check",
 		productId: "digilocker",
@@ -399,6 +425,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "name-match",
+		specId: "name-match",
 		name: "Name Match",
 		productId: "name-match",
 		group: "Identity Documents",
@@ -409,6 +436,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// Vehicle
 	{
 		id: "rc",
+		specId: "vehicle-rc",
 		name: "Vehicle RC Verification",
 		productId: "rc",
 		group: "Vehicle",
@@ -416,6 +444,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "e-challan",
+		specId: "e-challan",
 		name: "Vehicle E-Challan Advance",
 		productId: "e-challan",
 		group: "Vehicle",
@@ -434,6 +463,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "employee-detail",
+		specId: "advance-employment",
 		name: "Employee Detail",
 		productId: "employee",
 		group: "Employment",
@@ -449,6 +479,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// Data & Utility
 	{
 		id: "email-check",
+		specId: "check-email",
 		name: "Email Verification",
 		productId: "email",
 		group: "Data & Utility",
@@ -457,6 +488,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "reverse-geocoding",
+		specId: "reverse-geocoding",
 		name: "Reverse Geocoding",
 		productId: "geocoding",
 		group: "Data & Utility",
@@ -465,6 +497,7 @@ export const PRICED_APIS: PricedApi[] = [
 	},
 	{
 		id: "ip",
+		specId: "ip",
 		name: "IP Verification",
 		productId: "ip",
 		group: "Data & Utility",
@@ -475,6 +508,7 @@ export const PRICED_APIS: PricedApi[] = [
 	// Mobile OTP
 	{
 		id: "mobile-otp-send",
+		specId: "mobile-otp-send",
 		name: "Mobile OTP (Send)",
 		shortName: "Send OTP",
 		productId: "mobile-otp",

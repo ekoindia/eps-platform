@@ -14,6 +14,7 @@ import {
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import { SDK_GUIDES, sdkGuideHref } from "@/lib/data/sdk-guides";
 import { recipeHref } from "@/lib/data/api-recipes";
+import { specCommission, specPrice } from "@/lib/data/spec-prices";
 import type {
 	ApiErrorScenario,
 	ApiParam,
@@ -22,6 +23,7 @@ import type {
 	ResponseField,
 } from "@/lib/data/api-specs-common";
 import {
+	semanticBadges,
 	buildMultipartPayload,
 	buildSampleRequest,
 	isMultipart,
@@ -127,6 +129,25 @@ const paramTable = (params: ApiParam[]): string =>
 	);
 
 /** Render a single endpoint's markdown twin. */
+/** "Behaviour" list from the spec's semantics badges; undefined when unlabelled. */
+const behaviourBlock = (spec: ApiSpec): string | undefined => {
+	const badges = semanticBadges(
+		spec,
+		specPrice(spec.id),
+		specCommission(spec.id),
+	);
+	if (badges.length === 0) return undefined;
+	return [
+		"**Behaviour**",
+		"",
+		...badges.map((b) =>
+			b.href
+				? `- **[${b.label}](${SITE_URL}${b.href})**: ${b.hint}`
+				: `- **${b.label}**: ${b.hint}`,
+		),
+	].join("\n");
+};
+
 export function renderEndpointMarkdown(spec: ApiSpec): string {
 	const canonical = `${SITE_URL}${docsHref(endpointSlug(spec))}`;
 	const requestParams = resolveRequestParams(spec);
@@ -148,6 +169,7 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 		h1(`${spec.name} API Reference`),
 		`\`${spec.method} ${DEFAULT_BASE_URL}${spec.path}\``,
 		spec.summary,
+		behaviourBlock(spec),
 		spec.uatUnavailable &&
 			`> [!WARNING]\n> The ${API_ENVIRONMENTS.sandbox.label} environment is not available for this API — requests to \`${API_ENVIRONMENTS.sandbox.baseUrl}\` return an error response. Test it in ${API_ENVIRONMENTS.production.label}.`,
 		resolveShortDescription(spec),

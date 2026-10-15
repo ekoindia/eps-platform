@@ -5,6 +5,7 @@ import {
 	assertParamFormats,
 	assertResponseTypeSlugs,
 	assertSemantics,
+	semanticBadges,
 	buildMultipartPayload,
 	buildSampleRequest,
 	COMMON_REQUEST_PARAMS,
@@ -497,5 +498,89 @@ describe("assertSemantics", () => {
 
 	it("passes for every documented spec", () => {
 		expect(() => assertSemantics(getDocumentedSpecs())).not.toThrow();
+	});
+});
+
+describe("semanticBadges", () => {
+	const labels = (over: Partial<ApiSpec>) =>
+		semanticBadges(spec(over)).map((b) => b.label);
+
+	it("is empty for an unlabelled spec", () => {
+		expect(labels({})).toEqual([]);
+	});
+
+	it("labels a free lookup read-only; retry safety is implied", () => {
+		expect(
+			labels({
+				semantics: { readOnly: true, idempotent: true, billable: false },
+			}),
+		).toEqual(["Read-only"]);
+	});
+
+	it("shows the price instead of Billable, and never retry on money", () => {
+		expect(
+			labels({
+				semantics: { readOnly: true, idempotent: true, billable: true },
+			}),
+		).toEqual(["Read-only", "Billable"]); // no price known → fallback
+		expect(
+			labels({
+				financial: true,
+				semantics: {
+					readOnly: false,
+					idempotent: false,
+					billable: true,
+					sideEffects: ["moves-money"],
+				},
+			}),
+		).toEqual(["Moves money", "Billable"]);
+	});
+
+	it("uses the price badge when a price is given", () => {
+		const price = {
+			label: "₹1.20 + GST / verification",
+			hint: "h",
+			href: "/pricing",
+		};
+		expect(
+			semanticBadges(
+				spec({
+					semantics: { readOnly: true, idempotent: true, billable: true },
+				}),
+				price,
+			).map((b) => b.label),
+		).toEqual(["Read-only", "₹1.20 + GST / verification"]);
+	});
+
+	it("shows Safe to retry only on a state-changing call that allows it", () => {
+		expect(
+			labels({
+				semantics: {
+					readOnly: false,
+					idempotent: true,
+					billable: false,
+					sideEffects: ["deactivates"],
+				},
+			}),
+		).toEqual(["Deactivates", "Safe to retry"]);
+	});
+
+	it("adds Earns commission in its own tone", () => {
+		const badges = semanticBadges(
+			spec({
+				semantics: {
+					readOnly: false,
+					idempotent: false,
+					billable: false,
+					sideEffects: ["moves-money"],
+				},
+			}),
+			undefined,
+			{ label: "Earns commission", hint: "h", href: "/pricing" },
+		);
+		expect(badges.map((b) => [b.label, b.tone])).toEqual([
+			["Moves money", "caution"],
+			["Earns commission", "earning"],
+		]);
 	});
 });
