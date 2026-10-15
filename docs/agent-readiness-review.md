@@ -36,7 +36,7 @@ Everything here is **portal-side** unless marked **[core]**: wire behaviour or f
 | 1 Discovery | 🟡 | `llms.txt`, `.md` twins, `/agent/*` bundle, OpenAPI, CORS `*` all live. Nothing under `/.well-known/`; `/ai-sitemap.xml` and every `.well-known` path return **200 + HTML SPA shell** (soft-404, worse than a 404 for a scanner); `/llms-full.txt` is an alias of the index; no `<link>` to OpenAPI/bundle in HTML `<head>`. |
 | 2 Documentation | ✅ | 112/113 descriptions, **345/345 params described**, **903/903 response fields described**, 112 sample responses, `bestFor`, `responseTypes.next` routing, 4 branching recipes. Weak spots: 44 specs with no `errorScenarios`, terse MCP tool descriptions. |
 | 3 Authentication | 🟡 | HMAC fully specified with a published, unit-tested test vector; `get_signing_snippet` (6 languages); secret-free `debug_auth`; zero-signup public sandbox keypair. But OpenAPI **deliberately has no `securitySchemes`** so scanners/generators see an unauthenticated API; clock-skew tolerance unpublished. |
-| 4 Semantics | 🟡 | `ApiSpec.semantics` labels all 84 documented specs; the build fails on a missing label (3.1, 2026-10-15). Not yet emitted: OpenAPI, bundle, SDKs and the transact MCP still lack it (3.2–3.4). |
+| 4 Semantics | ✅ | `ApiSpec.semantics` labels all 84 documented specs and the build fails on a missing label (3.1). Emitted everywhere (3.2–3.4, 2026-10-15): bundle, OpenAPI `x-eko-semantics`, SDK `retrySafe`, transact MCP annotations, docs badges. |
 | 5 Schema | 🟡 | Response schemas have real nested `properties`. But the OpenAPI param serializer **drops `format`/`pattern`, `enum`, `min`/`max`, `maxLength`**; source data has 0 enums; no `components`/`$ref` (envelope repeated per op → 830 KB file); no `required` arrays. |
 | 6 Error recovery | 🟡 | Two-level status model documented; field-level `invalid_params`; `responseTypes.next`; SDKs classify 429/5xx/timeout as *indeterminate* and auto-inquire for financial calls — better than the article's baseline. But: no retryable/category metadata; docs contradicted each other (fixed in this pass, §6); transact MCP collapses HTTP and validation errors into `UPSTREAM_ERROR`; business failures look like success. |
 | 7 Runtime safety | ❌ | **No rate limits published anywhere.** `client_ref_id` optional, dedupe semantics unknown, mislabelled "idempotency" in two places (fixed). No `Retry-After` sent or honoured. Transact MCP exposes only non-financial verification tools — correct for now, no gating design for money tools yet. |
@@ -179,6 +179,10 @@ api-specs.ts ──► docs pages + .md twins      full (description, params, re
              ──► mock server                 scenario selector was keyed on response_status_id (fixed, §6.2)
 ```
 
+_Update 2026-10-15 (3.1–3.4): behaviour labels now reach every surface above — `semantics` in the bundle and context MCP, `x-eko-semantics` / `x-eko-financial` in OpenAPI, `retrySafe` in `sdk-surface.json`, transact MCP hints derived from data (hand map deleted), docs badges._
+
+> ⚠ **Open, found 2026-10-15:** commit 7996d7b8 changed Transaction Inquiry from `/tools/reference/transaction/{transaction-reference}` to `/tools/reference/transaction` with `tid` / `client_ref_id` query params. All five SDKs still send `transaction-reference=client_ref_id:<ref>` when they reconcile an indeterminate financial call, so that automatic status check no longer matches the documented API (one inquiry test fails per SDK). Fix the SDK inquiry call and `docs/sdk-golden-vector.md` together, once the live inquiry contract is confirmed.
+
 Rule of thumb from the article applied here: **anything only a human can read (prose) is lost to one surface or another.** Every fix below moves a fact from prose into a field.
 
 ## 6. Done in this pass (2026-10-08) — doc-consistency fixes
@@ -222,9 +226,9 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 | Step | What | Impact | Effort | Risk / notes |
 |---|---|---|---|---|
 | ✅ 3.1 | **Done 2026-10-15.** `ApiSpec.semantics: { readOnly, idempotent, billable, sideEffects? }` on all 84 documented specs; `assertSemantics` in `buildAgentBundle` fails the build on a missing or inconsistent label; no inference from method or `financial`. Specs of disabled products (PPI, QR, CMS, customer-management) stay unlabelled until re-enabled. Signed-off values: [semantics-review-sheet.md](semantics-review-sheet.md); the 9 DMT-Levin rows are by analogy and await review | Foundation for 3.2–3.4; mode 4 | M–L | review also corrected pricing: `ip`, IFSC and DigiLocker rows, DMT add-on fees |
-| 3.2 | Transact MCP annotations derived from `semantics`; delete `SIDE_EFFECTS` map; `destructiveHint` from `sideEffect`, `openWorldHint` separate | No drift between data and hints | S | depends 3.1; hints are advisory, hosts may ignore |
-| 3.3 | Emit `x-eko-semantics` + `x-eko-financial` in OpenAPI; `semantics` in bundle + `sdk-surface.json`; SDKs may retry non-GET **only when `idempotent: true`** | Safe retries, never on money | S | depends 3.1 |
-| 3.4 | Docs badge (Read-only · Billable · Money-moving · Sends OTP) on endpoint page and `.md` twin | Humans and agents see it | S | depends 3.1 |
+| ✅ 3.2 | **Done 2026-10-15.** Transact MCP annotations derived from `semantics`; delete `SIDE_EFFECTS` map; `destructiveHint` from `sideEffect`, `openWorldHint` separate | No drift between data and hints | S | depends 3.1; hints are advisory, hosts may ignore |
+| ✅ 3.3 | **Done 2026-10-15.** `retrySafe` = idempotent && !billable && !moves-money && !financial (`isRetrySafe`), so 2 billable GETs stop retrying and 2 idempotent free PUTs start. Emit `x-eko-semantics` + `x-eko-financial` in OpenAPI; `semantics` in bundle + `sdk-surface.json`; SDKs may retry non-GET **only when `idempotent: true`** | Safe retries, never on money | S | depends 3.1 |
+| ✅ 3.4 | **Done 2026-10-15.** Docs badge (Read-only · Moves money · Sends OTP · Deactivates · Billable · Safe to retry) on endpoint page and `.md` twin, from `semanticBadges` | Humans and agents see it | S | depends 3.1 |
 
 ### Phase 4 — Error recovery & runtime safety
 

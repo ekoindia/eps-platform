@@ -209,8 +209,15 @@ semantics: {
 fails the build when a label is missing or inconsistent. Specs of disabled
 products may stay unlabelled; re-enabling the product fails the build until they
 are labelled. Signed-off values and their evidence:
-[`semantics-review-sheet.md`](semantics-review-sheet.md). Nothing emits the field
-yet (agent-readiness steps 3.2–3.4).
+[`semantics-review-sheet.md`](semantics-review-sheet.md). Consumers: the agent
+bundle (`semantics`), OpenAPI (`x-eko-semantics`, `x-eko-financial`), the SDK
+surface (`retrySafe` from `isRetrySafe`), the transact MCP's annotations, and the
+docs badges (`semanticBadges`, which shows a billable call's price from
+`spec-prices.ts`).
+
+A billable spec must have a price: add `specId` to its `PRICED_APIS` row (or an
+entry in `spec-prices.ts` for a DMT / AePS charge). `spec-prices.test.ts`
+enforces billable ↔ priced in both directions.
 
 ### `imp` flags ("What can you verify?")
 

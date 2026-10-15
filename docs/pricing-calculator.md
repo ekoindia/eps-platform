@@ -94,6 +94,7 @@ Each sellable API is a `PricedApi`:
 | `popular`   | Shows the Popular badge + quick-add chip eligibility                                                                                                                                                    |
 | `setupFee`  | One-time activation fee (INR, excl. GST). Omit when none.                                                                                                                                               |
 | `isBulk`    | Bulk APIs (billed per individual verification inside the bulk request) — renders an asterisk + footnote; list bulk APIs **after** non-bulk APIs within their group                                      |
+| `specId` | Documented endpoint (`ApiSpec.id`) this row prices; drives the docs price badge and the billable ↔ priced test. Omit when the API has no docs page yet. |
 
 All rates: **INR per transaction, exclusive of GST @ 18%** (`GST_RATE`).
 Money math runs in integer paise to avoid float drift (`calcQuote`, `calcLineCost`).
@@ -109,9 +110,17 @@ Rows added or re-keyed 2026-10-15 from the [semantics review](semantics-review-s
   links carrying `digilocker-create-url` now drop that line; `calcQuote` ignores
   unknown ids.
 
-A price row and an endpoint's `semantics.billable` must agree. There is no
-id link between them (`dl` prices `driving-license`), so check both when a
-price changes.
+Each row that prices a documented endpoint names it in `specId` (`dl` →
+`driving-license`). `spec-prices.ts` turns rows, DMT add-ons and AePS
+settlement charges into the price badge on each endpoint's docs page, and
+`SPEC_COMMISSIONS` adds an "Earns commission" badge to AePS cash withdrawal /
+mini statement, BBPS pay bill and DMT transfers. Every badge links to its
+calculator section (`#calculator`, `#dmt-calculator`, `#payments-calculator`;
+AePS links preselect their line via `pay=`), and
+`spec-prices.test.ts` fails when a billable endpoint has no price or a price
+points at a non-billable endpoint. Rows with no documented endpoint yet
+(`ckyc-download`, `doctor`, `upi-mobile-to-vpa`, `gst-advance`,
+`epfo-passbook`) omit `specId`.
 
 ### Payments & BC (`src/lib/data/payments-pricing.ts`)
 

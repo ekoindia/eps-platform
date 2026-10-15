@@ -25,7 +25,14 @@ type SideEffect =
 
 **Enforcement.** `assertSemantics(specs)` runs inside `buildAgentBundle` over `getDocumentedSpecs()`, the specs of active products. It throws, naming every offender, when a spec has no `semantics`, a read-only spec lists side effects, or a writing spec lists none. The field is optional in the type only so that specs of disabled products stay unlabelled. Re-enabling a product therefore fails the build until its specs are labelled.
 
-**Not yet consumed.** Nothing reads the field yet. Steps 3.2 (MCP hints), 3.3 (OpenAPI, bundle, SDK retry) and 3.4 (docs badges) emit it.
+**Where the labels are used** (steps 3.2–3.4, 2026-10-15):
+
+- **Agent bundle** (`/agent/eps.json`, `api/<slug>.json`, context MCP `get_api`): `semantics` on every endpoint.
+- **OpenAPI**: `x-eko-semantics` and `x-eko-financial` on each operation.
+- **SDKs**: `sdk-surface.json` carries `retrySafe` from `isRetrySafe`; all five SDKs auto-retry only those endpoints (see `docs/sdk-golden-vector.md`).
+- **Transact MCP**: `readOnlyHint`, `idempotentHint`, `destructiveHint` and the side-effect / billing sentence of each tool. The hand-written `SIDE_EFFECTS` map is gone.
+- **Docs**: behaviour badges on each endpoint page and a "Behaviour" list in its `.md` twin, both from `semanticBadges`. Read-only (pastel green), Moves money / Sends OTP / Deactivates (amber), the call's **price** instead of a bare "Billable", **Earns commission** (pastel blue) on AePS cash withdrawal, AePS mini statement, BBPS pay bill and both DMT transfers, and Safe to retry. Every price and commission tag links to its calculator section on /pricing (`#calculator`, `#dmt-calculator`, `#payments-calculator`); AePS tags preselect their calculator line. Safe to retry shows only on state-changing calls: on a read-only call it is implied, and its two exceptions are visible anyway (a paid lookup bills again, shown by its price; AePS balance enquiry and mini statement use a single-use biometric block).
+- **Billable ↔ priced check**: `spec-prices.ts` resolves each endpoint's price from `PricedApi.specId` (verification), `dmt-pricing.ts` (KYC, recipient check, per-transfer Eko charge) and `payments-pricing.ts` (AePS settlement). `spec-prices.test.ts` fails when a billable documented endpoint has no price, or a price points at an endpoint that is not billable. Commissions (`SPEC_COMMISSIONS`) are income, not charges, so they never make an endpoint billable; the test only requires each to name a documented endpoint. `verify-gstin` is priced by GST Basic and `advance-employment` by Employee Detail.
 
 ## 2. Labelling rules
 
