@@ -1100,7 +1100,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		slug: "dmt-initiate-transfer",
 		summary: "Execute a DMT-Fino money transfer after OTP verification.",
 		description:
-			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account after OTP validation. Requires the otp and otp_ref_id from Send Transaction OTP plus a unique client_ref_id per attempt for reconciliation (it is NOT an idempotency key — on a timeout, look the attempt up via Transaction Inquiry with `client_ref_id:<ref>` before retrying). The response returns tid (Eko transaction ID) and bank_ref_num (the IMPS RRN/UTR). Use a fresh otp_ref_id and OTP for each attempt — a consumed OTP is rejected — and always persist tid, bank_ref_num, and your client_ref_id to reconcile before retrying.",
+			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account after OTP validation. Requires the otp and otp_ref_id from Send Transaction OTP plus a unique client_ref_id per attempt for reconciliation (it is NOT an idempotency key — on a timeout, look the attempt up via Transaction Inquiry with `client_ref_id=<ref>` before retrying). The response returns tid (Eko transaction ID) and bank_ref_num (the IMPS RRN/UTR). Use a fresh otp_ref_id and OTP for each attempt — a consumed OTP is rejected — and always persist tid, bank_ref_num, and your client_ref_id to reconcile before retrying.",
 		relevance: "M",
 		bestFor:
 			"Executing the actual money transfer — the only money-debit step in the DMT flow.",
@@ -1161,7 +1161,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Unique partner reference for this transaction, used for reconciliation and Transaction Inquiry lookup (`client_ref_id:<ref>`). Use a fresh value per attempt; it is not an idempotency key.",
+					"Unique partner reference for this transaction, used for reconciliation and Transaction Inquiry lookup (`client_ref_id=<ref>`). Use a fresh value per attempt; it is not an idempotency key.",
 				example: "<unique_client_ref_id>",
 			},
 		],
