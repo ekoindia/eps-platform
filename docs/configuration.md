@@ -100,6 +100,7 @@ shared elements live once and are composed via resolvers — see
 |------|-----------|-----------|
 | [`src/lib/data/api-pricing.ts`](../src/lib/data/api-pricing.ts) | Verification per-call rates, tiers, pricing FAQs | Rate-card changes |
 | [`src/lib/data/payments-pricing.ts`](../src/lib/data/payments-pricing.ts) | DMT / AePS / BBPS commission slabs, GST/TDS rates | Commission changes |
+| [`src/lib/data/credit-card-pricing.ts`](../src/lib/data/credit-card-pricing.ts) | Credit Card Bill Payment fee per payment + its own setup fee (a cost, not a BBPS commission) | Credit card fee changes |
 | [`src/lib/data/connected-banking-pricing.ts`](../src/lib/data/connected-banking-pricing.ts) | Connected-banking (BC) pricing + `CONNECTED_BANKING_ENABLED` master switch (currently `false`) | BC pricing changes; showing/hiding the whole product |
 
 Pricing feeds the pricing page, `/pricing.md`, and the offline XLSX calculator — see [docs/pricing-calculator.md](pricing-calculator.md).
@@ -146,10 +147,10 @@ Per-platform redirect/header configs. Each platform reads only its own file; the
 
 | File | Platform | Configures |
 |------|----------|-----------|
-| [`vercel.json`](../vercel.json) | Vercel | Rewrites (`/llms-full.txt`→`/index.md`, SPA fallback that excludes `/assets/`, `/.well-known/`, `/ai-sitemap.xml` so misses 404), `.md`/`.txt`/linkset content-type headers, canonical `Link` header on `.md` twins, `X-Robots-Tag` on `/console` + `/admin` |
+| [`vercel.json`](../vercel.json) | Vercel | Rewrites (`/llms-full.txt`→`/index.md`, SPA fallback that excludes `/assets/`, `/.well-known/`, `/ai-sitemap.xml` so misses 404), `.md`/`.txt`/linkset content-type headers, canonical `Link` header on `.md` twins, `.md` alternate `Link` on HTML pages with a twin, `X-Robots-Tag` on `/console` + `/admin` |
 | [`netlify.toml`](../netlify.toml) + [`public/_redirects`](../public/_redirects) | Netlify | Redirects / SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml`, linkset content-type, `X-Robots-Tag` on `/console` + `/admin` |
 | [`.htaccess`](../.htaccess) | Apache | Rewrites / SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml` (no `X-Robots-Tag` — not a live target) |
-| [`nginx.conf`](../nginx.conf) | Nginx | `.md`/`.txt`/linkset MIME types, canonical `Link` header on `.md` twins, SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml`, `X-Robots-Tag` on `/console` + `/admin` |
+| [`nginx.conf`](../nginx.conf) | Nginx | `.md`/`.txt`/linkset MIME types, canonical `Link` header on `.md` twins, `.md` alternate `Link` on HTML pages (`map $request_uri`), SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml`, `X-Robots-Tag` on `/console` + `/admin` |
 | [`public/robots.txt`](../public/robots.txt) | All | Crawler directives |
 | [`public/.well-known/api-catalog`](../public/.well-known/api-catalog) | All | RFC 9727 linkset: OpenAPI, docs, llms.txt, agent bundle, both MCP servers. Hand-maintained; `src/lib/well-known.test.ts` checks its shape. No `agent-card.json` on purpose — we do not implement A2A. |
 

@@ -3,6 +3,11 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { SITE_URL } from "./config/site";
+import {
+	alternateTwinPath,
+	headerValueFor,
+	sourceToRegExp,
+} from "./markdown/vercel-header-rules";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -56,42 +61,62 @@ describe("vercel.json /api proxy", () => {
 // Every .md twin carries `Link: <html page>; rel="canonical"` so search engines
 // fold it into its HTML page instead of indexing a duplicate.
 describe("vercel.json .md twin canonical Link header", () => {
-	const linkRules = config.headers.filter((h) =>
-		h.headers.some((x) => x.key === "Link"),
-	);
-	const twinRule = linkRules.find((h) => h.source.startsWith("/:path("));
-	const indexRule = linkRules.find((h) => h.source === "/index.md");
-
-	/** Emulates Vercel's match + `:path` substitution for the twin rule. */
-	const canonicalFor = (pathname: string): string | undefined => {
-		if (pathname === indexRule?.source) return indexRule.headers[0].value;
-		const inner = twinRule?.source.match(/^\/:path\((.*)\)\\\.md$/)?.[1];
-		const match = inner && new RegExp(`^/(${inner})\\.md$`).exec(pathname);
-		return match
-			? twinRule?.headers[0].value.replace(":path", match[1])
-			: undefined;
-	};
+	const link = (p: string) => headerValueFor(config.headers, p, "Link");
 
 	it("points each twin at its HTML page", () => {
-		expect(canonicalFor("/products/aeps-api.md")).toBe(
+		expect(link("/products/aeps-api.md")).toBe(
 			`<${SITE_URL}/products/aeps-api>; rel="canonical"`,
 		);
-		expect(canonicalFor("/docs/sdk/python.md")).toBe(
+		expect(link("/docs/sdk/python.md")).toBe(
 			`<${SITE_URL}/docs/sdk/python>; rel="canonical"`,
 		);
-		expect(canonicalFor("/docs.md")).toBe(
-			`<${SITE_URL}/docs>; rel="canonical"`,
-		);
+		expect(link("/docs.md")).toBe(`<${SITE_URL}/docs>; rel="canonical"`);
 	});
 
 	it("maps /index.md to the home page, and only via its own rule", () => {
-		expect(canonicalFor("/index.md")).toBe(`<${SITE_URL}/>; rel="canonical"`);
-		const inner = twinRule?.source.match(/^\/:path\((.*)\)\\\.md$/)?.[1];
-		expect(new RegExp(`^/(${inner})\\.md$`).test("/index.md")).toBe(false);
+		expect(link("/index.md")).toBe(`<${SITE_URL}/>; rel="canonical"`);
+		const twinRule = config.headers.find((h) => h.source.startsWith("/:path("));
+		expect(sourceToRegExp(twinRule!.source).test("/index.md")).toBe(false);
 	});
 
 	it("ignores non-twin paths", () => {
-		expect(canonicalFor("/products/aeps-api")).toBeUndefined();
-		expect(canonicalFor("/llms.txt")).toBeUndefined();
+		expect(link("/llms.txt")).toBeUndefined();
+		expect(link("/assets/index-abc.js")).toBeUndefined();
+	});
+});
+
+// Every HTML page with a twin advertises it, so an agent finds the markdown
+// from a HEAD request. The build guard in vite-plugin-generate-markdown.ts
+// fails the build if a prerendered route advertises a twin that isn't written.
+describe("vercel.json HTML → .md alternate Link header", () => {
+	const twin = (p: string) => alternateTwinPath(config.headers, p);
+
+	it("advertises the twin for each section and fixed page", () => {
+		expect(twin("/")).toBe("/index.md");
+		expect(twin("/products")).toBe("/products.md");
+		expect(twin("/products/aeps-api")).toBe("/products/aeps-api.md");
+		expect(twin("/industries/fintech")).toBe("/industries/fintech.md");
+		expect(twin("/docs/how-auth-works")).toBe("/docs/how-auth-works.md");
+		expect(twin("/docs/sdk")).toBe("/docs/sdk.md");
+		expect(twin("/docs/sdk/python")).toBe("/docs/sdk/python.md");
+		expect(twin("/recipe/bbps-bill-payment")).toBe(
+			"/recipe/bbps-bill-payment.md",
+		);
+		expect(twin("/pricing")).toBe("/pricing.md");
+	});
+
+	it("never advertises a twin for private, twin-less or non-HTML paths", () => {
+		for (const p of [
+			"/console",
+			"/console/credentials",
+			"/admin",
+			"/industries", // section index has no twin
+			"/about-us",
+			"/samples/partner-agreement", // noindex
+			"/products/aeps-api.md", // the twin itself
+			"/assets/index-abc.js",
+			"/llms.txt",
+		])
+			expect(twin(p), p).toBeUndefined();
 	});
 });
