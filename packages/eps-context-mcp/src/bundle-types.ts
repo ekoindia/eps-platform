@@ -54,10 +54,14 @@ export interface RecipeStep {
 }
 export interface Recipe {
 	id: string;
+	/** The `/recipe/<slug>` route. Distinct from `id`. */
+	slug: string;
 	name: string;
 	summary: string;
 	productId?: string;
 	steps: RecipeStep[];
+	/** Human page; joined from `AgentBundle.pages.recipes` by readers. */
+	docsUrl?: string;
 }
 
 export interface AgentEnvironment {
@@ -86,6 +90,11 @@ export interface AgentApiIndexEntry {
 	summary: string;
 	category: string;
 	relevance?: string;
+	/** Human docs page for this endpoint (`/docs/<slug>`). */
+	docsUrl: string;
+	/** Product page, when the product has one. Not stored on `apis` (that would
+	 * change `bundleVersion`); readers join it from `AgentBundle.pages`. */
+	productUrl?: string;
 }
 
 /** What a call does beyond returning data (mirror of the website's
@@ -116,7 +125,6 @@ export interface ApiSemantics {
 export interface AgentApiDetail extends AgentApiIndexEntry {
 	description?: string;
 	bestFor?: string;
-	docsUrl: string;
 	financial?: boolean;
 	/** Behaviour labels: read-only / idempotent / billable / side effects. Set
 	 * on every documented endpoint; absent only in bundles built before
@@ -161,6 +169,8 @@ export interface AgentErrorsTopic {
 
 export interface AgentPricingTopic {
 	id: "pricing";
+	/** Human page; joined from `AgentBundle.pages.topics` by readers. */
+	docsUrl?: string;
 	summary: string;
 	links: { label: string; url: string }[];
 }
@@ -172,6 +182,8 @@ export interface AgentEnvironmentsTopic {
 
 export interface AgentGettingStartedTopic {
 	id: "getting-started";
+	/** Human page; joined from `AgentBundle.pages.topics` by readers. */
+	docsUrl?: string;
 	summary: string;
 	steps: { title: string; detail: string; url?: string }[];
 	links: { label: string; url: string }[];
@@ -181,6 +193,9 @@ export interface AgentSecurityTopic {
 	id: "security";
 	/** Canonical human page. */
 	url: string;
+	/** Same page as `url`, under the name every other topic uses; joined from
+	 * `AgentBundle.pages.topics` by readers. */
+	docsUrl?: string;
 	summary: string;
 	/** IT-confirmed statements, markdown with absolute links. */
 	sections: { id: string; title: string; points: string[] }[];
@@ -242,6 +257,19 @@ export interface AgentFaq {
 	a: string;
 	tag?: string;
 	links?: { label: string; href: string }[];
+	/** Human page this FAQ appears on (`/faq`, or `/pricing` for pricing). */
+	docsUrl?: string;
+}
+
+/** Absolute human-page URLs, keyed by id. Kept out of `apis`/`recipes`/`topics`
+ * so URL changes never move `bundleVersion` (and never republish the SDKs). */
+export interface AgentPages {
+	/** productId → `/products/<slug>`; products with no page are absent. */
+	products: Record<string, string>;
+	/** recipe id → `/recipe/<slug>`. */
+	recipes: Record<string, string>;
+	/** topic id → its human page; topics with no page are absent. */
+	topics: Partial<Record<AgentTopicId, string>>;
 }
 
 export interface AgentBundle {
@@ -252,6 +280,8 @@ export interface AgentBundle {
 	sdks: AgentSdk[];
 	/** Optional: bundles built before FAQs shipped have none. */
 	faqs?: AgentFaq[];
+	/** Optional: bundles built before page URLs shipped have none. */
+	pages?: AgentPages;
 }
 
 /** Index slice: compact lists only, no full bodies. */
@@ -259,5 +289,5 @@ export interface AgentIndex {
 	meta: AgentBundleMeta;
 	apis: AgentApiIndexEntry[];
 	topics: AgentTopicId[];
-	recipes: { id: string; name: string; summary: string }[];
+	recipes: { id: string; name: string; summary: string; docsUrl?: string }[];
 }

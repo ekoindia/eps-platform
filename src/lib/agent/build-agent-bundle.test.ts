@@ -8,6 +8,7 @@ import {
 	buildTopic,
 } from "@/lib/agent/build-agent-bundle";
 import { SDK_GUIDES } from "@/lib/data/sdk-guides";
+import { hasProductPage } from "@/lib/data/api-product-pages";
 
 const specs = getDocumentedSpecs();
 const bundle = buildAgentBundle(specs);
@@ -120,5 +121,47 @@ describe("SDK slice", () => {
 		} finally {
 			SDK_GUIDES[0].summary = original;
 		}
+	});
+});
+
+describe("pages (human page URLs)", () => {
+	const pages = bundle.pages!;
+
+	it("links only products that have a product page", () => {
+		expect(Object.keys(pages.products).length).toBeGreaterThan(0);
+		for (const [id, url] of Object.entries(pages.products)) {
+			expect(hasProductPage(id)).toBe(true);
+			expect(url).toMatch(/^https:\/\/eps\.eko\.in\/products\/[a-z0-9-]+$/);
+		}
+		expect(pages.products).not.toHaveProperty("transactions");
+	});
+
+	it("links every recipe and every topic that has a page", () => {
+		for (const r of bundle.recipes)
+			expect(pages.recipes[r.id]).toBe(`https://eps.eko.in/recipe/${r.slug}`);
+		expect(Object.keys(pages.topics).sort()).toEqual(
+			["auth", "errors", "getting-started", "pricing", "security"].sort(),
+		);
+	});
+
+	it("stays out of the hashed fields, so URL edits never move bundleVersion", () => {
+		// bundleVersion hashes { topics, apis, recipes }; joined URLs must not land there.
+		for (const a of bundle.apis) expect(a).not.toHaveProperty("productUrl");
+		expect(bundle.topics.pricing).not.toHaveProperty("docsUrl");
+		for (const r of bundle.recipes) expect(r).not.toHaveProperty("docsUrl");
+		const moved = buildAgentBundle(specs);
+		moved.pages = { products: {}, recipes: {}, topics: {} };
+		expect(moved.meta.bundleVersion).toBe(bundle.meta.bundleVersion);
+	});
+
+	it("joins page URLs into the index, api and topic slices", () => {
+		const index = buildIndex(bundle);
+		const aeps = index.apis.find((a) => a.productId === "aeps");
+		expect(aeps?.productUrl).toBe(pages.products.aeps);
+		expect(aeps?.docsUrl).toMatch(/\/docs\//);
+		expect(index.recipes[0].docsUrl).toBe(pages.recipes[index.recipes[0].id]);
+		expect(buildApi(bundle, aeps!.slug)?.productUrl).toBe(pages.products.aeps);
+		expect(buildTopic(bundle, "pricing").docsUrl).toBe(pages.topics.pricing);
+		expect(buildTopic(bundle, "auth").docsUrl).toBe(bundle.topics.auth.docsUrl);
 	});
 });

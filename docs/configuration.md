@@ -142,12 +142,14 @@ See [docs/markdown-generation.md](markdown-generation.md).
 
 Per-platform redirect/header configs. Each platform reads only its own file; they don't conflict. See README "How can I deploy this project?".
 
+**Production is Vercel.** `https://eps.eko.in` answers with `server: Vercel` and `x-vercel-id` (checked 2026-10-19), and the `vercel.json` headers apply live. The other host files are reference copies; mirror a change into `nginx.conf` where it can express it.
+
 | File | Platform | Configures |
 |------|----------|-----------|
-| [`vercel.json`](../vercel.json) | Vercel | Rewrites (`/llms-full.txt`→`/index.md`, SPA fallback that excludes `/assets/`, `/.well-known/`, `/ai-sitemap.xml` so misses 404), `.md`/`.txt`/linkset content-type headers, `X-Robots-Tag` on `/console` + `/admin` |
+| [`vercel.json`](../vercel.json) | Vercel | Rewrites (`/llms-full.txt`→`/index.md`, SPA fallback that excludes `/assets/`, `/.well-known/`, `/ai-sitemap.xml` so misses 404), `.md`/`.txt`/linkset content-type headers, canonical `Link` header on `.md` twins, `X-Robots-Tag` on `/console` + `/admin` |
 | [`netlify.toml`](../netlify.toml) + [`public/_redirects`](../public/_redirects) | Netlify | Redirects / SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml`, linkset content-type, `X-Robots-Tag` on `/console` + `/admin` |
 | [`.htaccess`](../.htaccess) | Apache | Rewrites / SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml` (no `X-Robots-Tag` — not a live target) |
-| [`nginx.conf`](../nginx.conf) | Nginx | `.md`/`.txt`/linkset MIME types, SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml`, `X-Robots-Tag` on `/console` + `/admin` |
+| [`nginx.conf`](../nginx.conf) | Nginx | `.md`/`.txt`/linkset MIME types, canonical `Link` header on `.md` twins, SPA fallback, 404 for unknown `/.well-known/*` + `/ai-sitemap.xml`, `X-Robots-Tag` on `/console` + `/admin` |
 | [`public/robots.txt`](../public/robots.txt) | All | Crawler directives |
 | [`public/.well-known/api-catalog`](../public/.well-known/api-catalog) | All | RFC 9727 linkset: OpenAPI, docs, llms.txt, agent bundle, both MCP servers. Hand-maintained; `src/lib/well-known.test.ts` checks its shape. No `agent-card.json` on purpose — we do not implement A2A. |
 

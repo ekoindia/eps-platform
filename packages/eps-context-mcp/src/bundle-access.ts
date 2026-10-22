@@ -9,7 +9,20 @@ import type {
 	Recipe,
 } from "./bundle-types.js";
 
-const toIndexEntry = (a: AgentApiDetail): AgentApiIndexEntry => ({
+/** Product page for an API's product; absent when the product has no page or
+ * the bundle predates `pages`. */
+const productUrlFor = (
+	bundle: AgentBundle,
+	a: AgentApiDetail,
+): { productUrl?: string } => {
+	const productUrl = bundle.pages?.products[a.productId];
+	return productUrl ? { productUrl } : {};
+};
+
+const toIndexEntry = (
+	bundle: AgentBundle,
+	a: AgentApiDetail,
+): AgentApiIndexEntry => ({
 	slug: a.slug,
 	productId: a.productId,
 	productName: a.productName,
@@ -19,6 +32,8 @@ const toIndexEntry = (a: AgentApiDetail): AgentApiIndexEntry => ({
 	summary: a.summary,
 	category: a.category,
 	relevance: a.relevance,
+	docsUrl: a.docsUrl,
+	...productUrlFor(bundle, a),
 });
 
 export const listApis = (
@@ -28,7 +43,7 @@ export const listApis = (
 ): AgentApiIndexEntry[] => {
 	const entries = bundle.apis
 		.filter((a) => !category || a.category === category)
-		.map(toIndexEntry);
+		.map((a) => toIndexEntry(bundle, a));
 	return limit !== undefined ? entries.slice(0, limit) : entries;
 };
 
@@ -40,10 +55,24 @@ export const listCategories = (bundle: AgentBundle): string[] => [
 export const listTopics = (bundle: AgentBundle): AgentTopicId[] =>
 	Object.keys(bundle.topics) as AgentTopicId[];
 
+/** Human page for a recipe; absent when the bundle predates `pages`. */
+const recipeUrlFor = (
+	bundle: AgentBundle,
+	id: string,
+): { docsUrl?: string } => {
+	const docsUrl = bundle.pages?.recipes[id];
+	return docsUrl ? { docsUrl } : {};
+};
+
 export const listRecipes = (
 	bundle: AgentBundle,
-): { id: string; name: string; summary: string }[] =>
-	bundle.recipes.map((r) => ({ id: r.id, name: r.name, summary: r.summary }));
+): { id: string; name: string; summary: string; docsUrl?: string }[] =>
+	bundle.recipes.map((r) => ({
+		id: r.id,
+		name: r.name,
+		summary: r.summary,
+		...recipeUrlFor(bundle, r.id),
+	}));
 
 /** Zero-dependency token scoring over the compact index fields. */
 export const searchApis = (
@@ -63,24 +92,36 @@ export const searchApis = (
 	const ranked = scored
 		.filter((s) => s.score > 0)
 		.sort((x, y) => y.score - x.score)
-		.map((s) => toIndexEntry(s.a));
+		.map((s) => toIndexEntry(bundle, s.a));
 	return limit !== undefined ? ranked.slice(0, limit) : ranked;
 };
 
 export const getApi = (
 	bundle: AgentBundle,
 	slug: string,
-): AgentApiDetail | undefined => bundle.apis.find((a) => a.slug === slug);
+): AgentApiDetail | undefined => {
+	const api = bundle.apis.find((a) => a.slug === slug);
+	return api && { ...api, ...productUrlFor(bundle, api) };
+};
 
+/** One topic, with its human page as `docsUrl` when it has one. A topic that
+ * already carries `docsUrl` (auth, errors) keeps its own. */
 export const getTopic = <K extends AgentTopicId>(
 	bundle: AgentBundle,
 	topic: K,
-): AgentTopics[K] | undefined => bundle.topics[topic];
+): AgentTopics[K] | undefined => {
+	const found = bundle.topics[topic];
+	const docsUrl = bundle.pages?.topics[topic];
+	return found && docsUrl ? { docsUrl, ...found } : found;
+};
 
 export const getRecipe = (
 	bundle: AgentBundle,
 	id: string,
-): Recipe | undefined => bundle.recipes.find((r) => r.id === id);
+): Recipe | undefined => {
+	const recipe = bundle.recipes.find((r) => r.id === id);
+	return recipe && { ...recipe, ...recipeUrlFor(bundle, id) };
+};
 
 /** Compact SDK index — no members, config or examples. */
 export const listSdks = (
