@@ -1,3 +1,4 @@
+import { CC_FAQS, CC_FEE_PER_TXN } from "@/lib/data/credit-card-pricing";
 import { describe, expect, it } from "vitest";
 import { renderPricingMarkdown } from "@/lib/markdown/render-pricing";
 import {
@@ -81,6 +82,16 @@ describe("renderPricingMarkdown", () => {
 		expect(md).toContain("https://eps.eko.in/eps-pricing-calculator.xlsx");
 	});
 
+	it("renders Credit Card Bill Payment as a fee, not a BBPS commission", () => {
+		expect(md).toContain("## Credit Card Bill Payment Pricing");
+		expect(md).toContain(
+			`| Fee per payment (any bill amount) | ₹${CC_FEE_PER_TXN} |`,
+		);
+		expect(BBPS_CATEGORIES.map((c) => c.name)).not.toContain(
+			"Credit Card Bill Payment",
+		);
+	});
+
 	it.skipIf(!CONNECTED_BANKING_ENABLED)(
 		"renders the Connected Banking section when the product is enabled",
 		() => {
@@ -107,6 +118,7 @@ describe("renderPricingMarkdown", () => {
 			...PRICING_FAQS,
 			...DMT_FAQS,
 			...PAYMENTS_FAQS,
+			...CC_FAQS,
 			...(CONNECTED_BANKING_ENABLED ? CB_FAQS : []),
 		]) {
 			expect(md).toContain(`### ${faq.q}`);

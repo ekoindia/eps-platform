@@ -41,6 +41,11 @@ import {
 	CB_TXN_SLABS,
 	CONNECTED_BANKING_ENABLED,
 } from "@/lib/data/connected-banking-pricing";
+import {
+	CC_DEFAULT_TXNS,
+	CC_FEE_PER_TXN,
+	CC_SETUP_FEE,
+} from "@/lib/data/credit-card-pricing";
 import { BBPS_OPERATORS } from "@/lib/data/bbps-operators";
 import { SITE_URL } from "@/lib/config/site";
 import { renderPricingXlsx } from "../../ssg/render-pricing-xlsx";
@@ -50,6 +55,7 @@ const SHEET_ORDER = [
 	"Verification Calculator",
 	"DMT Calculator",
 	"Payments Earnings",
+	"Credit Card Bills",
 	...(CONNECTED_BANKING_ENABLED ? ["Connected Banking"] : []),
 	"Verification Rate Card",
 	"Payments Rate Card",
@@ -114,6 +120,11 @@ describe("renderPricingXlsx", () => {
 				modeParam: BBPS_MODE_PARAM,
 				offlineSettlementHours: BBPS_OFFLINE_SETTLEMENT_HOURS,
 			},
+			cc: {
+				feePerTxn: CC_FEE_PER_TXN,
+				setupFee: CC_SETUP_FEE,
+				defaultMonthlyTxns: CC_DEFAULT_TXNS,
+			},
 			cb: {
 				setupFee: CB_SETUP_FEE,
 				banks: [...CB_BANKS],
@@ -136,6 +147,28 @@ describe("renderPricingXlsx", () => {
 
 	it("contains every enabled sheet with Index first, in order", () => {
 		expect(workbook.worksheets.map((ws) => ws.name)).toEqual(SHEET_ORDER);
+	});
+
+	it("prices credit card bills as a flat fee with a discounted, volume-gated setup fee", () => {
+		const sheet = workbook.getWorksheet("Credit Card Bills")!;
+		const formulas: string[] = [];
+		sheet.eachRow((row) =>
+			row.eachCell((cell) => {
+				if (cell.formula) formulas.push(cell.formula);
+			}),
+		);
+		expect(formulas).toContain(String(CC_FEE_PER_TXN));
+		expect(formulas.some((f) => f.includes(`*${GST_RATE}`))).toBe(true);
+		// Mirrors calcCcQuote: no setup fee at zero payments, discount applied.
+		const netFactor = (100 - SETUP_FEE_DISCOUNT_PERCENT) / 100;
+		expect(
+			formulas.some((f) =>
+				new RegExp(`^IF\\(B\\d+>0,${CC_SETUP_FEE},0\\)\\*${netFactor}$`).test(
+					f,
+				),
+			),
+		).toBe(true);
+		expect(cellTexts(index)).toContain("Credit Card Bills");
 	});
 
 	it.runIf(!CONNECTED_BANKING_ENABLED)(

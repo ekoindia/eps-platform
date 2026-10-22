@@ -54,6 +54,7 @@ const renderTabs = (
 					verification={<div>VERIFICATION PANEL</div>}
 					dmt={<div>DMT PANEL</div>}
 					payments={<div>PAYMENTS PANEL</div>}
+					creditCard={<div>CREDIT CARD PANEL</div>}
 					{...props}
 				/>
 			</MemoryRouter>,
@@ -86,6 +87,7 @@ describe("PricingTabs", () => {
 			"Verification APIs",
 			"Money Transfer (DMT)",
 			"AePS & BBPS",
+			"Credit Card Bills",
 		]);
 		expect(container.textContent).not.toContain("Connected Banking");
 		expect(container.textContent).not.toContain("BANKING PANEL");
@@ -112,6 +114,14 @@ describe("PricingTabs", () => {
 
 		expect(activeTrigger()).toBe("Money Transfer (DMT)");
 		expect(search).toContain("tab=dmt");
+	});
+
+	it("honours ?tab=credit-card", () => {
+		renderTabs("/pricing?tab=credit-card&cc=500");
+
+		expect(activeTrigger()).toBe("Credit Card Bills");
+		expect(search).toContain("tab=credit-card");
+		expect(search).toContain("cc=500");
 	});
 
 	// A ⌘K earnings card on /pricing links to /pricing?tab=dmt… — same route,

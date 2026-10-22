@@ -1,10 +1,21 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Banknote, Landmark, Send, ShieldCheck } from "lucide-react";
+import {
+	Banknote,
+	CreditCard,
+	Landmark,
+	Send,
+	ShieldCheck,
+} from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
 /** Tab ids — URL-stable (used in the ?tab= query param) */
-export type PricingTabId = "verification" | "dmt" | "payments" | "banking";
+export type PricingTabId =
+	| "verification"
+	| "dmt"
+	| "payments"
+	| "credit-card"
+	| "banking";
 
 /** The calculator tabs' own URL key (absent = "verification") */
 const TAB_PARAM = "tab";
@@ -17,6 +28,7 @@ const TAB_DEFS: {
 	{ id: "verification", label: "Verification APIs", icon: ShieldCheck },
 	{ id: "dmt", label: "Money Transfer (DMT)", icon: Send },
 	{ id: "payments", label: "AePS & BBPS", icon: Banknote },
+	{ id: "credit-card", label: "Credit Card Bills", icon: CreditCard },
 	{ id: "banking", label: "Connected Banking", icon: Landmark },
 ];
 
@@ -33,7 +45,9 @@ export interface PricingTabsProps {
 	dmt: ReactNode;
 	/** Tab 3 — AePS & BBPS (earnings calculator + rate card) */
 	payments: ReactNode;
-	/** Tab 4 — Connected Banking (cost calculator). Omit to hide the tab. */
+	/** Tab 4 — Credit Card Bill Payment (cost calculator + rate card) */
+	creditCard: ReactNode;
+	/** Tab 5 — Connected Banking (cost calculator). Omit to hide the tab. */
 	banking?: ReactNode;
 }
 
@@ -52,12 +66,13 @@ export interface PricingTabsProps {
  *
  * The active tab is mirrored to `?tab=` ("verification" is the canonical
  * default and never written). Only the `tab` key is touched — `sel`, `gst`,
- * `dmt`, `pay`, `cb` and UTM/tracking params are preserved.
+ * `dmt`, `pay`, `cc`, `cb` and UTM/tracking params are preserved.
  */
 export const PricingTabs = ({
 	verification,
 	dmt,
 	payments,
+	creditCard,
 	banking,
 }: PricingTabsProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -68,6 +83,7 @@ export const PricingTabs = ({
 			{ id: "verification", content: verification },
 			{ id: "dmt", content: dmt },
 			{ id: "payments", content: payments },
+			{ id: "credit-card", content: creditCard },
 			{ id: "banking", content: banking },
 		] as const
 	).filter((panel) => panel.content != null);

@@ -94,7 +94,7 @@
 {"query":"aeps mini statement commission","intent":"estimate_earnings","target":"action:estimate_earnings:aeps-mini","split":"dev"}
 {"query":"retailer commission","intent":"estimate_earnings","target":"action:estimate_earnings:calculator","split":"dev"}
 {"query":"dth recharge earnings","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-dth","split":"test"}
-{"query":"credit card bill commission","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-credit-card","split":"dev"}
+{"query":"credit card bill commission","intent":"estimate_earnings","target":"action:estimate_earnings:credit-card","split":"dev"}
 {"query":"what do i earn per dmt transaction","intent":"estimate_earnings","target":"action:estimate_earnings:dmt","split":"dev"}
 {"query":"lpg booking commission","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-lpg","split":"test"}
 {"query":"pan verification","intent":null,"result":"api:pan-verification-api","split":"dev"}

@@ -3,6 +3,7 @@ import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { ConnectedBankingCalculator } from "@/components/pricing/banking/ConnectedBankingCalculator";
+import { CreditCardCalculator } from "@/components/pricing/credit-card/CreditCardCalculator";
 import { DmtCalculator } from "@/components/pricing/dmt/DmtCalculator";
 import { DmtRateTable } from "@/components/pricing/dmt/DmtRateTable";
 import { PaymentsCalculator } from "@/components/pricing/payments/PaymentsCalculator";
@@ -25,6 +26,7 @@ import {
 	CB_FAQS,
 	CONNECTED_BANKING_ENABLED,
 } from "@/lib/data/connected-banking-pricing";
+import { CC_FAQS, CC_FEE_PER_TXN } from "@/lib/data/credit-card-pricing";
 import { DMT_FAQS } from "@/lib/data/dmt-pricing";
 import { PAYMENTS_FAQS } from "@/lib/data/payments-pricing";
 import { generatePricingJsonLd } from "@/lib/utils/json-ld";
@@ -48,15 +50,22 @@ const TRUST_CHIPS = [
 ];
 
 /**
- * All pricing FAQs — verification, DMT, AePS & BBPS, and Connected Banking when
+ * All pricing FAQs — verification, DMT, AePS & BBPS, credit card bill payment,
+ * and Connected Banking when
  * enabled (`CB_FAQS` is empty while it is not). Feeds both the visible FAQ
  * accordion and the FAQPage JSON-LD.
  */
-const ALL_FAQS = [...PRICING_FAQS, ...DMT_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS];
+const ALL_FAQS = [
+	...PRICING_FAQS,
+	...DMT_FAQS,
+	...PAYMENTS_FAQS,
+	...CC_FAQS,
+	...CB_FAQS,
+];
 
 const PAGE_DESCRIPTION = CONNECTED_BANKING_ENABLED
-	? "Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
-	: "Transparent pricing for 25+ verification APIs and partner commissions for DMT, AePS and BBPS. Estimate your monthly cost or earnings with our interactive calculators.";
+	? "Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS and BBPS, credit card bill payment fees and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
+	: "Transparent pricing for 25+ verification APIs and partner commissions for DMT, AePS and BBPS, plus credit card bill payment fees. Estimate your monthly cost or earnings with our interactive calculators.";
 
 const PricingPage = () => {
 	const jsonLdSchemas = generatePricingJsonLd(ALL_FAQS);
@@ -197,6 +206,19 @@ const PricingPage = () => {
 									<PaymentsRateTable />
 								</SectionContainer>
 							</>
+						}
+						creditCard={
+							<SectionContainer
+								id="credit-card-calculator"
+								className="scroll-mt-24 pt-10 lg:pt-14"
+							>
+								<SectionHeader
+									badge="Cost Calculator"
+									title="Estimate your credit card bill payment cost"
+									subtitle={`Credit card bill payments carry a flat fee of ₹${CC_FEE_PER_TXN} + GST per payment, whatever the bill amount. Set your monthly volume to see your cost.`}
+								/>
+								<CreditCardCalculator />
+							</SectionContainer>
 						}
 						banking={
 							CONNECTED_BANKING_ENABLED ? (

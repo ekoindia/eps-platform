@@ -220,13 +220,8 @@ export const BBPS_CATEGORIES: BbpsCategory[] = [
 		rangeNote: "2%–2.56% by operator (Tata Play/Videocon 2%, others 2.56%)",
 		defaultAvgAmount: 400,
 	},
-	{
-		id: "bbps-credit-card",
-		name: "Credit Card Bill Payment",
-		online: [{ from: 1, upTo: null, flat: 0.2 }],
-		offline: null,
-		defaultAvgAmount: 8000,
-	},
+	// Credit Card Bill Payment is not here: it is charged, not commissioned —
+	// see credit-card-pricing.ts and its own /pricing tab.
 	{
 		id: "bbps-education",
 		name: "Education Fee Payment",

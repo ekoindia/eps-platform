@@ -1,6 +1,6 @@
 # Pricing Calculator (`/pricing`)
 
-One page, four client-side tabs:
+One page, five client-side tabs:
 
 1. **Verification APIs** — interactive COST calculator + crawlable rate card
    (you pay per call).
@@ -11,7 +11,12 @@ One page, four client-side tabs:
 3. **AePS & BBPS** — interactive EARNINGS calculator + commission rate card
    (these products pay the partner a commission per transaction — inverted
    semantics vs. verification).
-4. **Connected Banking** — COST calculator (one-time setup per bank per user
+4. **Credit Card Bills** — COST calculator + rate card. Credit card bill
+   payment is CHARGED a flat fee per payment (₹5 + GST), unlike the other
+   BBPS categories, which earn a commission — so it is not in
+   `BBPS_CATEGORIES` (moved out 2026-10-22; it is also becoming its own API,
+   separate from BBPS).
+5. **Connected Banking** — COST calculator (one-time setup per bank per user
    - per-transaction charges). **Currently disabled** — see below.
 
 DigiKhata is intentionally out of scope.
@@ -31,6 +36,7 @@ src/lib/data/api-pricing.ts                ← verification config + pure quote 
 src/lib/data/payments-pricing.ts           ← AePS/BBPS commission config + earnings math (no React)
 src/lib/data/dmt-pricing.ts                ← DMT ledger config + per-txn/monthly math (no React)
 src/lib/data/product-earnings.ts           ← getEarningsHighlight() — spans both, so it lives in neither
+src/lib/data/credit-card-pricing.ts        ← Credit Card Bill Payment fee + cost math (no React)
 src/lib/data/connected-banking-pricing.ts  ← Connected Banking config + cost math (no React)
 src/lib/data/bbps-operators.ts             ← full BBPS operator list (Excel-ONLY — never imported client-side)
 src/pages/PricingPage.tsx                  ← page assembly, SEO, tabs, combined FAQ
@@ -53,6 +59,8 @@ src/components/pricing/
     DmtCalculator.tsx                      ← DMT ledger orchestrator: state + ?dmt= URL sync
     RcmExplainer.tsx                       ← forward-charge vs reverse-charge comparison (live figures)
     DmtRateTable.tsx                       ← static DMT rate card, DERIVED from calcDmtTxn (SEO)
+  credit-card/
+    CreditCardCalculator.tsx               ← payment-count input + fee/GST/setup summary + ?cc= URL sync + static rate card
   banking/
     ConnectedBankingCalculator.tsx         ← inputs + setup/monthly blocks + ?cb= URL sync + static rate card
 src/lib/utils/json-ld.ts                   ← generatePricingJsonLd() (OfferCatalogs + FAQPage)
@@ -63,7 +71,7 @@ src/lib/utils/json-ld.ts                   ← generatePricingJsonLd() (OfferCat
 `PricingTabs.tsx` wraps shadcn/Radix Tabs with **`forceMount` +
 `data-[state=inactive]:hidden`** on every `TabsContent`:
 
-- All three panels stay in the prerendered HTML → every product's rates are
+- Every panel stays in the prerendered HTML → every product's rates are
   crawlable from the single `/pricing` URL.
 - Calculator state survives tab switches for free (nothing unmounts).
 - `display:none` also hides each inactive tab's `position:fixed` mobile
@@ -71,7 +79,7 @@ src/lib/utils/json-ld.ts                   ← generatePricingJsonLd() (OfferCat
 - The tab bar is `sticky top-0 z-40` — the fixed site header (z-50)
   auto-hides on scroll-down, so the tab bar surfaces at the top while reading.
 
-Active tab mirrors to `?tab=` (`payments` / `banking`; **`verification` is
+Active tab mirrors to `?tab=` (`dmt` / `payments` / `credit-card` / `banking`; **`verification` is
 the canonical default and never written**). Deep links with `?tab=` produce
 the same accepted recoverable hydration mismatch as `?sel=` (see
 docs/ssg-hydration.md); the param-less URL stays mismatch-free.
@@ -156,6 +164,19 @@ Commission products keyed on **transaction amount** (not monthly volume):
 - Estimates use the **average** txn amount; real earnings depend on the
   amount distribution — disclaimer copy lives in the summary, Excel and
   /pricing.md.
+
+### Credit Card Bill Payment (`src/lib/data/credit-card-pricing.ts`)
+
+A COST, not a commission. `CC_FEE_PER_TXN` (₹5 excl. GST, any bill amount)
+and its own one-time `CC_SETUP_FEE` (₹20,000 excl. GST, separate from the
+BBPS fee; the site-wide setup-fee discount applies). `calcCcQuote(monthlyTxns)`
+→ `{ monthlyTxns, perTxn, monthlySubtotal, monthlyGst, monthlyTotal, setupFee }`;
+zero payments carry no setup fee (same rule as the payments calculator). The
+calculator's URL key is `cc=<monthlyTxns>`; old `pay=bbps-credit-card:…`
+links drop that line (the `pay=` parser ignores unknown ids). Surfaces:
+the tab, `CC_FAQS`, the `#credit-card-offers` JSON-LD `OfferCatalog`, the
+`/pricing.md` section, the workbook's "Credit Card Bills" sheet and the ⌘K
+palette (`credit card …` → a cost card linking to `?tab=credit-card&cc=…`).
 
 ### Connected Banking (`src/lib/data/connected-banking-pricing.ts`)
 

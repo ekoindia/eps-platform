@@ -1,5 +1,6 @@
 import { buildEngine } from "@/lib/search-engine";
 import { DMT_DEFAULT_INPUT, calcDmtQuote } from "@/lib/data/dmt-pricing";
+import { calcCcQuote } from "@/lib/data/credit-card-pricing";
 import { calcEarningsQuote } from "@/lib/data/payments-pricing";
 import { formatINR } from "@/lib/utils";
 import { describe, expect, it } from "vitest";
@@ -18,6 +19,7 @@ describe("earningsProductOf", () => {
 		["mobile recharge", "bbps-prepaid"],
 		["dth", "bbps-dth"],
 		["bbps", "bbps-electricity"],
+		["credit card bill payment", "credit-card"],
 	])("%s → %s", (subject, id) => {
 		expect(earningsProductOf(subject)).toBe(id);
 	});
@@ -97,6 +99,21 @@ describe("resolveAction → estimate_earnings (real pricing data)", () => {
 			},
 		});
 		expect(card?.title).toContain(formatINR(quote.total, 0));
+	});
+
+	it("answers credit card with its fee, never a commission", () => {
+		const card = resolveAction(
+			engine,
+			"credit card bill commission for 200 payments",
+		);
+		expect(card).toMatchObject({
+			id: "action:estimate_earnings:credit-card",
+			badge: "Cost",
+			primary: {
+				href: "/pricing?tab=credit-card&cc=200#credit-card-calculator",
+			},
+		});
+		expect(card?.title).toContain(formatINR(calcCcQuote(200).monthlyTotal, 0));
 	});
 
 	it("uses the calculator's defaults for numbers the query leaves out", () => {
