@@ -12,6 +12,7 @@ import type {
 	AgentEnvironment,
 	AgentFaq,
 	AgentIndex,
+	AgentPages,
 	AgentSdk,
 	AgentTopicId,
 	AgentTopics,
@@ -25,8 +26,9 @@ import {
 import { ALL_ERROR_CODES } from "@/lib/data/api-error-codes";
 import { PRICING_FAQS } from "@/lib/data/api-pricing";
 import { GLOBAL_FAQS, type FAQ } from "@/lib/data/common-faqs";
-import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
-import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
+import { hasProductPage } from "@/lib/data/api-product-pages";
+import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
+import { RECIPES, assertRecipeSlugs, recipeHref } from "@/lib/data/api-recipes";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	assertResponseTypeSlugs,
@@ -70,7 +72,11 @@ const fnv1aHex = (input: string): string => {
 const productNameFor = (spec: ApiSpec): string =>
 	ACTIVE_PRODUCTS_MAP[spec.productId]?.name ?? spec.productId;
 
-const indexEntry = (spec: ApiSpec): AgentApiIndexEntry => ({
+// URL fields are set by `apiDetail` (docsUrl keeps its key position, which the
+// version hash sees) and by readers (productUrl, from `pages`).
+const indexEntry = (
+	spec: ApiSpec,
+): Omit<AgentApiIndexEntry, "docsUrl" | "productUrl"> => ({
 	slug: spec.slug,
 	productId: spec.productId,
 	productName: productNameFor(spec),
@@ -245,8 +251,34 @@ const buildFaqs = (): AgentFaq[] => {
 		...(links && {
 			links: links.map((link) => ({ ...link, href: absoluteHref(link.href) })),
 		}),
+		// Pricing FAQs render on /pricing; every other one on /faq.
+		docsUrl: `${SITE_URL}${tag === "pricing" ? "/pricing" : "/faq"}`,
 	}));
 };
+
+/**
+ * Human page per product / recipe / topic, so every agent answer can point at
+ * the page a person would read. Products without a page (e.g. `transactions`)
+ * are left out rather than linked to a 404.
+ */
+const buildPages = (): AgentPages => ({
+	products: Object.fromEntries(
+		Object.values(ACTIVE_PRODUCTS_MAP)
+			.filter((p) => hasProductPage(p.id))
+			.map((p) => [p.id, `${SITE_URL}${productHref(p.slug)}`]),
+	),
+	recipes: Object.fromEntries(
+		RECIPES.map((r) => [r.id, `${SITE_URL}${recipeHref(r.slug)}`]),
+	),
+	// `environments` has no page of its own, so it gets no URL.
+	topics: {
+		auth: `${SITE_URL}${docsHref("how-auth-works")}`,
+		errors: `${SITE_URL}${docsHref("error-codes")}`,
+		pricing: `${SITE_URL}/pricing`,
+		"getting-started": `${SITE_URL}${docsHref()}`,
+		security: `${SITE_URL}${SECURITY_PATH}`,
+	},
+});
 
 /**
  * Build the full agent bundle. Callers should pass the documented set
@@ -266,6 +298,7 @@ export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
 	const recipes = RECIPES;
 	const sdks = buildSdks();
 	const faqs = buildFaqs();
+	const pages = buildPages();
 
 	// `sdks` is DELIBERATELY excluded from the version hash. `bundleVersion` is
 	// copied into `sdk-surface.json` (build-sdk-surface.ts), whose bytes are part
@@ -274,6 +307,7 @@ export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
 	// The field versions the API surface those packages embed — nothing else.
 	// `faqs` is excluded for the same reason; the remote refresh keys on the
 	// file's ETag, not this hash, so FAQ edits still reach the MCP server.
+	// `pages` is excluded for the same reason: a page URL is not API surface.
 	const apiSurfaceVersion = fnv1aHex(JSON.stringify({ topics, apis, recipes }));
 	const meta = {
 		org: "ekoindia",
@@ -282,7 +316,7 @@ export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
 		environments: ENVIRONMENTS,
 	};
 
-	return { meta, topics, apis, recipes, sdks, faqs };
+	return { meta, topics, apis, recipes, sdks, faqs, pages };
 };
 
 /** Compact index slice — no full bodies. */
@@ -299,6 +333,7 @@ export const buildIndex = (bundle: AgentBundle): AgentIndex => ({
 			summary,
 			category,
 			relevance,
+			docsUrl,
 		}) => ({
 			slug,
 			productId,
@@ -309,6 +344,8 @@ export const buildIndex = (bundle: AgentBundle): AgentIndex => ({
 			summary,
 			category,
 			relevance,
+			docsUrl,
+			productUrl: bundle.pages?.products[productId],
 		}),
 	),
 	topics: Object.keys(bundle.topics) as AgentTopicId[],
@@ -316,6 +353,7 @@ export const buildIndex = (bundle: AgentBundle): AgentIndex => ({
 		id: r.id,
 		name: r.name,
 		summary: r.summary,
+		docsUrl: bundle.pages?.recipes[r.id],
 	})),
 });
 
@@ -323,10 +361,17 @@ export const buildIndex = (bundle: AgentBundle): AgentIndex => ({
 export const buildApi = (
 	bundle: AgentBundle,
 	slug: string,
-): AgentApiDetail | undefined => bundle.apis.find((a) => a.slug === slug);
+): AgentApiDetail | undefined => {
+	const api = bundle.apis.find((a) => a.slug === slug);
+	const productUrl = api && bundle.pages?.products[api.productId];
+	return api && productUrl ? { ...api, productUrl } : api;
+};
 
 /** One topic by id. */
 export const buildTopic = <K extends AgentTopicId>(
 	bundle: AgentBundle,
 	topic: K,
-): AgentTopics[K] => bundle.topics[topic];
+): AgentTopics[K] => {
+	const docsUrl = bundle.pages?.topics[topic];
+	return docsUrl ? { docsUrl, ...bundle.topics[topic] } : bundle.topics[topic];
+};

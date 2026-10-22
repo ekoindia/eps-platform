@@ -35,7 +35,8 @@ const REST_DESCRIPTIONS: Record<string, string> = {
 		"Full detail for one endpoint by slug: params, headers, sample request, " +
 		"response fields + sample, errorScenarios, responseTypes ({id, meaning, " +
 		"next} = which endpoint to call per response_type_id) and financial " +
-		"(money-moving: never retry blind; inquire by client_ref_id).",
+		"(money-moving: never retry blind; inquire by client_ref_id). " +
+		"docsUrl/productUrl: web pages.",
 	// Fits, but the MCP text tells the user to re-run via npx — wrong over REST.
 	get_meta:
 		"Bundle org/version, data source and this server's package version, " +

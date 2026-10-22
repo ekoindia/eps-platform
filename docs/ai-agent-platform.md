@@ -107,7 +107,12 @@ baked bundle: `list_apis`, `list_topics`, `list_recipes`, `list_sdks`, `search`,
 `get_signing_snippet`, `debug_auth`, `get_meta`. FAQs come from
 `GLOBAL_FAQS` + `PRICING_FAQS` (`build-agent-bundle.ts`, optional
 `AgentBundle.faqs`, links absolutized) and are deliberately left out of the
-`bundleVersion` hash, like `sdks`. It reads the
+`bundleVersion` hash, like `sdks`. So is `AgentBundle.pages`: absolute human
+page URLs per product, recipe and topic (`buildPages`). The accessors in
+`bundle-access.ts` join them into results as `docsUrl` / `productUrl`, and
+`buildIndex` / `buildApi` / `buildTopic` do the same for the `/agent/*`
+slices. A URL edit therefore never moves `bundleVersion` or republishes the
+SDKs. It reads the
 **baked** `data/eps.json` shipped in the package; set `EPS_BUNDLE_URL` to fetch
 a fresher bundle at startup. No secrets are ever required or handled.
 

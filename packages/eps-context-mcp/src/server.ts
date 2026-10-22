@@ -55,10 +55,19 @@ export const createEpsServer = (
 	source: "baked" | "remote",
 	versionState?: VersionState,
 ): McpServer => {
-	const server = new McpServer({
-		name: "eps-context-mcp",
-		version: bundle.meta.bundleVersion,
-	});
+	const server = new McpServer(
+		{
+			name: "eps-context-mcp",
+			version: bundle.meta.bundleVersion,
+		},
+		{
+			instructions:
+				"Results carry docsUrl: the human-readable docs page for that API, " +
+				"recipe, topic or FAQ. API results also carry productUrl when the " +
+				"product has its own page. When you answer from a result, give the " +
+				"user its docsUrl (and productUrl) so they can read the full page.",
+		},
+	);
 
 	const categories = listCategories(bundle);
 	// z.enum needs a non-empty tuple; a malformed/empty bundle falls back to string.
@@ -83,7 +92,8 @@ export const createEpsServer = (
 			description:
 				"Compact index of EPS API endpoints (no request/response bodies). " +
 				"Unfiltered, all ~99 entries are returned (the full tiered index); " +
-				"narrow with category and/or limit when you don't need everything.",
+				"narrow with category and/or limit when you don't need everything. " +
+				"Each entry has docsUrl, plus productUrl when the product has a page.",
 			inputSchema: {
 				category: categorySchema
 					.optional()
@@ -110,7 +120,7 @@ export const createEpsServer = (
 		"list_recipes",
 		{
 			title: "List recipes",
-			description: "List multi-step recipe ids + names.",
+			description: "List multi-step recipe ids + names, each with its docsUrl.",
 			inputSchema: {},
 			annotations: READ_ONLY,
 		},
@@ -123,7 +133,8 @@ export const createEpsServer = (
 			title: "Search APIs",
 			description:
 				"Ranked endpoint matches for a query (ids only, no bodies). " +
-				`Returns the top ${DEFAULT_SEARCH_LIMIT} by default; raise limit for more.`,
+				`Returns the top ${DEFAULT_SEARCH_LIMIT} by default; raise limit for more. ` +
+				"Each match has docsUrl, plus productUrl when the product has a page.",
 			inputSchema: {
 				query: z.string(),
 				limit: limitSchema.describe(
@@ -145,7 +156,8 @@ export const createEpsServer = (
 				"headers, requestParams (name/type/required/format/example), sampleRequest, " +
 				"responseFields, sampleSuccessResponse, errorScenarios, responseTypes " +
 				"({id, meaning, next}: which endpoint to call for each response_type_id) " +
-				"and financial (true = money-moving; never retry blind, inquire by client_ref_id).",
+				"and financial (true = money-moving; never retry blind, inquire by client_ref_id). " +
+				"docsUrl = its human docs page; productUrl = its product page, when one exists.",
 			inputSchema: { slug: z.string() },
 			annotations: READ_ONLY,
 		},
@@ -173,7 +185,9 @@ export const createEpsServer = (
 		"get_topic",
 		{
 			title: "Get topic",
-			description: `One topic: ${topicIds.join(" | ")}.`,
+			description:
+				`One topic: ${topicIds.join(" | ")}. ` +
+				"Includes docsUrl when the topic has a human page.",
 			inputSchema: {
 				topic: z.enum(topicIds as [AgentTopicId, ...AgentTopicId[]]),
 			},
@@ -190,7 +204,8 @@ export const createEpsServer = (
 				"One multi-step recipe by id: ordered steps (specSlug, purpose, appliesWhen) " +
 				"with branches — each has onResponseTypeId (match response_type_id) OR " +
 				"onStatus (match envelope status; 0 = success) → goto next step slug or 'done'. " +
-				"Never branch on response_status_id (UI hint only).",
+				"Never branch on response_status_id (UI hint only). " +
+				"docsUrl = its page.",
 			inputSchema: { id: z.string() },
 			annotations: READ_ONLY,
 		},
@@ -219,7 +234,8 @@ export const createEpsServer = (
 			description:
 				"EPS FAQs (onboarding, auth, testing, integration, pricing, security, " +
 				"support). Answers are markdown with absolute links. Filter by tag " +
-				"and/or rank by query; with neither, all FAQs are returned.",
+				"and/or rank by query; with neither, all FAQs are returned. " +
+				"Each FAQ's docsUrl is the page it appears on.",
 			inputSchema: {
 				tag: faqTagSchema.optional().describe(`One of: ${faqTags.join(", ")}`),
 				query: z.string().optional().describe("Free-text question to rank by"),
@@ -336,13 +352,14 @@ export const createEpsServer = (
 		{
 			title: "Get meta",
 			description:
-				"Bundle org/version + data source, plus this server's package version and whether a newer npm release is available (updateAvailable). If an update is available, tell the user to run this server via `npx -y @ekoindia/eps-context-mcp@latest`.",
+				"Bundle org/version + data source + siteUrl (the human docs site), plus this server's package version and whether a newer npm release is available (updateAvailable). If an update is available, tell the user to run this server via `npx -y @ekoindia/eps-context-mcp@latest`.",
 			inputSchema: {},
 			annotations: READ_ONLY,
 		},
 		async () =>
 			json({
 				...bundle.meta,
+				siteUrl: new URL(bundle.topics.auth.docsUrl).origin,
 				source,
 				packageVersion: versionState?.current,
 				latestVersion: versionState?.latest,

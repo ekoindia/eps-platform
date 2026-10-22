@@ -311,3 +311,102 @@ describe("eps-context-mcp tools", () => {
 		expect(parse(res)).toEqual([]);
 	});
 });
+
+describe("human page URLs", () => {
+	const SITE = /^https:\/\/eps\.eko\.in\//;
+	type Entry = {
+		slug: string;
+		productId: string;
+		docsUrl: string;
+		productUrl?: string;
+	};
+
+	it("every list_apis / search entry links its docs page", async () => {
+		const client = await connect();
+		const list: Entry[] = parse(
+			await client.callTool({ name: "list_apis", arguments: {} }),
+		);
+		for (const e of list) expect(e.docsUrl).toMatch(SITE);
+		const hits: Entry[] = parse(
+			await client.callTool({ name: "search", arguments: { query: "pan" } }),
+		);
+		expect(hits.length).toBeGreaterThan(0);
+		for (const e of hits) expect(e.docsUrl).toMatch(SITE);
+	});
+
+	it("links the product page only for products that have one", async () => {
+		const client = await connect();
+		const list: Entry[] = parse(
+			await client.callTool({ name: "list_apis", arguments: {} }),
+		);
+		const aeps = list.find((e) => e.productId === "aeps");
+		expect(aeps?.productUrl).toMatch(/^https:\/\/eps\.eko\.in\/products\//);
+		// `transactions` has docs pages but no product page — never link a 404.
+		const txn = list.find((e) => e.productId === "transactions");
+		expect(txn).toBeDefined();
+		expect(txn).not.toHaveProperty("productUrl");
+
+		const api = parse(
+			await client.callTool({
+				name: "get_api",
+				arguments: { slug: aeps?.slug },
+			}),
+		);
+		expect(api.productUrl).toBe(aeps?.productUrl);
+		expect(api.docsUrl).toBe(aeps?.docsUrl);
+	});
+
+	it("recipes, topics and FAQs link their human page", async () => {
+		const client = await connect();
+		const recipes = parse(
+			await client.callTool({ name: "list_recipes", arguments: {} }),
+		);
+		expect(recipes[0].docsUrl).toMatch(/\/recipe\/[a-z0-9-]+$/);
+		const recipe = parse(
+			await client.callTool({
+				name: "get_recipe",
+				arguments: { id: recipes[0].id },
+			}),
+		);
+		expect(recipe.docsUrl).toBe(recipes[0].docsUrl);
+
+		const topic = async (t: string) =>
+			parse(
+				await client.callTool({ name: "get_topic", arguments: { topic: t } }),
+			);
+		expect((await topic("pricing")).docsUrl).toMatch(/\/pricing$/);
+		expect((await topic("security")).docsUrl).toMatch(/\/security$/);
+		expect((await topic("auth")).docsUrl).toMatch(/\/docs\/how-auth-works$/);
+		expect(await topic("environments")).not.toHaveProperty("docsUrl");
+
+		const faqs = parse(
+			await client.callTool({ name: "get_faqs", arguments: {} }),
+		);
+		for (const f of faqs) expect(f.docsUrl).toMatch(/\/(faq|pricing)$/);
+
+		const meta = parse(
+			await client.callTool({ name: "get_meta", arguments: {} }),
+		);
+		expect(meta.siteUrl).toBe("https://eps.eko.in");
+	});
+
+	it("degrades cleanly on a bundle built before page URLs shipped", async () => {
+		const { pages: _dropped, ...legacy } = bundle;
+		const server = createEpsServer(legacy, "remote");
+		const client = new Client({ name: "test", version: "0" });
+		const [a, b] = InMemoryTransport.createLinkedPair();
+		await Promise.all([server.connect(a), client.connect(b)]);
+		const list: Entry[] = parse(
+			await client.callTool({ name: "list_apis", arguments: {} }),
+		);
+		// docsUrl lives on every API in every bundle; only the joined URLs go.
+		expect(list[0].docsUrl).toMatch(SITE);
+		expect(list.some((e) => "productUrl" in e)).toBe(false);
+		const recipe = await client.callTool({
+			name: "get_recipe",
+			arguments: { id: legacy.recipes[0].id },
+		});
+		expect(recipe.isError).toBeFalsy();
+		expect(parse(recipe)).not.toHaveProperty("docsUrl");
+	});
+});

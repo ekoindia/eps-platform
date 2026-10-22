@@ -108,6 +108,15 @@ clients can see this programmatically.
 | `debug_auth`          | `timestamp?`, `secret_key?`                                                  | Diagnose a `401`: returns a known-answer test vector to check your signing against, mechanical checks on a supplied timestamp/signature, and ranked causes. **Never takes an `access_key`.** |
 | `get_meta`            | —                                                                            | Bundle org/version, data source (`baked` or `remote`), this server's `packageVersion`, and `updateAvailable` (whether a newer npm release exists). |
 
+**Every answer links its human page.** Results carry `docsUrl`, the web page a
+person would read for that API, recipe, topic or FAQ. API results (`list_apis`,
+`search`, `get_api`) also carry `productUrl` when the product has its own page.
+Products with no page (e.g. `transactions`) and topics with no page
+(`environments`) carry no URL rather than a link to a 404. `get_meta` returns
+`siteUrl`. The server's MCP `instructions` tell agents to pass these URLs on to
+the user. A bundle built before 2026-10-19 has no `pages` section; with one of
+those, only the API `docsUrl` comes back.
+
 **Tiered usage:** start with `list_apis` / `search` (cheap, compact), then call
 `get_api` only for the endpoint(s) you actually need. Same pattern for
 `list_topics` → `get_topic`, `list_recipes` → `get_recipe` and
