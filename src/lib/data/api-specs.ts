@@ -293,7 +293,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/dmt-fino/sender/{customer_id}",
 		trxnTypeId: 110,
 		epsProductCode: 106,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/create-customer",
 		extraRequestParams: [
 			{
@@ -416,7 +416,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/otp",
 		trxnTypeId: 810,
 		epsProductCode: 750,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-dmt-customer-kyc",
 		extraRequestParams: [
 			{
@@ -544,7 +544,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/otp/verify",
 		trxnTypeId: 812,
 		epsProductCode: 752,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-validate-aadhar",
 		extraRequestParams: [
 			{
@@ -650,7 +650,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/recipients",
 		trxnTypeId: 82,
 		epsProductCode: 80,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-get-recipients",
 		extraRequestParams: [
 			{
@@ -852,7 +852,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/dmt-fino/sender/{customer_id}/recipient",
 		trxnTypeId: 74,
 		epsProductCode: 72,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-add-recipient",
 		extraRequestParams: [
 			{
@@ -1003,7 +1003,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/dmt-fino/otp",
 		trxnTypeId: 811,
 		epsProductCode: 751,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/fino-otp-transaction",
 		extraRequestParams: [
 			{
@@ -1114,7 +1114,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/dmt-fino",
 		trxnTypeId: 81,
 		epsProductCode: 79,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/initiate-transaction-fino",
 		financial: true,
 		extraRequestParams: [
@@ -1803,7 +1803,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/user/collection/aeps-fingpay/kyc/otp",
 		trxnTypeId: 540,
 		epsProductCode: 512,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -1919,7 +1919,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/user/collection/aeps-fingpay/kyc/otp/verify",
 		trxnTypeId: 542,
 		epsProductCode: 514,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-kyc-verify-otp",
 		extraRequestParams: [
 			{
@@ -2062,7 +2062,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/user/collection/aeps-fingpay/kyc/biometric",
 		trxnTypeId: 543,
 		epsProductCode: 515,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -2200,7 +2200,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/user/collection/aeps-fingpay/kyc/biometric/daily",
 		trxnTypeId: 594,
 		epsProductCode: 565,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -2352,7 +2352,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/collection/aeps-fingpay/cash-withdrawal/otp/{customer_id}",
 		trxnTypeId: 851,
 		epsProductCode: 784,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -2472,7 +2472,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/collection/aeps-fingpay/cash-withdrawl/{customer_id}",
 		trxnTypeId: 345,
 		epsProductCode: 329,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		financial: true,
 		extraRequestParams: [
@@ -2899,7 +2899,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/collection/aeps-fingpay/balance-enquiry/{customer_id}",
 		trxnTypeId: 346,
 		epsProductCode: 330,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -3161,7 +3161,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/customer/collection/aeps-fingpay/mini-statement/{customer_id}",
 		trxnTypeId: 497,
 		epsProductCode: 469,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
@@ -3432,7 +3432,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/user/payment/aeps/settlement/account",
 		trxnTypeId: 399,
 		epsProductCode: 380,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl:
 			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
 		extraRequestParams: [
@@ -3536,7 +3536,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/user/payment/aeps/settlement/accounts",
 		trxnTypeId: 391,
 		epsProductCode: 372,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl:
 			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
 		extraRequestParams: [
@@ -3647,7 +3647,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		path: "/user/payment/aeps/settlement",
 		trxnTypeId: 392,
 		epsProductCode: 373,
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		docsUrl: "https://developers.eko.in/reference/aeps-fund-settlement-request",
 		financial: true,
 		extraRequestParams: [
@@ -7318,7 +7318,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			sideEffects: ["creates", "sends-otp"],
 		},
 		path: "/customer/account/{customer_id}/dmt-levin",
-		uatUnavailable: true,
+		// uatUnavailable: true,
 		extraRequestParams: [
 			{
 				name: "customer_id",
