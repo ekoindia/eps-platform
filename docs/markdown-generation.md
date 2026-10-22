@@ -15,8 +15,12 @@ At build time, the site generates Markdown equivalents for:
 - Product pages: `/products/:slug.md`
 - Industry pages: `/industries/:slug.md`
 - Solution pages: `/solutions/:slug.md`
+- Docs index + endpoint/guide pages: `/docs.md`, `/docs/:slug.md`
+- SDK guides: `/docs/sdk.md`, `/docs/sdk/:lang.md`
+- Recipes: `/recipe.md`, `/recipe/:slug.md`
 - Pricing rate card: `/pricing.md`
-- Use cases hub: `/use-cases.md`
+- FAQ, security, use cases: `/faq.md`, `/security.md`, `/use-cases.md`
+- AI hub + agents page: `/ai.md`, `/agents.md`
 - Site index: `/index.md`
 - LLM discovery index: `/llms.txt`
 - Full-content alias: `/llms-full.txt`
@@ -41,6 +45,27 @@ The main HTML pages continue to exist at their normal routes, for example:
 
 - HTML: `/products/aeps-api`
 - Markdown: `/products/aeps-api.md`
+
+### Canonical `Link` header on every twin
+
+A twin has the same content as its HTML page, so search engines could index
+both and split ranking. Every `.md` response therefore carries an HTTP header
+pointing at the HTML page:
+
+```
+Link: <https://eps.eko.in/products/aeps-api>; rel="canonical"
+```
+
+The rule is "path minus `.md`", which holds because twins are flat siblings of
+the prerendered route directories (`products/aeps-api.md` next to
+`products/aeps-api/index.html`). The one exception is `/index.md` → `/`. Agents
+still fetch twins freely; only the indexing signal moves to the HTML page.
+
+| Host | How |
+| --- | --- |
+| Vercel (production) | Two `headers` rules in `vercel.json`: `/:path((?!index\.md$).*)\.md` interpolates `:path` into the value, plus an exact `/index.md` rule. `src/lib/vercel-config.test.ts` checks the mapping. |
+| nginx (reference copy) | A named regex capture in the `.md` location (`$twin`) plus `location = /index.md`. |
+| Netlify | **Not set.** `[[headers]]` can't put the matched path into a header value, so it would need a generated per-twin `_headers` file. Nobody serves the site from Netlify, so we skipped it. |
 
 ### Source of truth
 
@@ -209,6 +234,7 @@ Responsibilities:
 	which must 404 for stale chunks — see docs/chunk-error-auto-reload.md)
 - Sets explicit headers for:
 	- `*.md` -> `text/markdown; charset=utf-8`
+	- `*.md` -> `Link: <html page>; rel="canonical"` (see above)
 	- `/llms.txt` -> `text/plain; charset=utf-8`
 
 Because the generated `.md` files exist as static output, Vercel serves those
@@ -220,7 +246,7 @@ files directly before the SPA rewrite is applied.
 
 Responsibilities:
 
-- Serves `.md` files with `text/markdown`
+- Serves `.md` files with `text/markdown` and the canonical `Link` header
 - Serves `/llms.txt` with `text/plain`
 - Avoids falling back to the SPA when a `.md` file is missing
 - Preserves the usual React SPA `index.html` fallback for normal HTML routes

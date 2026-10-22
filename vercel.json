@@ -94,6 +94,21 @@
 			]
 		},
 		{
+			"source": "/:path((?!index\\.md$).*)\\.md",
+			"headers": [
+				{
+					"key": "Link",
+					"value": "<https://eps.eko.in/:path>; rel=\"canonical\""
+				}
+			]
+		},
+		{
+			"source": "/index.md",
+			"headers": [
+				{ "key": "Link", "value": "<https://eps.eko.in/>; rel=\"canonical\"" }
+			]
+		},
+		{
 			"source": "/.well-known/api-catalog",
 			"headers": [
 				{ "key": "Content-Type", "value": "application/linkset+json" },
