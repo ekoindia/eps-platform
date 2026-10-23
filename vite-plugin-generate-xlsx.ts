@@ -94,7 +94,7 @@ export function generatePricingXlsxPlugin(): Plugin {
 async function loadPricingData(
 	server: Pick<ViteDevServer, "ssrLoadModule">,
 ): Promise<PricingXlsxData> {
-	const [pricingMod, siteMod, paymentsMod, dmtMod, cbMod, operatorsMod] =
+	const [pricingMod, siteMod, paymentsMod, dmtMod, cbMod, operatorsMod, ccMod] =
 		await Promise.all([
 			server.ssrLoadModule("/src/lib/data/api-pricing.ts"),
 			server.ssrLoadModule("/src/lib/config/site.ts"),
@@ -102,6 +102,7 @@ async function loadPricingData(
 			server.ssrLoadModule("/src/lib/data/dmt-pricing.ts"),
 			server.ssrLoadModule("/src/lib/data/connected-banking-pricing.ts"),
 			server.ssrLoadModule("/src/lib/data/bbps-operators.ts"),
+			server.ssrLoadModule("/src/lib/data/credit-card-pricing.ts"),
 		]);
 
 	return {
@@ -137,6 +138,11 @@ async function loadPricingData(
 			modeParam: paymentsMod.BBPS_MODE_PARAM,
 			offlineSettlementHours: paymentsMod.BBPS_OFFLINE_SETTLEMENT_HOURS,
 			operators: operatorsMod.BBPS_OPERATORS,
+		},
+		cc: {
+			feePerTxn: ccMod.CC_FEE_PER_TXN,
+			setupFee: ccMod.CC_SETUP_FEE,
+			defaultMonthlyTxns: ccMod.CC_DEFAULT_TXNS,
 		},
 		cb: {
 			setupFee: cbMod.CB_SETUP_FEE,

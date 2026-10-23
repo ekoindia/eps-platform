@@ -4,6 +4,7 @@ import {
 	clampDmtAmount,
 	serializeDmtInput,
 } from "@/lib/data/dmt-pricing";
+import { CC_DEFAULT_TXNS, calcCcQuote } from "@/lib/data/credit-card-pricing";
 import {
 	EARNINGS_PRODUCTS,
 	EARNINGS_PRODUCTS_MAP,
@@ -19,6 +20,8 @@ import type { ActionCard, DetectedIntent } from "./types";
 
 /** The DMT calculator's product id in slots; it has its own pricing tab. */
 const DMT = "dmt";
+/** Credit card bill payment's id in slots; a cost (not commission) on its own tab. */
+const CREDIT_CARD = "credit-card";
 
 /** Lowercase words of 3+ characters, for loose product-name matching. */
 const words = (text: string): string[] =>
@@ -27,10 +30,11 @@ const words = (text: string): string[] =>
 /**
  * Words naming each calculator product: its id parts and display name,
  * derived from the pricing data so a new BBPS category needs no edit here.
- * DMT first — it lives on its own tab, outside EARNINGS_PRODUCTS.
+ * DMT and credit card first — each lives on its own tab, outside EARNINGS_PRODUCTS.
  */
 const PRODUCT_WORDS: [string, string[]][] = [
 	[DMT, ["dmt", "money", "transfer", "remittance", "domestic"]],
+	[CREDIT_CARD, ["credit", "card"]],
 	...EARNINGS_PRODUCTS.map((p): [string, string[]] => [
 		p.id,
 		[...new Set([...words(p.id), ...words(p.name)])],
@@ -45,7 +49,7 @@ const wordMatches = (query: string, product: string): boolean =>
  * The calculator product a query names: the one sharing the most words with
  * it, earliest on a tie (so plain "aeps" → cash withdrawal, "bbps" → electricity).
  * @param query - The query or its subject.
- * @returns A calculator id (`dmt` or an EARNINGS_PRODUCTS id), or null.
+ * @returns A calculator id (`dmt`, `credit-card` or an EARNINGS_PRODUCTS id), or null.
  */
 export function earningsProductOf(query: string): string | null {
 	const queryWords = words(query);
@@ -156,6 +160,23 @@ export function resolveEstimateEarnings(detected: DetectedIntent): ActionCard {
 			primary: {
 				label: "Open calculator",
 				href: `/pricing?tab=dmt&dmt=${serializeDmtInput(input)}#dmt-calculator`,
+			},
+		};
+	}
+
+	// A cost, not earnings: answer with the fee so a credit card query never
+	// lands on another product's commission estimate.
+	if (product === CREDIT_CARD) {
+		const quote = calcCcQuote(txns ?? CC_DEFAULT_TXNS);
+		return {
+			...base,
+			id: `action:estimate_earnings:${CREDIT_CARD}`,
+			badge: "Cost",
+			title: `${formatINR(quote.monthlyTotal, 0)}/month for credit card bill payments`,
+			detail: `${formatIndianCompact(quote.monthlyTxns)} payments × ${formatINR(quote.perTxn, 0)} fee · incl. GST (charged, not a commission)`,
+			primary: {
+				label: "Open calculator",
+				href: `/pricing?tab=credit-card&cc=${quote.monthlyTxns}#credit-card-calculator`,
 			},
 		};
 	}

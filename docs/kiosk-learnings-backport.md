@@ -123,7 +123,7 @@ Clickjacking and XSS mitigations matter here.
 - nginx: a named regex capture.
 - Netlify: skipped, because it can't interpolate a path into a header value; see `docs/markdown-generation.md`.
 - `src/lib/vercel-config.test.ts` guards the mapping.
-- Still to do: run the acceptance curls below on a preview, then on prod.
+- Verified on prod 2026-10-22. `/products/aeps-api.md`, `/index.md` (→ `/`), `/docs.md`, `/docs/sdk/python.md`, `/docs/how-auth-works.md` and `/recipe/bbps-bill-payment.md` all carry the right canonical. `/samples/partner-agreement.md` keeps `X-Robots-Tag: noindex`. HTML pages get no canonical `Link`. Vercel does fill `:path` into header values.
 
 
 Every product, recipe, doc, SDK and industry page has a `.md` twin with the same content as its HTML page. Search engines can index the twins as duplicates and split ranking signals. A canonical `Link` HTTP header on each twin, pointing at its HTML page, fixes this without hiding the twins from agents.
@@ -153,7 +153,11 @@ Not from kiosk. It is the agent-side counterpart of item 4. An agent answering f
 - [x] `list_recipes`/`get_recipe`, `get_topic` and `get_faqs` return `docsUrl`; `get_meta` returns `siteUrl`.
 - [x] The server's MCP `instructions` tell agents to pass the URLs on.
 - [x] The hosted `/context` server and the docs-chat tools share `bundle-access.ts`, so both get the URLs.
-- [ ] Deploy: the site (new bundle), eps-backend (new accessor code for hosted `/context`), and an npm release of `@ekoindia/eps-context-mcp`.
+- [x] Deploy, verified 2026-10-22:
+  - The site serves `/agent/eps.json` with `pages` (23 products).
+  - The hosted `/context` server returns `docsUrl`, `productUrl` and `siteUrl`.
+  - `@ekoindia/eps-context-mcp@0.1.39` is published.
+  - `bundleVersion` is unchanged by the change (`4a281cb2`).
 
 **Accept:** `POST https://mcp.eko.in/context/tools/list_apis` entries include `docsUrl`, and AEPS entries include `productUrl: https://eps.eko.in/products/aeps-api`.
 
@@ -288,16 +292,29 @@ It opens on the first click.
 
 **Accept:** the Search Console robots.txt report shows no errors, and `/console` and `/admin` are still disallowed for every group.
 
-### 13. A `Link` alternate header for `.md` twins
+### 13. A `Link` alternate header for `.md` twins ✅ (2026-10-22)
+
+Moved up from low priority, because it reuses item 4's mechanism.
+
+**Done:**
+- Vercel: per-section rules, not a catch-all, so no route advertises a twin that doesn't exist.
+- nginx: a `map $request_uri`.
+- Tests: `vercel-config.test.ts`.
+- Build guard: the build fails on any advertised twin that is missing. On 2026-10-22, 160 of 169 prerendered routes advertised a twin and none were missing.
+- Details are in `docs/markdown-generation.md`.
+- Still to do:
+  - run the Accept curl on prod after deploy;
+  - `nginx -t` hasn't been run, because no nginx was available locally.
+
 
 Agents can discover twins today only by parsing the HTML `<link rel="alternate" type="text/markdown">`. An HTTP `Link` header makes this discoverable from a `HEAD` request.
 
-- [ ] Use the same mechanism as item 4, in the reverse direction. On each HTML route, send:
+- [x] Use the same mechanism as item 4, in the reverse direction. On each HTML route, send:
   ```
   Link: </products/aeps-api.md>; rel="alternate"; type="text/markdown"
   ```
   This is either a pattern rule (`/:path*` → `</:path*.md>`, with `/` → `/index.md` special-cased) or rules generated from `PRERENDER_ROUTES`.
-- [ ] Skip noindex and private routes.
+- [x] Skip noindex and private routes.
 
 **Accept:** `curl -sI https://eps.eko.in/pricing | grep -i '^link:'` shows the `.md` alternate.
 
@@ -331,6 +348,6 @@ These kiosk items don't fit eps-platform:
 
 - `docs/configuration.md`: production host (item 0 ✅), security headers and CSP rules (2), trailing-slash policy (8).
 - `docs/static-page-generation.md`: `404.html` and the scoped fallback (1), Lighthouse budget (10), hydration triggers (11).
-- `docs/markdown-generation.md`: `llms-full.txt` (3), twin `Link` headers (4 ✅, 13).
+- `docs/markdown-generation.md`: `llms-full.txt` (3), twin `Link` headers (4 ✅, 13 ✅).
 - `docs/agent-readiness-review.md`: mark Phase 5.3 done (3).
 - `README.md` "Gotchas": the SPA-fallback sentence changes after item 1.

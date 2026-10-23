@@ -35,6 +35,11 @@ const TOC: { sheet: string; purpose: string; enabled?: boolean }[] = [
 			"Estimate your monthly EARNINGS from AePS and BBPS — these products pay you a commission per transaction.",
 	},
 	{
+		sheet: SHEETS.creditCard,
+		purpose:
+			"Estimate your monthly COST for credit card bill payments — a flat fee per payment, plus a one-time setup fee.",
+	},
+	{
 		sheet: SHEETS.connectedBanking,
 		purpose:
 			"Estimate Connected Banking costs — one-time setup per bank per user plus per-transaction charges.",
@@ -80,7 +85,7 @@ export async function buildIndexSheet(
 		row,
 		"B",
 		"Offline companion to the live pricing page. Covers verification APIs (a cost you pay per call) " +
-			"and DMT / AePS / BBPS (which pay YOU a commission per transaction)" +
+			"DMT / AePS / BBPS (which pay YOU a commission per transaction), credit card bill payments (a fee per payment)" +
 			(CONNECTED_BANKING_ENABLED ? " and Connected Banking." : "."),
 	);
 	row++;

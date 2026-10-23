@@ -34,6 +34,11 @@ import {
 	dmtRateCardRows,
 } from "@/lib/data/dmt-pricing";
 import {
+	CC_FAQS,
+	CC_FEE_PER_TXN,
+	CC_SETUP_FEE,
+} from "@/lib/data/credit-card-pricing";
+import {
 	CB_BANKS,
 	CB_FAQS,
 	CB_SETUP_FEE,
@@ -81,7 +86,8 @@ const rateRow = (api: PricedApi): string[] => {
 /**
  * Render `/pricing.md` — the full rate card for ALL products, mirroring the
  * HTML `/pricing` page: verification APIs (cost), DMT/AePS/BBPS commissions
- * (earnings) and — when `CONNECTED_BANKING_ENABLED` — Connected Banking
+ * (earnings), Credit Card Bill Payment fees (cost) and — when
+ * `CONNECTED_BANKING_ENABLED` — Connected Banking
  * charges. The interactive calculators are HTML-only, so this document carries
  * the complete tables, notes and FAQs.
  *
@@ -109,8 +115,8 @@ export function renderPricingMarkdown(): string {
 				? `Transparent, pay-per-use API pricing. ${SETUP_FEE_DISCOUNT_PERCENT}% off the one-time setup fee for a limited time. No monthly minimums. Pay only for successful verifications.`
 				: "Transparent, pay-per-use API pricing. No monthly minimums. Pay only for successful verifications.",
 		CONNECTED_BANKING_ENABLED
-			? "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), and (3) Connected Banking charges."
-			: "This page covers (1) Verification API pricing (a cost you pay per call) and (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction).",
+			? "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), (3) Credit Card Bill Payment fees (a cost you pay per payment), and (4) Connected Banking charges."
+			: "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), and (3) Credit Card Bill Payment fees (a cost you pay per payment).",
 		`Interactive pricing calculators (pick APIs, set monthly volumes, see your estimated cost or earnings) are available on the HTML page: ${canonical}`,
 		gettingStartedNotice(),
 		h2("Verification API Rate Card"),
@@ -211,6 +217,20 @@ export function renderPricingMarkdown(): string {
 		`Operator-wise commission for 100+ BBPS billers is available in the downloadable Excel rate card: ${SITE_URL}/eps-pricing-calculator.xlsx`,
 	);
 
+	// ---- Credit Card Bill Payment (a cost, unlike the BBPS commissions) ----
+	blocks.push(
+		h2("Credit Card Bill Payment Pricing"),
+		"Credit Card Bill Payment is a cost you pay per payment (like verification APIs), not a commission product — unlike the other BBPS categories above.",
+		markdownTable(
+			["Charge", "Amount (INR, excl. GST)"],
+			[
+				["Fee per payment (any bill amount)", formatAmount(CC_FEE_PER_TXN)],
+				["One-time setup fee", formatAmount(CC_SETUP_FEE)],
+			],
+		),
+		`The setup fee is separate from the BBPS setup fee. GST @ ${Math.round(GST_RATE * 100)}% applies to both charges.`,
+	);
+
 	// ---- Connected Banking (omitted while the product is disabled) ----
 	if (CONNECTED_BANKING_ENABLED) {
 		blocks.push(
@@ -233,7 +253,7 @@ export function renderPricingMarkdown(): string {
 			`All listed rates exclude GST, charged at ${Math.round(GST_RATE * 100)}%.`,
 			"Billing is per successful API call — failed or errored calls are not charged.",
 			"No monthly minimums and no lock-in.",
-			`One-time setup fee: ${formatAmount(VERIFICATION_SETUP_FEE)} per verification API and ${formatAmount(BC_SETUP_FEE)} per BC/Payments API family (DMT, AePS, BBPS), excl. GST.`,
+			`One-time setup fee: ${formatAmount(VERIFICATION_SETUP_FEE)} per verification API, ${formatAmount(BC_SETUP_FEE)} per BC/Payments API family (DMT, AePS, BBPS) and ${formatAmount(CC_SETUP_FEE)} for Credit Card Bill Payment, excl. GST.`,
 			...(SETUP_FEE_DISCOUNT_PERCENT >= 100
 				? [
 						"Setup fees are currently waived as a limited-time offer (₹0 to activate).",
@@ -260,6 +280,7 @@ export function renderPricingMarkdown(): string {
 		...PRICING_FAQS,
 		...DMT_FAQS,
 		...PAYMENTS_FAQS,
+		...CC_FAQS,
 		...CB_FAQS,
 	]) {
 		blocks.push(`${h3(faq.q)}\n${faq.a}`);

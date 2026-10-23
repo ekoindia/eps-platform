@@ -121,6 +121,12 @@ describe("generatePricingJsonLd", () => {
 		},
 	);
 
+	it("emits the Credit Card Bill Payment OfferCatalog", () => {
+		const json = graphJson();
+		expect(json).toContain("#credit-card-offers");
+		expect(json).toContain('"price":"5.00"');
+	});
+
 	it.skipIf(!CONNECTED_BANKING_ENABLED)(
 		"emits the Connected Banking OfferCatalog while the product is enabled",
 		() => {

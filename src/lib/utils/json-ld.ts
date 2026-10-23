@@ -9,6 +9,7 @@ import {
 import type { ProductPageData } from "@/lib/data/api-product-pages";
 import { productHref } from "@/lib/data/api-products";
 import { PRICED_APIS } from "@/lib/data/api-pricing";
+import { CC_FEE_PER_TXN, CC_SETUP_FEE } from "@/lib/data/credit-card-pricing";
 import {
 	CB_SETUP_FEE,
 	CB_TXN_SLABS,
@@ -198,6 +199,48 @@ export function generatePricingJsonLd(faqs: FaqItem[]): object[] {
 				availability: "https://schema.org/InStock",
 				seller: { "@id": ORG_ID },
 			})),
+		},
+		// Credit Card Bill Payment is a cost (a flat fee per payment), unlike the
+		// BBPS commissions, so it gets Offer semantics like verification APIs.
+		{
+			"@type": "OfferCatalog",
+			"@id": `${pricingUrl}#credit-card-offers`,
+			name: "Credit Card Bill Payment Pricing",
+			url: pricingUrl,
+			itemListElement: [
+				{
+					"@type": "Offer",
+					name: "Credit Card Bill Payment — per payment",
+					url: pricingUrl,
+					priceCurrency: "INR",
+					price: CC_FEE_PER_TXN.toFixed(2),
+					priceSpecification: {
+						"@type": "UnitPriceSpecification",
+						price: CC_FEE_PER_TXN.toFixed(2),
+						priceCurrency: "INR",
+						unitText: "per payment",
+						valueAddedTaxIncluded: false,
+					},
+					availability: "https://schema.org/InStock",
+					seller: { "@id": ORG_ID },
+				},
+				{
+					"@type": "Offer",
+					name: "Credit Card Bill Payment — one-time setup",
+					url: pricingUrl,
+					priceCurrency: "INR",
+					price: CC_SETUP_FEE.toFixed(2),
+					priceSpecification: {
+						"@type": "UnitPriceSpecification",
+						price: CC_SETUP_FEE.toFixed(2),
+						priceCurrency: "INR",
+						unitText: "one-time",
+						valueAddedTaxIncluded: false,
+					},
+					availability: "https://schema.org/InStock",
+					seller: { "@id": ORG_ID },
+				},
+			],
 		},
 		// Connected Banking is a cost product, so Offer semantics apply.
 		// DMT/AePS/BBPS commissions are income to the buyer — deliberately

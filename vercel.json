@@ -109,6 +109,42 @@
 			]
 		},
 		{
+			"source": "/",
+			"headers": [
+				{
+					"key": "Link",
+					"value": "</index.md>; rel=\"alternate\"; type=\"text/markdown\""
+				}
+			]
+		},
+		{
+			"source": "/:page(products|docs|recipe|pricing|faq|security|use-cases|ai|agents)",
+			"headers": [
+				{
+					"key": "Link",
+					"value": "</:page.md>; rel=\"alternate\"; type=\"text/markdown\""
+				}
+			]
+		},
+		{
+			"source": "/:section(products|industries|solutions|docs|recipe)/:slug([^/.]+)",
+			"headers": [
+				{
+					"key": "Link",
+					"value": "</:section/:slug.md>; rel=\"alternate\"; type=\"text/markdown\""
+				}
+			]
+		},
+		{
+			"source": "/docs/sdk/:lang([^/.]+)",
+			"headers": [
+				{
+					"key": "Link",
+					"value": "</docs/sdk/:lang.md>; rel=\"alternate\"; type=\"text/markdown\""
+				}
+			]
+		},
+		{
 			"source": "/.well-known/api-catalog",
 			"headers": [
 				{ "key": "Content-Type", "value": "application/linkset+json" },

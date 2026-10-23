@@ -163,7 +163,6 @@ const ROWS: OperatorRow[] = [
 	["Tata Play", "DTH", 2, 2, "pct"],
 	["Videocon D2H", "DTH", 2, 2, "pct"],
 	["BSNL Recharge", "Prepaid", 3.04, 3.04, "pct"],
-	["Credit Card Bill Payment", "Credit Card", 0.2, 0.2, "fixed"],
 	["FASTag (General)", "FASTag", 0.05, 0.05, "pct"],
 ];
 

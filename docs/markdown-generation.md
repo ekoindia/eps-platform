@@ -67,6 +67,39 @@ still fetch twins freely; only the indexing signal moves to the HTML page.
 | nginx (reference copy) | A named regex capture in the `.md` location (`$twin`) plus `location = /index.md`. |
 | Netlify | **Not set.** `[[headers]]` can't put the matched path into a header value, so it would need a generated per-twin `_headers` file. Nobody serves the site from Netlify, so we skipped it. |
 
+### Alternate `Link` header on every HTML page with a twin
+
+The reverse direction: each HTML page that has a twin advertises it, so an
+agent can discover the markdown from a `HEAD` request without parsing HTML.
+
+```
+Link: </products/aeps-api.md>; rel="alternate"; type="text/markdown"
+```
+
+The rules are listed per section rather than as one catch-all, because a
+catch-all would advertise twins that don't exist (`/console`, `/about-us`,
+`/industries`, the noindex `/samples/partner-agreement`):
+
+- `/` → `/index.md`
+- `/:page(products|docs|recipe|pricing|faq|security|use-cases|ai|agents)` → `/:page.md`
+- `/:section(products|industries|solutions|docs|recipe)/:slug([^/.]+)` → `/:section/:slug.md` (the slug excludes `.`, so the twins themselves don't match)
+- `/docs/sdk/:lang([^/.]+)` → `/docs/sdk/:lang.md`
+
+nginx mirrors these with a `map $request_uri $md_alternate` and
+`add_header Link $md_alternate` in `location /`. Netlify is not covered, for
+the same reason as above.
+
+**Guards:**
+
+- `src/lib/vercel-config.test.ts` checks both directions with
+  `src/lib/markdown/vercel-header-rules.ts`, a small emulation of Vercel's rule
+  matching and `:param` substitution.
+- At build time, `assertAdvertisedTwinsExist` (in
+  `vite-plugin-generate-markdown.ts`) fails the build if a prerendered route
+  advertises a twin that wasn't written.
+- If you add a page with a twin, add its path to the rules. If you add a page
+  without one under a covered section, the build tells you.
+
 ### Source of truth
 
 The Markdown files are generated from the same TypeScript data used to render the
@@ -235,6 +268,7 @@ Responsibilities:
 - Sets explicit headers for:
 	- `*.md` -> `text/markdown; charset=utf-8`
 	- `*.md` -> `Link: <html page>; rel="canonical"` (see above)
+	- HTML pages with a twin -> `Link: </x.md>; rel="alternate"; type="text/markdown"`
 	- `/llms.txt` -> `text/plain; charset=utf-8`
 
 Because the generated `.md` files exist as static output, Vercel serves those

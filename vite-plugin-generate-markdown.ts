@@ -354,6 +354,12 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(path.join(outDir, "search-body.json"), bodiesJson);
 				written++;
 
+				await assertAdvertisedTwinsExist(
+					ssrServer,
+					resolvedConfig.root,
+					outDir,
+				);
+
 				// eslint-disable-next-line no-console
 				console.log(
 					`\n[eko:markdown] wrote ${written} markdown files to ${path.relative(resolvedConfig.root, outDir)}/` +
@@ -364,6 +370,43 @@ export function generateMarkdownPlugin(): Plugin {
 			}
 		},
 	};
+}
+
+/**
+ * Fail the build if `vercel.json` advertises a twin that wasn't written: every
+ * prerendered route whose `Link: <…>; rel="alternate"` rule matches must have
+ * that `.md` in `outDir`. Catches a new section or slug the rules cover but the
+ * generator doesn't, before it ships as a dead link.
+ */
+async function assertAdvertisedTwinsExist(
+	server: Pick<ViteDevServer, "ssrLoadModule">,
+	root: string,
+	outDir: string,
+): Promise<void> {
+	const [routesMod, rulesMod] = await Promise.all([
+		server.ssrLoadModule("/ssg/routes.ts"),
+		server.ssrLoadModule("/src/lib/markdown/vercel-header-rules.ts"),
+	]);
+	const vercel = JSON.parse(
+		await fs.readFile(path.join(root, "vercel.json"), "utf8"),
+	) as { headers: unknown[] };
+	const missing: string[] = [];
+	for (const route of routesMod.PRERENDER_ROUTES as string[]) {
+		const twin: string | undefined = rulesMod.alternateTwinPath(
+			vercel.headers,
+			route,
+		);
+		if (!twin) continue;
+		try {
+			await fs.access(path.join(outDir, twin));
+		} catch {
+			missing.push(`${route} → ${twin}`);
+		}
+	}
+	if (missing.length)
+		throw new Error(
+			`[eko:markdown] vercel.json advertises missing .md twins:\n  ${missing.join("\n  ")}`,
+		);
 }
 
 interface MarkdownBundle {

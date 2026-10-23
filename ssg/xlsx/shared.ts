@@ -19,6 +19,7 @@ export const SHEETS = {
 	verificationCalculator: "Verification Calculator",
 	dmt: "DMT Calculator",
 	paymentsEarnings: "Payments Earnings",
+	creditCard: "Credit Card Bills",
 	connectedBanking: "Connected Banking",
 	verificationRateCard: "Verification Rate Card",
 	paymentsRateCard: "Payments Rate Card",
@@ -113,6 +114,14 @@ export interface PricingXlsxData {
 		modeParam: { online: number; offline: number };
 		/** `BBPS_OFFLINE_SETTLEMENT_HOURS` — minimum offline settlement time. */
 		offlineSettlementHours: number;
+	};
+	/** Credit Card Bill Payment config from credit-card-pricing (a cost). */
+	cc: {
+		/** `CC_FEE_PER_TXN` — flat per payment, excl. GST. */
+		feePerTxn: number;
+		/** `CC_SETUP_FEE` — one-time, excl. GST, before discount. */
+		setupFee: number;
+		defaultMonthlyTxns: number;
 	};
 	/** Connected Banking config from connected-banking-pricing. */
 	cb: {
