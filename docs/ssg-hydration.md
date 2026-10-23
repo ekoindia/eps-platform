@@ -41,6 +41,14 @@ the pre-rendered DOM and re-render from scratch on every page load).
   skips attribute patching during hydration, so the stale hidden class locked
   content at opacity 0. Class names (and any other rendered output) must
   depend on props/data only; environment checks belong in `useEffect`.
+- **Never derive initial state from the query string when it drives
+  attributes.** Prerender runs without a query, and attribute mismatches are
+  not patched. `PricingTabs` (`src/components/pricing/PricingTabs.tsx`) read
+  `?tab=` in its `useState` initializer, so a hard load of
+  `/pricing/?tab=dmt` hydrated with Verification's
+  `data-state`/`aria-selected` stuck in the DOM, and since state never
+  changed nothing re-rendered. Fix: start from the SSG value and apply the
+  URL in `useEffect` (regression test in `PricingTabs.test.tsx`).
 - **Never pair `animation-timeline: view()` with base hidden styles.** When
   the view timeline is inactive (full-page screenshot capture, print, no
   scrollable overflow) the animation stops applying and a base `opacity: 0`

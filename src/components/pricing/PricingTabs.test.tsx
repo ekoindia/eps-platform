@@ -3,7 +3,8 @@
 // falls back to "verification" with the stale key stripped from the URL.
 // This is what switches Connected Banking off (CONNECTED_BANKING_ENABLED).
 import { act, useEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot, hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import {
 	MemoryRouter,
 	useLocation,
@@ -122,6 +123,33 @@ describe("PricingTabs", () => {
 		expect(activeTrigger()).toBe("Credit Card Bills");
 		expect(search).toContain("tab=credit-card");
 		expect(search).toContain("cc=500");
+	});
+
+	// Hard load of a prerendered /pricing/?tab=…: SSG rendered with no query, so
+	// the HTML ships with Verification active. React skips attribute patching
+	// during hydration, so the URL's tab must be applied after hydration.
+	it("activates the URL's tab when hydrating the prerendered HTML", async () => {
+		const tree = (url: string) => (
+			<MemoryRouter initialEntries={[url]}>
+				<PricingTabs
+					verification={<div>VERIFICATION PANEL</div>}
+					dmt={<div>DMT PANEL</div>}
+					payments={<div>PAYMENTS PANEL</div>}
+					creditCard={<div>CREDIT CARD PANEL</div>}
+				/>
+			</MemoryRouter>
+		);
+		container.innerHTML = renderToString(tree("/pricing"));
+
+		await act(async () => {
+			root = hydrateRoot(container, tree("/pricing?tab=dmt"));
+		});
+
+		expect(activeTrigger()).toBe("Money Transfer (DMT)");
+		const activePanel = container.querySelector(
+			'[role="tabpanel"][data-state="active"]',
+		);
+		expect(activePanel?.textContent).toBe("DMT PANEL");
 	});
 
 	// A ⌘K earnings card on /pricing links to /pricing?tab=dmt… — same route,

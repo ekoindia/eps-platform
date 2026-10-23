@@ -80,9 +80,12 @@ src/lib/utils/json-ld.ts                   ← generatePricingJsonLd() (OfferCat
   auto-hides on scroll-down, so the tab bar surfaces at the top while reading.
 
 Active tab mirrors to `?tab=` (`dmt` / `payments` / `credit-card` / `banking`; **`verification` is
-the canonical default and never written**). Deep links with `?tab=` produce
-the same accepted recoverable hydration mismatch as `?sel=` (see
-docs/ssg-hydration.md); the param-less URL stays mismatch-free.
+the canonical default and never written**). `activeTab` always starts as
+`verification` (matching the query-less prerender) and the follow-the-URL
+effect applies `?tab=` right after hydration, so a hard-loaded deep link —
+with or without the trailing slash — opens the right tab and causes no
+hydration mismatch. Calculator params (`?sel=`, `?cc=`…) still produce the
+accepted recoverable text mismatch (see docs/ssg-hydration.md).
 
 ## Pricing config
 

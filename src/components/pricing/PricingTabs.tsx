@@ -91,10 +91,12 @@ export const PricingTabs = ({
 		panels.some((panel) => panel.id === tab.id),
 	);
 
-	const [activeTab, setActiveTab] = useState<PricingTabId>(() => {
-		const fromUrl = searchParams.get(TAB_PARAM);
-		return isVisibleTabId(fromUrl, tabs) ? fromUrl : "verification";
-	});
+	// Always start on the SSG default, never the URL's tab: /pricing is
+	// prerendered without a query string, and React skips attribute patching
+	// during hydration, so a URL-derived first render left Verification's
+	// data-state/aria-selected in the DOM on a hard load of `?tab=…`. The
+	// follow-the-URL effect below applies `?tab=` right after hydration.
+	const [activeTab, setActiveTab] = useState<PricingTabId>("verification");
 
 	// Strip a `?tab=` that names a hidden or unknown tab so the URL stops
 	// advertising it on reload/share. The predicate is computed during render so
@@ -114,9 +116,10 @@ export const PricingTabs = ({
 		);
 	}, [hasStaleTabParam, setSearchParams]);
 
-	// Follow `?tab=` when something else rewrites it on this mounted page (a
-	// ⌘K earnings card linking to another tab). Our own writes already match
-	// `activeTab`, so this is a no-op for them.
+	// Apply `?tab=` on mount (the hard-load deep link, after hydration — see
+	// the useState above) and follow it when something else rewrites it on this
+	// mounted page (a ⌘K earnings card linking to another tab). Our own writes
+	// already match `activeTab`, so this is a no-op for them.
 	const urlTabIsVisible = isVisibleTabId(urlTab, tabs);
 	useEffect(() => {
 		if (urlTabIsVisible) setActiveTab(urlTab as PricingTabId);
