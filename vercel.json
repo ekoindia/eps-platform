@@ -65,10 +65,6 @@
 	],
 	"rewrites": [
 		{
-			"source": "/llms-full.txt",
-			"destination": "/index.md"
-		},
-		{
 			"source": "/((?!assets/|\\.well-known/|ai-sitemap\\.xml$).*)",
 			"destination": "/__spa-fallback.html"
 		}

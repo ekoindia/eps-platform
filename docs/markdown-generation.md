@@ -23,7 +23,11 @@ At build time, the site generates Markdown equivalents for:
 - AI hub + agents page: `/ai.md`, `/agents.md`
 - Site index: `/index.md`
 - LLM discovery index: `/llms.txt`
-- Full-content alias: `/llms-full.txt`
+- `/llms-full.txt`: a byte-identical copy of `/index.md`, written by the plugin.
+	It is deliberately **not** the full concatenated content: all public twins
+	together are ~1.2 MB, about 306k tokens (measured 2026-10-23), which most
+	agents would truncate or skip. Agents get full content per page from the
+	twins, the context MCP, or `/agent/*`.
 - Sample partner agreement: `/samples/partner-agreement.md`
 
 The partner agreement is the one twin that is **authored, not generated**:
@@ -262,7 +266,6 @@ The HTML pages advertise their Markdown equivalents in two ways:
 
 Responsibilities:
 
-- Rewrites `/llms-full.txt` to `/index.md`
 - Keeps SPA fallback rewrite to `/__spa-fallback.html` (excluding `/assets/*`,
 	which must 404 for stale chunks — see docs/chunk-error-auto-reload.md)
 - Sets explicit headers for:
