@@ -11,7 +11,8 @@ record directly:
 | `GET /crm/lead` | The signed-in partner's own Lead, as `{ id, fields }` |
 | `PATCH /crm/lead` | Writes an allow-listed subset of fields back to Zoho |
 
-Backend only at the time of writing — no console page consumes them yet.
+`GET` is consumed by `/console/profile` (business-details cards — see
+`docs/console-roadmap.md` → *My Profile*). Nothing calls `PATCH` yet.
 
 ## Whose record, and how it is found
 

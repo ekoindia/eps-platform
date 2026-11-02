@@ -120,6 +120,16 @@ export interface AadhaarKeyView {
 	key: string;
 }
 
+/**
+ * The signed-in partner's own Zoho CRM Lead (`GET /crm/lead`). `fields` is the
+ * raw record keyed by Zoho `api_name`, so values are untyped: picklists arrive
+ * as strings, numeric fields as numbers, unset fields as null.
+ */
+export interface CrmLeadView {
+	id: string;
+	fields: Record<string, unknown> | null;
+}
+
 export interface AdminView {
 	role: "admin";
 	login: string | null;
@@ -719,6 +729,13 @@ export const authClient = {
 		request("/credentials/aadhaar-key", {
 			method: "GET",
 		}) as Promise<AadhaarKeyView>,
+	/**
+	 * The partner's own Zoho CRM Lead. 404 `CRM_DISABLED` when the deployment has
+	 * no Zoho credentials, 404 `NO_CRM_LEAD` when the profile links no Lead —
+	 * both normal states a caller should render as "no CRM data", not an error.
+	 */
+	crmLead: (): Promise<CrmLeadView> =>
+		request("/crm/lead", { method: "GET" }) as Promise<CrmLeadView>,
 	/**
 	 * The developer's notifications, already filtered to NORMAL items,
 	 * normalized, deduped and capped by the backend.

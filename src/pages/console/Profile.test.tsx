@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Profile from "@/pages/console/Profile";
+import { ApiError } from "@/lib/auth/client";
 import type { MeView, Profile as ProfileData } from "@/lib/auth/client";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
 
@@ -20,6 +21,14 @@ let mockInteractions: RoleTransactionList | null = null;
 vi.mock("@/lib/connect/use-interactions", () => ({
 	useRoleTransactionList: () => mockInteractions,
 }));
+
+// The CRM card fetches through the client; everything else on the page is
+// session-derived. ApiError stays real so the 404-vs-failure split is tested.
+const { crmLead } = vi.hoisted(() => ({ crmLead: vi.fn() }));
+vi.mock("@/lib/auth/client", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@/lib/auth/client")>();
+	return { ...actual, authClient: { ...actual.authClient, crmLead } };
+});
 
 const PROFILE: ProfileData = {
 	name: "Kumar Abhishek",
@@ -69,6 +78,10 @@ function renderProfile(me: MeView = ACTIVE) {
 
 beforeEach(() => {
 	mockInteractions = null;
+	crmLead.mockReset();
+	// Default: a deployment with no CRM data, so suites that don't care about
+	// CRM render without a pending request.
+	crmLead.mockRejectedValue(new ApiError("NO_CRM_LEAD", "none", 404));
 });
 
 describe("Profile identity card", () => {
@@ -123,67 +136,123 @@ describe("Profile identity card", () => {
 	});
 });
 
-describe("Profile personal details", () => {
-	it("renders the fields from the personal_detail block", () => {
+describe("Profile business details", () => {
+	const CRM_FIELDS = {
+		Industry: "Fintech",
+		Annual_Turnover: 25000000,
+		Number_of_Employees: "51-200",
+		Number_of_Clients: 120,
+		GST_No: "07AAACA1234A1Z5",
+		Count_of_Directors: 3,
+		Authorized_Signatory_Full_name: "Asha Rao",
+		Website: "https://acme.test",
+		Mobile_App_Name: "Acme Pay",
+	};
+
+	/** The value cell next to a label. */
+	const valueOf = (label: string) =>
+		screen.getByText(label, { selector: "dt" }).nextElementSibling;
+
+	it("no longer shows Eloka's personal fields", () => {
 		renderProfile({
 			...ACTIVE,
 			profile: {
 				...PROFILE,
 				detailBlocks: {
-					personal_detail: {
-						gender: "Male",
-						dob: "01-01-1990",
-						qualification: "Graduate",
-						marital_status: "Single",
-					},
+					personal_detail: { gender: "Male", dob: "01-01-1990" },
 				},
 			},
 		});
-		expect(screen.getByText("Male")).toBeInTheDocument();
-		expect(screen.getByText("01-01-1990")).toBeInTheDocument();
-		expect(screen.getByText("Graduate")).toBeInTheDocument();
-		expect(screen.getByText("Single")).toBeInTheDocument();
+		expect(screen.queryByText("Personal Details")).toBeNull();
+		expect(screen.queryByText("Gender")).toBeNull();
+		expect(screen.queryByText("Male")).toBeNull();
 	});
 
-	it("reads the plural spelling of the block too", () => {
+	it("shows profile fields: company type as a label, and email", () => {
 		renderProfile({
 			...ACTIVE,
-			profile: {
-				...PROFILE,
-				detailBlocks: { personal_details: { gender: "Female" } },
-			},
+			profile: { ...PROFILE, userDetail: { company_type: "4" } },
 		});
-		expect(screen.getByText("Female")).toBeInTheDocument();
-	});
-
-	it("shows a dash for every field when the block is absent", () => {
-		renderProfile();
-		expect(screen.getAllByText("—")).toHaveLength(4);
-	});
-
-	it("shows a dash rather than rendering a non-displayable value", () => {
-		renderProfile({
-			...ACTIVE,
-			profile: {
-				...PROFILE,
-				detailBlocks: { personal_detail: { gender: { nested: "object" } } },
-			},
-		});
-		expect(screen.getAllByText("—")).toHaveLength(4);
-	});
-
-	it("hides the edit link unless the user is entitled to interaction 401", () => {
-		renderProfile();
-		expect(screen.queryByRole("link", { name: /edit/i })).toBeNull();
-	});
-
-	it("links editing to the Connect flow when entitled", () => {
-		mockInteractions = { "401": { label: "User Profile" } };
-		renderProfile();
-		expect(screen.getByRole("link", { name: /edit/i })).toHaveAttribute(
-			"href",
-			"/console/transaction/401",
+		expect(valueOf("Company Type")).toHaveTextContent(
+			"LLP (Limited Liability Partnership)",
 		);
+		expect(valueOf("Email")).toHaveTextContent("abhi@example.com");
+	});
+
+	it("renders every CRM field once the Lead loads", async () => {
+		crmLead.mockResolvedValue({ id: "1", fields: CRM_FIELDS });
+		renderProfile();
+		await waitFor(() =>
+			expect(valueOf("Industry")).toHaveTextContent("Fintech"),
+		);
+		expect(valueOf("Annual Turnover")).toHaveTextContent("2,50,00,000");
+		expect(valueOf("Employees")).toHaveTextContent("51-200");
+		expect(valueOf("Clients")).toHaveTextContent("120");
+		expect(valueOf("GST Number")).toHaveTextContent("07AAACA1234A1Z5");
+		expect(valueOf("Number of Directors")).toHaveTextContent("3");
+		expect(valueOf("Authorized Signatory")).toHaveTextContent("Asha Rao");
+		expect(valueOf("Mobile App")).toHaveTextContent("Acme Pay");
+		expect(
+			screen.getByRole("link", { name: "https://acme.test" }),
+		).toHaveAttribute("href", "https://acme.test");
+	});
+
+	it("groups the fields into separate sections", async () => {
+		crmLead.mockResolvedValue({ id: "1", fields: CRM_FIELDS });
+		renderProfile();
+		for (const title of [
+			"Business Profile",
+			"Legal & Compliance",
+			"Contact & Online Presence",
+		]) {
+			expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+		}
+	});
+
+	// Partner-editable CRM data must never become a clickable javascript: URL.
+	it("renders a non-http website as plain text, not a link", async () => {
+		crmLead.mockResolvedValue({
+			id: "1",
+			fields: { Website: "javascript:alert(1)" },
+		});
+		renderProfile();
+		await waitFor(() =>
+			expect(valueOf("Website")).toHaveTextContent("javascript:alert(1)"),
+		);
+		expect(screen.queryByRole("link", { name: /javascript/ })).toBeNull();
+	});
+
+	it("shows a placeholder for CRM rows while loading, profile rows at once", () => {
+		crmLead.mockReturnValue(new Promise(() => {}));
+		renderProfile();
+		expect(valueOf("Industry")).toHaveTextContent("…");
+		expect(valueOf("Email")).toHaveTextContent("abhi@example.com");
+	});
+
+	it("shows dashes, not an error, when there is no CRM Lead", async () => {
+		renderProfile();
+		await waitFor(() => expect(valueOf("Industry")).toHaveTextContent("—"));
+		expect(screen.queryByRole("status")).toBeNull();
+	});
+
+	it("says so once when the CRM fails, keeping the profile rows", async () => {
+		crmLead.mockRejectedValue(new ApiError("CRM_UNAVAILABLE", "down", 502));
+		renderProfile();
+		expect(await screen.findByRole("status")).toHaveTextContent(
+			/couldn.t load your business details/i,
+		);
+		expect(valueOf("Email")).toHaveTextContent("abhi@example.com");
+		expect(valueOf("Industry")).toHaveTextContent("—");
+	});
+
+	it("shows a dash rather than a non-displayable CRM value", async () => {
+		crmLead.mockResolvedValue({
+			id: "1",
+			fields: { Industry: { name: "Fintech" }, Number_of_Clients: ["1"] },
+		});
+		renderProfile();
+		await waitFor(() => expect(valueOf("Industry")).toHaveTextContent("—"));
+		expect(valueOf("Clients")).toHaveTextContent("—");
 	});
 });
 

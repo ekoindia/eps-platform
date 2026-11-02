@@ -1,5 +1,6 @@
 import type { AuthState } from "@/lib/auth/AuthProvider";
 import type { Profile } from "@/lib/auth/client";
+import { COMPANY_TYPES } from "@/features/signup/businessFields";
 import { formatMobile } from "@/lib/utils";
 
 /** Display identity for the logged-in user, ready to render in a profile menu. */
@@ -131,40 +132,6 @@ export function profileCompleteness(profile: Profile): number {
 }
 
 /**
- * Reads one displayable field out of a profile detail block.
- *
- * The blocks are forwarded from upstream whole and untyped (see
- * `Profile.detailBlocks`), and upstream is inconsistent about spelling: some
- * responses use `personal_detail`, some `personal_details`. Both are allowlisted
- * by the backend, so both are tried here.
- *
- * Only strings and numbers are returned. Anything else — a nested object, an
- * array, null — is a field this function was not meant to render, and returning
- * it would put "[object Object]" on the page.
- * @param blocks - The profile's `detailBlocks`, or undefined when there is no profile.
- * @param block - Block name without the singular/plural suffix, e.g. `"personal"`.
- * @param field - The field inside that block, e.g. `"gender"`.
- * @returns The trimmed value, or null when absent or not displayable.
- */
-export function detailField(
-	blocks: Record<string, unknown> | undefined,
-	block: string,
-	field: string,
-): string | null {
-	if (!blocks) return null;
-	for (const name of [`${block}_detail`, `${block}_details`]) {
-		const source = blocks[name];
-		if (!source || typeof source !== "object") continue;
-		const value = (source as Record<string, unknown>)[field];
-		if (typeof value === "number" && Number.isFinite(value)) {
-			return String(value);
-		}
-		if (typeof value === "string" && value.trim()) return value.trim();
-	}
-	return null;
-}
-
-/**
  * Derives the support-chat visitor identity for an authenticated developer, or
  * `null` for anonymous, loading, and admin sessions (admins are internal staff —
  * identifying them to a sales operator has no value).
@@ -220,4 +187,36 @@ export function profileGstNumber(profile: Profile | null | undefined): string {
 		}
 	}
 	return "";
+}
+
+/**
+ * The profile's company type, as a human label.
+ *
+ * Upstream stores the interaction-522 code (`"4"` = LLP), so it is mapped
+ * through `COMPANY_TYPES` — the same table the signup form submits from, so the
+ * two cannot drift. Where on the profile the field lands is not pinned by
+ * upstream, so the flat user detail is tried first and then every detail block.
+ * A value that is not a known code is shown as-is: it is either already a label
+ * or a code added upstream later, and either beats a blank.
+ * @param profile - The signed-in developer's profile, or null.
+ * @returns The label, or null when the profile carries no company type.
+ */
+export function profileCompanyType(
+	profile: Profile | null | undefined,
+): string | null {
+	if (!profile) return null;
+	const sources: unknown[] = [
+		profile.userDetail,
+		...Object.values(profile.detailBlocks ?? {}),
+	];
+	for (const source of sources) {
+		if (!source || typeof source !== "object" || Array.isArray(source))
+			continue;
+		const raw = (source as Record<string, unknown>).company_type;
+		if (typeof raw !== "string" && typeof raw !== "number") continue;
+		const code = String(raw).trim();
+		if (!code) continue;
+		return COMPANY_TYPES.find((type) => type.value === code)?.label ?? code;
+	}
+	return null;
 }

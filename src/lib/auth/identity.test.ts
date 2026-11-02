@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
 	accountIdentity,
 	chatIdentity,
-	detailField,
+	profileCompanyType,
 	profileCompleteness,
 	profileGstNumber,
 } from "./identity";
@@ -227,54 +227,41 @@ describe("profileCompleteness", () => {
 	});
 });
 
-describe("detailField", () => {
-	const BLOCKS = {
-		personal_detail: { gender: "Male", dob: " 01-01-1990 ", pincode: 110001 },
-	};
+describe("profileCompanyType", () => {
+	const withDetail = (
+		userDetail: Record<string, unknown>,
+		detailBlocks: Record<string, unknown> = {},
+	) => ({ userDetail, detailBlocks }) as unknown as Profile;
 
-	it("reads a string field out of the block", () => {
-		expect(detailField(BLOCKS, "personal", "gender")).toBe("Male");
+	it("maps the interaction-522 code to its label", () => {
+		expect(profileCompanyType(withDetail({ company_type: "4" }))).toBe(
+			"LLP (Limited Liability Partnership)",
+		);
+		// Codes are not sequential by label — 2 is Partnership, not LLP.
+		expect(profileCompanyType(withDetail({ company_type: 2 }))).toBe(
+			"Partnership",
+		);
 	});
 
-	it("trims the value", () => {
-		expect(detailField(BLOCKS, "personal", "dob")).toBe("01-01-1990");
-	});
-
-	it("renders a numeric field as a string", () => {
-		expect(detailField(BLOCKS, "personal", "pincode")).toBe("110001");
-	});
-
-	it("accepts the plural spelling of the block name", () => {
-		// Upstream is inconsistent; the backend allowlists both.
+	it("finds the field inside a detail block when user detail lacks it", () => {
 		expect(
-			detailField(
-				{ personal_details: { gender: "Female" } },
-				"personal",
-				"gender",
+			profileCompanyType(
+				withDetail({}, { business_detail: { company_type: "1" } }),
 			),
-		).toBe("Female");
+		).toBe("Private Limited");
 	});
 
-	it("returns null for an absent block, field, or profile", () => {
-		expect(detailField(undefined, "personal", "gender")).toBeNull();
-		expect(detailField({}, "personal", "gender")).toBeNull();
-		expect(detailField(BLOCKS, "shop", "shop_name")).toBeNull();
-		expect(detailField(BLOCKS, "personal", "qualification")).toBeNull();
+	it("shows an unknown code as-is rather than blank", () => {
+		expect(profileCompanyType(withDetail({ company_type: "LLP" }))).toBe("LLP");
 	});
 
-	it("returns null rather than a value that cannot be displayed", () => {
-		const blocks = {
-			personal_detail: {
-				gender: { en: "Male" },
-				dob: ["01-01-1990"],
-				qualification: null,
-				marital_status: "   ",
-			},
-		};
-		expect(detailField(blocks, "personal", "gender")).toBeNull();
-		expect(detailField(blocks, "personal", "dob")).toBeNull();
-		expect(detailField(blocks, "personal", "qualification")).toBeNull();
-		expect(detailField(blocks, "personal", "marital_status")).toBeNull();
+	it("returns null when absent, blank, non-scalar, or there is no profile", () => {
+		expect(profileCompanyType(null)).toBeNull();
+		expect(profileCompanyType(withDetail({}))).toBeNull();
+		expect(profileCompanyType(withDetail({ company_type: "  " }))).toBeNull();
+		expect(
+			profileCompanyType(withDetail({ company_type: { id: 1 } })),
+		).toBeNull();
 	});
 });
 
