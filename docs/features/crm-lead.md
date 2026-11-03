@@ -8,11 +8,12 @@ record directly:
 
 | Route | What it does |
 | --- | --- |
-| `GET /crm/lead` | The signed-in partner's own Lead, as `{ id, fields }` |
+| `GET /crm/lead` | The signed-in partner's own Lead, as `{ id, fields, picklists }` |
 | `PATCH /crm/lead` | Writes an allow-listed subset of fields back to Zoho |
 
-`GET` is consumed by `/console/profile` (business-details cards — see
-`docs/console-roadmap.md` → *My Profile*). Nothing calls `PATCH` yet.
+Both are consumed by `/console/profile`: the business-details cards read the
+Lead and edit nine of its fields in place (see `docs/console-roadmap.md` →
+*My Profile*).
 
 ## Whose record, and how it is found
 
@@ -54,8 +55,15 @@ Activation_Fee_Discount, Activation_Fee_Status, Activation_Fee_Paid_INR, UTR_No,
 Go_Live_Disposition, Date_of_Go_live, Integration_Status,
 Developer_s_Name, Developer_s_Email, Developer_s_Phone_No,
 Programming_Language, Profession,
-Authorized_Signatory_Full_name, Authorized_Signatory_Phone_Number
+Authorized_Signatory_Full_name, Authorized_Signatory_Phone_Number,
+Industry, Annual_Turnover, Number_of_Employees, Number_of_Clients,
+Mobile_App_Name, Count_of_Directors
 ```
+
+Every name was checked against the live org's field metadata on 2026-11-02.
+`Pro_Required` and `Programming_Language` are **multi-select** picklists — Zoho
+wants an array — and `parseLeadPatch` refuses arrays, so those two are listed
+but cannot actually be written yet.
 
 Note what this includes: **the activation-fee and go-live fields are
 partner-writable.** A partner can record their own fee status, amount and UTR.
@@ -68,11 +76,32 @@ Before adding a field, check its exact `api_name` against
 `GET /crm/v2/settings/fields?module=Leads`. A wrong name is accepted by Zoho and
 writes nothing.
 
-`parseLeadPatch` (`src/http/crm.ts`) enforces only what must never reach the
-CRM: an object body, allow-listed keys, scalar values, finite numbers, strings
-under 500 characters. Picklist membership, date formats and per-field lengths
-are Zoho's rules and are reported through the update result — duplicating them
-here would mean two definitions of the same rule, one of which is always stale.
+`parseLeadPatch` (`src/http/crm.ts`) enforces what must never reach the CRM:
+an object body, allow-listed keys, scalar values, finite numbers, strings under
+500 characters — and **picklist membership** for the four single-selects in
+`LEAD_PICKLISTS` (`src/clients/zoho.ts`): Industry, Annual_Turnover,
+Number_of_Employees, Number_of_Clients. **Nothing can be cleared**: `null` and
+blank strings are refused (`400 FIELD_REQUIRED`) — a value may be replaced with
+a valid one, never erased. Date formats,
+per-field lengths and URL shape stay Zoho's rules, reported through the update
+result.
+
+### Picklists
+
+`LEAD_PICKLISTS` is copied **byte-for-byte** from the live field metadata. The
+dashes are EN DASH (U+2013), the rupee is U+20B9, and the irregular spacing
+(`₹ 5 – 25 crore` beside `₹1 crore – 5 crore`) is Zoho's. A value one
+character off — a hyphen for the en dash, a tidied space — is a different
+option, so do not normalise them. To refresh after sales edits a list, read
+`pick_list_values[].actual_value` from
+`GET /crm/v2/settings/fields?module=Leads`.
+
+`Industry` offers 14 of the org's 30 values; the rest are legacy options. A
+Lead already holding one keeps it — the console shows it as the current choice
+and only sends fields the partner changed.
+
+Every `/crm/lead` response carries the lists as `picklists`, and the console
+builds its dropdowns from that. There is one definition, on the server.
 
 **Reads are not filtered.** `GET` returns every field on the Lead, minus
 credential-shaped keys (`stripSensitive`). Sales-internal fields — owner,

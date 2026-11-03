@@ -128,6 +128,11 @@ export interface AadhaarKeyView {
 export interface CrmLeadView {
 	id: string;
 	fields: Record<string, unknown> | null;
+	/**
+	 * Allowed values per single-select picklist, keyed by `api_name`. Served by
+	 * the backend so a dropdown offers exactly what `PATCH /crm/lead` accepts.
+	 */
+	picklists: Record<string, readonly string[]>;
 }
 
 export interface AdminView {
@@ -736,6 +741,18 @@ export const authClient = {
 	 */
 	crmLead: (): Promise<CrmLeadView> =>
 		request("/crm/lead", { method: "GET" }) as Promise<CrmLeadView>,
+	/**
+	 * Writes the given Lead fields (by `api_name`) and returns the re-read
+	 * record. `null` clears a field. 400 `FIELD_NOT_WRITABLE` /
+	 * `INVALID_FIELD_VALUE` name the offending field; 502 `CRM_UNAVAILABLE` when
+	 * Zoho refused or was unreachable. `fields` comes back null when the write
+	 * landed but the read-back failed — the save still succeeded.
+	 */
+	updateCrmLead: (fields: Record<string, unknown>): Promise<CrmLeadView> =>
+		request("/crm/lead", {
+			method: "PATCH",
+			body: JSON.stringify(fields),
+		}) as Promise<CrmLeadView>,
 	/**
 	 * The developer's notifications, already filtered to NORMAL items,
 	 * normalized, deduped and capped by the backend.

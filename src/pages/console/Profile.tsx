@@ -1,17 +1,12 @@
 import { PageMeta } from "@/components/PageMeta";
+import { BusinessDetails } from "@/components/console/BusinessDetails";
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { ApiError, authClient } from "@/lib/auth/client";
-import {
-	accountIdentity,
-	profileCompanyType,
-	profileCompleteness,
-} from "@/lib/auth/identity";
+import { accountIdentity, profileCompleteness } from "@/lib/auth/identity";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { groupChildren } from "@/lib/connect/interactions";
 import { cn, formatMobile } from "@/lib/utils";
 import { ChevronRight, Phone } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 /**
@@ -149,206 +144,6 @@ function ManageMyAccount() {
 }
 
 /**
- * The partner's CRM Lead, as the page sees it.
- *
- * `none` covers both deliberate 404s — the deployment has no Zoho credentials
- * (`CRM_DISABLED`) or the profile links no Lead (`NO_CRM_LEAD`). Neither is a
- * failure the partner can do anything about, so both render as empty fields
- * rather than an error.
- */
-type CrmState =
-	| { status: "loading" }
-	| { status: "ok"; fields: Record<string, unknown> }
-	| { status: "none" }
-	| { status: "error" };
-
-/** Fetches the CRM Lead once; a late answer after unmount is dropped. */
-function useCrmLead(): CrmState {
-	const [state, setState] = useState<CrmState>({ status: "loading" });
-	useEffect(() => {
-		let current = true;
-		authClient
-			.crmLead()
-			.then(({ fields }) => {
-				if (!current) return;
-				setState(fields ? { status: "ok", fields } : { status: "none" });
-			})
-			.catch((error: unknown) => {
-				if (!current) return;
-				const deliberate =
-					error instanceof ApiError && error.httpStatus === 404;
-				setState({ status: deliberate ? "none" : "error" });
-			});
-		return () => {
-			current = false;
-		};
-	}, []);
-	return state;
-}
-
-/**
- * One CRM value as display text, or null.
- *
- * The record is Zoho's, untyped: picklists arrive as strings, numeric fields as
- * numbers, unset fields as null. Anything else (a lookup object, a multi-select
- * array) is not a field this page renders, and stringifying it would print
- * "[object Object]".
- */
-function crmText(
-	fields: Record<string, unknown> | null,
-	name: string,
-): string | null {
-	const value = fields?.[name];
-	if (typeof value === "number" && Number.isFinite(value)) {
-		return value.toLocaleString("en-IN");
-	}
-	if (typeof value === "string" && value.trim()) return value.trim();
-	return null;
-}
-
-/**
- * A website as a link — but only an http(s) one. The value is partner-editable
- * CRM data, and rendering an arbitrary string as an `href` would let a
- * `javascript:` URL run in the console.
- */
-function websiteNode(value: string | null): ReactNode {
-	if (!value || !/^https?:\/\//i.test(value)) return value;
-	return (
-		<a
-			href={value}
-			target="_blank"
-			rel="noopener noreferrer"
-			className="break-all text-eko-navy underline underline-offset-4 hover:no-underline"
-		>
-			{value}
-		</a>
-	);
-}
-
-/** One labelled value; `—` when absent, `…` while the CRM is still loading. */
-interface DetailRow {
-	label: string;
-	value: ReactNode;
-	/** True when the value comes from CRM, so it waits on the CRM fetch. */
-	fromCrm?: boolean;
-}
-
-/** A titled card of label/value pairs. */
-function DetailSection({
-	title,
-	rows,
-	crm,
-}: {
-	title: string;
-	rows: DetailRow[];
-	crm: CrmState;
-}) {
-	return (
-		<section className="flex flex-col gap-4 rounded-lg border p-4">
-			<h3 className="text-sm font-semibold text-eko-navy">{title}</h3>
-			<dl className="grid grid-cols-2 gap-x-4 gap-y-5">
-				{rows.map(({ label, value, fromCrm }) => (
-					<div key={label} className="flex min-w-0 flex-col gap-0.5">
-						<dt className="text-sm text-muted-foreground">{label}</dt>
-						<dd className="break-words text-sm font-medium">
-							{fromCrm && crm.status === "loading" ? (
-								<span className="text-muted-foreground">…</span>
-							) : (
-								(value ?? "—")
-							)}
-						</dd>
-					</div>
-				))}
-			</dl>
-		</section>
-	);
-}
-
-/**
- * Business, compliance and contact details — the login profile's own fields
- * alongside the partner's CRM Lead.
- *
- * Profile-sourced rows render immediately; CRM rows wait on one `GET
- * /crm/lead`. A CRM outage leaves the profile rows intact and says so once,
- * rather than blanking the page.
- */
-function BusinessDetails() {
-	const me = useConsoleMe();
-	const crm = useCrmLead();
-	const fields = crm.status === "ok" ? crm.fields : null;
-	const text = (name: string) => crmText(fields, name);
-
-	const sections: { title: string; rows: DetailRow[] }[] = [
-		{
-			title: "Business Profile",
-			rows: [
-				{ label: "Company Type", value: profileCompanyType(me.profile) },
-				{ label: "Industry", value: text("Industry"), fromCrm: true },
-				{
-					label: "Annual Turnover",
-					value: text("Annual_Turnover"),
-					fromCrm: true,
-				},
-				{
-					label: "Employees",
-					value: text("Number_of_Employees"),
-					fromCrm: true,
-				},
-				{ label: "Clients", value: text("Number_of_Clients"), fromCrm: true },
-			],
-		},
-		{
-			title: "Legal & Compliance",
-			rows: [
-				{ label: "GST Number", value: text("GST_No"), fromCrm: true },
-				{
-					label: "Number of Directors",
-					value: text("Count_of_Directors"),
-					fromCrm: true,
-				},
-				{
-					label: "Authorized Signatory",
-					value: text("Authorized_Signatory_Full_name"),
-					fromCrm: true,
-				},
-			],
-		},
-		{
-			title: "Contact & Online Presence",
-			rows: [
-				{ label: "Email", value: me.profile?.email?.trim() || null },
-				{
-					label: "Website",
-					value: websiteNode(text("Website")),
-					fromCrm: true,
-				},
-				{
-					label: "Mobile App",
-					value: text("Mobile_App_Name"),
-					fromCrm: true,
-				},
-			],
-		},
-	];
-
-	return (
-		<div className="flex flex-col gap-6">
-			{crm.status === "error" ? (
-				<p role="status" className="text-sm text-destructive">
-					Couldn&apos;t load your business details from our records. Reload the
-					page to try again.
-				</p>
-			) : null}
-			<div className="grid gap-6 lg:grid-cols-2">
-				{sections.map((section) => (
-					<DetailSection key={section.title} {...section} crm={crm} />
-				))}
-			</div>
-		</div>
-	);
-}
-
-/**
  * Console Profile page — the signed-in partner's identity, their business
  * details (login profile + CRM Lead), and their Manage-My-Account flows.
  *
@@ -357,7 +152,7 @@ function BusinessDetails() {
  */
 export default function Profile() {
 	return (
-		<div className="flex max-w-3xl flex-col gap-6">
+		<div className="flex flex-col gap-6">
 			<PageMeta title="My Profile | Eko Console" />
 			<div className="flex flex-col gap-1">
 				<h2 className="text-lg font-semibold text-eko-navy">My Profile</h2>
@@ -365,9 +160,14 @@ export default function Profile() {
 					Your account details, as registered with Eko.
 				</p>
 			</div>
-			<IdentityCard />
-			<BusinessDetails />
-			<ManageMyAccount />
+			{/* Auto-fill: as many ~22rem cards per row as fit — one on a phone,
+			    two on a laptop, three or four on a wide monitor. `min(100%, …)`
+			    keeps a card from overflowing a viewport narrower than 22rem. */}
+			<div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,22rem),1fr))] gap-6">
+				<IdentityCard />
+				<BusinessDetails />
+				<ManageMyAccount />
+			</div>
 		</div>
 	);
 }

@@ -3,7 +3,11 @@ import type { Sessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import { stripSensitive } from "../clients/profile-fields";
 import type { ZohoClient, ZohoLead } from "../clients/zoho";
-import { isWritableLeadField, WRITABLE_LEAD_FIELDS } from "../clients/zoho";
+import {
+	isWritableLeadField,
+	LEAD_PICKLISTS,
+	WRITABLE_LEAD_FIELDS,
+} from "../clients/zoho";
 import type { KV } from "../store/kv";
 import { AppError } from "./errors";
 import { enforceRateLimit, RL_WINDOW_SEC } from "./rateLimit";
@@ -24,10 +28,16 @@ const DENIED = "This account cannot view its CRM record.";
  * Narrows an untrusted PATCH body to the writable Lead fields.
  *
  * Rejects rather than drops: an unknown key silently discarded looks to the
- * console exactly like a successful save. Zoho itself owns the deeper rules
- * (picklist membership, date format, per-field length) and reports them through
- * `updateLead`'s per-record result — this guard only enforces what must never
- * reach the CRM in the first place: unwritable fields and non-scalar values.
+ * console exactly like a successful save. Picklist membership is checked here
+ * against `LEAD_PICKLISTS` — Zoho's own handling of an unlisted value is not
+ * something to lean on. Zoho still owns the remaining rules (date format,
+ * per-field length, URL shape) and reports them through `updateLead`'s
+ * per-record result.
+ *
+ * Nothing can be cleared: `null` and blank strings are refused. A partner may
+ * replace a value with a valid one, never erase it — sales relies on these
+ * fields staying filled, and the console never needs to send an empty value
+ * (an unset field left unset is simply not a change).
  *
  * @param body - Untrusted JSON body.
  * @returns The allow-listed fields, ready to send.
@@ -51,7 +61,14 @@ export function parseLeadPatch(body: unknown): Record<string, unknown> {
 				{ writable: [...WRITABLE_LEAD_FIELDS] },
 			);
 		}
-		if (value !== null && typeof value === "object") {
+		if (value === null || (typeof value === "string" && !value.trim())) {
+			throw new AppError(
+				400,
+				"FIELD_REQUIRED",
+				`"${key}" can't be left empty.`,
+			);
+		}
+		if (typeof value === "object") {
 			throw new AppError(
 				400,
 				"INVALID_FIELD_VALUE",
@@ -72,6 +89,15 @@ export function parseLeadPatch(body: unknown): Record<string, unknown> {
 				`"${key}" is longer than ${MAX_FIELD_LEN} characters.`,
 			);
 		}
+		const options = LEAD_PICKLISTS[key];
+		if (options && !options.includes(value as string)) {
+			throw new AppError(
+				400,
+				"INVALID_FIELD_VALUE",
+				`"${key}" must be one of the listed options.`,
+				{ options: [...options] },
+			);
+		}
 		out[key] = value;
 	}
 	if (Object.keys(out).length === 0) {
@@ -81,19 +107,25 @@ export function parseLeadPatch(body: unknown): Record<string, unknown> {
 }
 
 /**
- * The partner's own Lead record, as `{ id, fields }`.
+ * The partner's own Lead record, as `{ id, fields, picklists }`.
  *
  * `fields` runs through `stripSensitive` for the same reason `userDetail` does —
  * it is a passthrough of an upstream bag, and a credential-shaped key must not
- * reach the browser.
+ * reach the browser. `picklists` is `LEAD_PICKLISTS`, so the console's dropdowns
+ * offer exactly what `parseLeadPatch` accepts.
  */
 interface LeadView {
 	id: string;
 	fields: Record<string, unknown> | null;
+	picklists: typeof LEAD_PICKLISTS;
 }
 
-function toView(id: string, lead: ZohoLead): LeadView {
-	return { id, fields: stripSensitive(lead) };
+function toView(id: string, lead: ZohoLead | null): LeadView {
+	return {
+		id,
+		fields: lead ? stripSensitive(lead) : null,
+		picklists: LEAD_PICKLISTS,
+	};
 }
 
 /**
@@ -222,13 +254,13 @@ export function mountCrm(
 		}
 		try {
 			const lead = await zoho.getLead(leadId);
-			return c.json(lead ? toView(leadId, lead) : { id: leadId, fields: null });
+			return c.json(toView(leadId, lead));
 		} catch (err) {
 			console.error("[eps-backend] zoho crm read-back after write failed", {
 				rid: c.get("rid"),
 				err,
 			});
-			return c.json({ id: leadId, fields: null } satisfies LeadView);
+			return c.json(toView(leadId, null));
 		}
 	});
 }

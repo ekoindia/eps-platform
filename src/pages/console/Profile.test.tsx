@@ -1,4 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Profile from "@/pages/console/Profile";
@@ -24,10 +30,16 @@ vi.mock("@/lib/connect/use-interactions", () => ({
 
 // The CRM card fetches through the client; everything else on the page is
 // session-derived. ApiError stays real so the 404-vs-failure split is tested.
-const { crmLead } = vi.hoisted(() => ({ crmLead: vi.fn() }));
+const { crmLead, updateCrmLead } = vi.hoisted(() => ({
+	crmLead: vi.fn(),
+	updateCrmLead: vi.fn(),
+}));
 vi.mock("@/lib/auth/client", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@/lib/auth/client")>();
-	return { ...actual, authClient: { ...actual.authClient, crmLead } };
+	return {
+		...actual,
+		authClient: { ...actual.authClient, crmLead, updateCrmLead },
+	};
 });
 
 const PROFILE: ProfileData = {
@@ -79,6 +91,7 @@ function renderProfile(me: MeView = ACTIVE) {
 beforeEach(() => {
 	mockInteractions = null;
 	crmLead.mockReset();
+	updateCrmLead.mockReset();
 	// Default: a deployment with no CRM data, so suites that don't care about
 	// CRM render without a pending request.
 	crmLead.mockRejectedValue(new ApiError("NO_CRM_LEAD", "none", 404));
@@ -253,6 +266,296 @@ describe("Profile business details", () => {
 		renderProfile();
 		await waitFor(() => expect(valueOf("Industry")).toHaveTextContent("—"));
 		expect(valueOf("Clients")).toHaveTextContent("—");
+	});
+});
+
+describe("Profile business details — editing", () => {
+	const PICKLISTS = {
+		Industry: ["Financial Services", "IT/Software", "Others"],
+		Annual_Turnover: ["Pre-revenue", "\u20b9 5 \u2013 25 crore"],
+		Number_of_Employees: ["1", "51 \u2013 200"],
+		Number_of_Clients: ["1 \u2013 50", "Not sure"],
+	};
+	const FIELDS = {
+		Industry: "Financial Services",
+		Annual_Turnover: "Pre-revenue",
+		Number_of_Employees: "1",
+		Number_of_Clients: "Not sure",
+		GST_No: "07AAACA1234A1Z5",
+		Count_of_Directors: 2,
+		Authorized_Signatory_Full_name: "Asha Rao",
+		Website: "https://acme.test",
+		Mobile_App_Name: "Acme Pay",
+	};
+
+	/** The card whose heading is `title`. */
+	const card = (title: string) =>
+		screen.getByRole("heading", { name: title }).closest("section")!;
+
+	async function openEditor(
+		title: string,
+		fields: Record<string, unknown> = FIELDS,
+	) {
+		crmLead.mockResolvedValue({ id: "1", fields, picklists: PICKLISTS });
+		renderProfile();
+		fireEvent.click(
+			await screen.findByRole("button", { name: `Edit ${title}` }),
+		);
+		return within(card(title));
+	}
+
+	it("offers no Edit while loading, or when there is no CRM Lead", async () => {
+		crmLead.mockReturnValue(new Promise(() => {}));
+		const { unmount } = renderProfile();
+		expect(screen.queryByRole("button", { name: /^Edit / })).toBeNull();
+		unmount();
+
+		crmLead.mockRejectedValue(new ApiError("NO_CRM_LEAD", "none", 404));
+		renderProfile();
+		await waitFor(() => expect(crmLead).toHaveBeenCalled());
+		expect(screen.queryByRole("button", { name: /^Edit / })).toBeNull();
+	});
+
+	it("renders picklists as selects of the backend's options", async () => {
+		const form = await openEditor("Business Profile");
+		const industry = form.getByLabelText("Industry") as HTMLSelectElement;
+		expect(industry.value).toBe("Financial Services");
+		// Populated, so no blank choice — it may be replaced, not removed.
+		expect([...industry.options].map((o) => o.value)).toEqual([
+			"Financial Services",
+			"IT/Software",
+			"Others",
+		]);
+		// Profile-sourced rows stay read-only.
+		expect(form.queryByLabelText("Company Type")).toBeNull();
+	});
+
+	it("saves only the changed field and shows the re-read value", async () => {
+		updateCrmLead.mockResolvedValue({
+			id: "1",
+			fields: { ...FIELDS, Industry: "IT/Software" },
+			picklists: PICKLISTS,
+		});
+		const form = await openEditor("Business Profile");
+		fireEvent.change(form.getByLabelText("Industry"), {
+			target: { value: "IT/Software" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(updateCrmLead).toHaveBeenCalledWith({ Industry: "IT/Software" }),
+		);
+		expect(
+			await within(card("Business Profile")).findByText("IT/Software"),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+	});
+
+	it("makes no request when nothing changed", async () => {
+		const form = await openEditor("Legal & Compliance");
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(screen.queryByRole("button", { name: "Save" })).toBeNull(),
+		);
+		expect(updateCrmLead).not.toHaveBeenCalled();
+	});
+
+	// A Lead may hold an Industry sales set before the list was trimmed. It must
+	// display, and saving another field must not rewrite or blank it.
+	it("keeps a legacy picklist value selectable and never resends it", async () => {
+		updateCrmLead.mockResolvedValue({
+			id: "1",
+			fields: null,
+			picklists: PICKLISTS,
+		});
+		const form = await openEditor("Business Profile", {
+			...FIELDS,
+			Industry: "Large Enterprise",
+		});
+		const industry = form.getByLabelText("Industry") as HTMLSelectElement;
+		expect(industry.value).toBe("Large Enterprise");
+		fireEvent.change(form.getByLabelText("Employees"), {
+			target: { value: "51 \u2013 200" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(updateCrmLead).toHaveBeenCalledWith({
+				Number_of_Employees: "51 \u2013 200",
+			}),
+		);
+	});
+
+	it("sends a director count as a number", async () => {
+		updateCrmLead.mockResolvedValue({
+			id: "1",
+			fields: null,
+			picklists: PICKLISTS,
+		});
+		const form = await openEditor("Legal & Compliance");
+		fireEvent.change(form.getByLabelText("Number of Directors"), {
+			target: { value: "5" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(updateCrmLead).toHaveBeenCalledWith({ Count_of_Directors: 5 }),
+		);
+	});
+
+	it("refuses to empty a field that was already filled in", async () => {
+		const form = await openEditor("Legal & Compliance");
+		fireEvent.change(form.getByLabelText("Authorized Signatory"), {
+			target: { value: "   " },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		expect(
+			await form.findByText("This can't be left empty once filled in."),
+		).toBeInTheDocument();
+		expect(updateCrmLead).not.toHaveBeenCalled();
+	});
+
+	it("lets an empty field stay empty, and offers a blank choice only while unset", async () => {
+		const form = await openEditor("Business Profile", {
+			...FIELDS,
+			Industry: null,
+		});
+		const industry = form.getByLabelText("Industry") as HTMLSelectElement;
+		expect(industry.value).toBe("");
+		expect(industry.options[0].value).toBe("");
+		expect(
+			(form.getByLabelText("Employees") as HTMLSelectElement).options[0].value,
+		).toBe("1");
+		// Saving with the unset field still unset is not a change.
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(screen.queryByRole("button", { name: "Save" })).toBeNull(),
+		);
+		expect(updateCrmLead).not.toHaveBeenCalled();
+	});
+
+	it("still overwrites a filled field with a valid value", async () => {
+		updateCrmLead.mockResolvedValue({
+			id: "1",
+			fields: null,
+			picklists: PICKLISTS,
+		});
+		const form = await openEditor("Legal & Compliance");
+		fireEvent.change(form.getByLabelText("Authorized Signatory"), {
+			target: { value: "Ravi Iyer" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(updateCrmLead).toHaveBeenCalledWith({
+				Authorized_Signatory_Full_name: "Ravi Iyer",
+			}),
+		);
+	});
+
+	// The write landed even though the read-back failed — show what was saved.
+	it("shows the sent values when the read-back comes back empty", async () => {
+		updateCrmLead.mockResolvedValue({
+			id: "1",
+			fields: null,
+			picklists: PICKLISTS,
+		});
+		const form = await openEditor("Contact & Online Presence");
+		fireEvent.change(form.getByLabelText("Mobile App"), {
+			target: { value: "Acme Wallet" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		expect(
+			await within(card("Contact & Online Presence")).findByText("Acme Wallet"),
+		).toBeInTheDocument();
+	});
+
+	it("upper-cases a GSTIN and blocks an invalid one before any request", async () => {
+		const form = await openEditor("Legal & Compliance");
+		fireEvent.change(form.getByLabelText("GST Number"), {
+			target: { value: "not-a-gstin" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		expect(
+			await form.findByText("Enter a valid 15-character GSTIN."),
+		).toBeInTheDocument();
+		expect(updateCrmLead).not.toHaveBeenCalled();
+
+		updateCrmLead.mockResolvedValue({
+			id: "1",
+			fields: null,
+			picklists: PICKLISTS,
+		});
+		fireEvent.change(form.getByLabelText("GST Number"), {
+			target: { value: "29aabcu9603r1zm" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(updateCrmLead).toHaveBeenCalledWith({ GST_No: "29AABCU9603R1ZM" }),
+		);
+	});
+
+	it("blocks a non-http website and a non-numeric director count", async () => {
+		let form = await openEditor("Contact & Online Presence");
+		fireEvent.change(form.getByLabelText("Website"), {
+			target: { value: "javascript:alert(1)" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		expect(
+			await form.findByText("Enter a full address starting with https://"),
+		).toBeInTheDocument();
+
+		form = within(card("Legal & Compliance"));
+		fireEvent.click(
+			screen.getByRole("button", { name: "Edit Legal & Compliance" }),
+		);
+		fireEvent.change(form.getByLabelText("Number of Directors"), {
+			target: { value: "3a" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		expect(
+			await form.findByText("Enter a whole number up to 99."),
+		).toBeInTheDocument();
+		expect(updateCrmLead).not.toHaveBeenCalled();
+	});
+
+	it("shows the server's message on a 400, and a generic one otherwise", async () => {
+		updateCrmLead.mockRejectedValueOnce(
+			new ApiError(
+				"INVALID_FIELD_VALUE",
+				'"Industry" must be one of the listed options.',
+				400,
+			),
+		);
+		const form = await openEditor("Business Profile");
+		fireEvent.change(form.getByLabelText("Industry"), {
+			target: { value: "Others" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		expect(await form.findByRole("alert")).toHaveTextContent(
+			"must be one of the listed options",
+		);
+
+		updateCrmLead.mockRejectedValueOnce(
+			new ApiError("CRM_UNAVAILABLE", "Zoho internals", 502),
+		);
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(form.getByRole("alert")).toHaveTextContent(/couldn.t save/i),
+		);
+		expect(form.getByRole("alert")).not.toHaveTextContent("Zoho internals");
+		// The draft survives a failed save.
+		expect((form.getByLabelText("Industry") as HTMLSelectElement).value).toBe(
+			"Others",
+		);
+	});
+
+	it("Cancel discards the draft", async () => {
+		const form = await openEditor("Business Profile");
+		fireEvent.change(form.getByLabelText("Industry"), {
+			target: { value: "Others" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Cancel" }));
+		expect(updateCrmLead).not.toHaveBeenCalled();
+		expect(
+			within(card("Business Profile")).getByText("Financial Services"),
+		).toBeInTheDocument();
 	});
 });
 

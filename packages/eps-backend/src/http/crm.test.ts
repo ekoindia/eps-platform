@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Sessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
-import { ZohoError } from "../clients/zoho";
+import { LEAD_PICKLISTS, ZohoError } from "../clients/zoho";
 import { createInMemoryKV, type KV } from "../store/kv";
 import { mountCrm, parseLeadPatch } from "./crm";
 import { AppError, errorBody } from "./errors";
@@ -83,6 +83,7 @@ describe("GET /crm/lead", () => {
 		expect(await body(res)).toEqual({
 			id: LEAD_ID,
 			fields: { id: LEAD_ID, Company: "Acme" },
+			picklists: LEAD_PICKLISTS,
 		});
 		expect(zoho.getLead).toHaveBeenCalledWith(LEAD_ID);
 	});
@@ -185,6 +186,7 @@ describe("PATCH /crm/lead", () => {
 		expect(await body(res)).toEqual({
 			id: LEAD_ID,
 			fields: { id: LEAD_ID, Company: "Acme" },
+			picklists: LEAD_PICKLISTS,
 		});
 	});
 
@@ -232,7 +234,11 @@ describe("PATCH /crm/lead", () => {
 		});
 		const res = await app.request("/crm/lead", patch({ Company: "Acme" }));
 		expect(res.status).toBe(200);
-		expect(await body(res)).toEqual({ id: LEAD_ID, fields: null });
+		expect(await body(res)).toEqual({
+			id: LEAD_ID,
+			fields: null,
+			picklists: LEAD_PICKLISTS,
+		});
 	});
 
 	it("429 once the write window is exhausted", async () => {
@@ -258,21 +264,57 @@ describe("PATCH /crm/lead", () => {
 });
 
 describe("parseLeadPatch", () => {
+	it("accepts the profile page's newly editable fields", () => {
+		expect(
+			parseLeadPatch({
+				Industry: "IT/Software",
+				Annual_Turnover: "\u20b9 5 \u2013 25 crore",
+				Number_of_Employees: "51 \u2013 200",
+				Number_of_Clients: "5001 \u2013 50,000",
+				Mobile_App_Name: "Acme Pay",
+				Count_of_Directors: 3,
+			}),
+		).toMatchObject({ Industry: "IT/Software", Count_of_Directors: 3 });
+	});
+
+	// One character off is a different option — a hyphen where Zoho has an en
+	// dash, or a tidied space, must not reach the CRM.
+	it("refuses a picklist value that is not exactly a listed option", () => {
+		const bad: Record<string, unknown>[] = [
+			{ Number_of_Employees: "51 - 200" }, // hyphen, not en dash
+			{ Annual_Turnover: "\u20b95 \u2013 25 crore" }, // Zoho has "₹ 5"
+			{ Industry: "Large Enterprise" }, // legacy option, no longer offered
+			{ Number_of_Clients: "" },
+			{ Number_of_Employees: 1 },
+		];
+		for (const patch of bad) {
+			expect(() => parseLeadPatch(patch)).toThrow(AppError);
+		}
+	});
+
+	// Values may be replaced, never erased — and the console never needs to
+	// send an empty one, so none reaches the CRM by any route.
+	it("refuses null and blank values for every field", () => {
+		for (const value of [null, "", "   "]) {
+			for (const field of ["Industry", "GST_No", "Website"]) {
+				expect(() => parseLeadPatch({ [field]: value })).toThrowError(
+					expect.objectContaining({ code: "FIELD_REQUIRED" }),
+				);
+			}
+		}
+	});
+
 	it("passes scalars through", () => {
 		expect(
 			parseLeadPatch({
 				Company: "Acme",
 				Activation_Fee_Paid_INR: 4999,
 				Pro_Required: true,
-				Website: "",
-				GST_No: null,
 			}),
 		).toEqual({
 			Company: "Acme",
 			Activation_Fee_Paid_INR: 4999,
 			Pro_Required: true,
-			Website: "",
-			GST_No: null,
 		});
 	});
 

@@ -9,8 +9,14 @@ export type ZohoLead = Record<string, unknown>;
  *
  * An allowlist, not a denylist: Zoho accepts an unknown `api_name` silently, so
  * anything not named here is refused before it reaches the CRM rather than
- * quietly writing nothing. Verified against
- * `GET /crm/v2/settings/fields?module=Leads` — re-check there before adding.
+ * quietly writing nothing. Every name verified against the live org's
+ * `GET /crm/v2/settings/fields?module=Leads` on 2026-11-02 — re-check there
+ * before adding.
+ *
+ * ponytail: `Pro_Required` and `Programming_Language` are multi-select
+ * picklists (Zoho wants an array), which `parseLeadPatch` refuses — they are
+ * listed but not yet writable. Allow string arrays for those two when a form
+ * needs them.
  */
 export const WRITABLE_LEAD_FIELDS = [
 	"Company",
@@ -32,9 +38,77 @@ export const WRITABLE_LEAD_FIELDS = [
 	"Profession",
 	"Authorized_Signatory_Full_name",
 	"Authorized_Signatory_Phone_Number",
+	"Industry",
+	"Annual_Turnover",
+	"Number_of_Employees",
+	"Number_of_Clients",
+	"Mobile_App_Name",
+	"Count_of_Directors",
 ] as const;
 
 export type WritableLeadField = (typeof WRITABLE_LEAD_FIELDS)[number];
+
+/**
+ * The values a partner may choose for each single-select Lead picklist.
+ *
+ * Copied byte-for-byte from the live org's field metadata (2026-11-02): the
+ * dashes are EN DASH (U+2013), the rupee is U+20B9, and the irregular spacing
+ * ("₹ 5 – 25 crore" beside "₹1 crore – 5 crore") is Zoho's, not a typo. A value
+ * that differs by one character is not the same option, so do not tidy these.
+ *
+ * `Industry` deliberately offers 14 of the org's 30 values — the rest are
+ * legacy options a partner should not pick. A Lead already holding one keeps
+ * it: the console only sends fields the partner changed.
+ *
+ * Served to the console in every `/crm/lead` response, so the dropdowns cannot
+ * drift from what `parseLeadPatch` accepts.
+ */
+export const LEAD_PICKLISTS: Readonly<
+	Partial<Record<WritableLeadField, readonly string[]>>
+> = {
+	Industry: [
+		"Financial Services",
+		"IT/Software",
+		"Professional Services",
+		"Logistics",
+		"Healthcare",
+		"Education",
+		"Hospitality",
+		"Agriculture",
+		"Manufacturing",
+		"Construction",
+		"NGO",
+		"Small/Medium Enterprise",
+		"Retail/Wholesale",
+		"Others",
+	],
+	Annual_Turnover: [
+		"Pre-revenue",
+		"Under \u20b925 lakh",
+		"\u20b925 lakh \u2013 \u20b91 crore",
+		"\u20b91 crore \u2013 5 crore",
+		"\u20b9 5 \u2013 25 crore",
+		"Over \u20b9 25 crore",
+		"Prefer not to disclose",
+	],
+	Number_of_Employees: [
+		"1",
+		"2 \u2013 10",
+		"11 \u2013 50",
+		"51 \u2013 200",
+		"201 \u2013 500",
+		"Over 500",
+		"Prefer not to disclose",
+	],
+	Number_of_Clients: [
+		"1 \u2013 50",
+		"51 \u2013 500",
+		"501 \u2013 5000",
+		"5001 \u2013 50,000",
+		"Above 50,000",
+		"Not sure",
+	],
+};
 
 const WRITABLE = new Set<string>(WRITABLE_LEAD_FIELDS);
 
