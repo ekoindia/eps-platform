@@ -700,10 +700,10 @@ async function request(
 
 /** Eko's activation-fee collection account, as eps-backend's env configures it. */
 export interface ActivationFeeBankDetails {
+	accountName: string;
+	accountNumber: string;
+	ifsc: string;
 	bankName?: string;
-	accountName?: string;
-	accountNumber?: string;
-	ifsc?: string;
 	branchAddress?: string;
 }
 
@@ -852,7 +852,7 @@ export const authClient = {
 	 * it transferred, never on whose behalf.
 	 */
 	activationFee: {
-		/** Eko's collection account. Fields the deployment has not set are absent. */
+		/** Eko's collection account. 503 unless name, number and IFSC are all set. */
 		bankDetails: (signal?: AbortSignal): Promise<ActivationFeeBankDetails> =>
 			request("/activation-fee/bank-details", {
 				signal,

@@ -140,9 +140,9 @@ export interface Config {
 	/**
 	 * Eko's activation-fee collection account, as the partner is shown it. Kept
 	 * apart from `activationFee` because the page shows where to pay even on a
-	 * deployment with no webhook to report the payment through. Each field is
-	 * independent; one left unset is hidden from the page. Absent when all are
-	 * unset. See {@link parseActivationFeeBank}.
+	 * deployment with no webhook to report the payment through. Absent unless the
+	 * account name, number and IFSC are all set, so a partner is never shown part
+	 * of an account. See {@link parseActivationFeeBank}.
 	 */
 	activationFeeBank?: ActivationFeeBank;
 	github: {
@@ -290,12 +290,12 @@ function zohoConfig(
 	};
 }
 
-/** The activation-fee collection account. Unset fields are omitted. */
+/** The activation-fee collection account. Unset optional fields are omitted. */
 export interface ActivationFeeBank {
+	accountName: string;
+	accountNumber: string;
+	ifsc: string;
 	bankName?: string;
-	accountName?: string;
-	accountNumber?: string;
-	ifsc?: string;
 	branchAddress?: string;
 }
 
@@ -303,10 +303,12 @@ export interface ActivationFeeBank {
  * Reads the activation-fee collection account from the environment.
  *
  * Partners transfer real money on the strength of these values, so a malformed
- * account number or IFSC fails at boot. The messages name the variable and never
- * the value, which would otherwise land in boot logs.
+ * account number or IFSC fails at boot. A missing one does not: the rest of the
+ * backend can run without it, so the account is withheld and a warning names what
+ * is missing. Messages name the variable and never the value, which would
+ * otherwise land in boot logs.
  * @param env - The process environment.
- * @returns The configured fields, or undefined when none is set.
+ * @returns The account, or undefined when a required field is unset.
  * @throws Error when the account number or IFSC is set but malformed.
  */
 function parseActivationFeeBank(
@@ -324,14 +326,30 @@ function parseActivationFeeBank(
 			"ACTIVATION_FEE_BANK_IFSC must be 4 capital letters, a zero, then 6 capital letters or digits",
 		);
 	}
-	const fields = Object.entries({
-		bankName: env.ACTIVATION_FEE_BANK_NAME?.trim(),
-		accountName: env.ACTIVATION_FEE_BANK_ACCOUNT_NAME?.trim(),
+	const accountName = env.ACTIVATION_FEE_BANK_ACCOUNT_NAME?.trim();
+	const bankName = env.ACTIVATION_FEE_BANK_NAME?.trim();
+	const branchAddress = env.ACTIVATION_FEE_BANK_BRANCH_ADDRESS?.trim();
+	if (!accountName || !accountNumber || !ifsc) {
+		// All unset is a deployment that simply has not configured this.
+		if (accountName || accountNumber || ifsc || bankName || branchAddress) {
+			const missing = [
+				!accountName && "ACTIVATION_FEE_BANK_ACCOUNT_NAME",
+				!accountNumber && "ACTIVATION_FEE_BANK_ACCOUNT_NUMBER",
+				!ifsc && "ACTIVATION_FEE_BANK_IFSC",
+			].filter(Boolean);
+			console.warn(
+				`[eps-backend] activation-fee bank details withheld, missing: ${missing.join(", ")}`,
+			);
+		}
+		return undefined;
+	}
+	return {
+		accountName,
 		accountNumber,
 		ifsc,
-		branchAddress: env.ACTIVATION_FEE_BANK_BRANCH_ADDRESS?.trim(),
-	}).filter(([, value]) => value);
-	return fields.length > 0 ? Object.fromEntries(fields) : undefined;
+		...(bankName && { bankName }),
+		...(branchAddress && { branchAddress }),
+	};
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv): Config {

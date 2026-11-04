@@ -72,17 +72,18 @@ This keeps the account out of source and anonymous assets. It is not a secret
 from partners: any signed-in developer can read and share it. Values committed
 before this change remain in git history and in any old frontend build or cache.
 
-Each field is independent. One left unset has no row on the page, and a blank or
-whitespace-only value counts as unset. With all five unset the route answers
-`503 ACTIVATION_FEE_BANK_UNAVAILABLE`.
+Account name, account number and IFSC are required as a set, because a partner
+cannot complete a transfer without all three. With any of them unset the route
+answers `503 ACTIVATION_FEE_BANK_UNAVAILABLE`, so a partner is never shown part of
+an account, and boot logs a warning naming what is missing. Bank name and branch
+address are optional, and each has no row when unset. A blank or whitespace-only
+value counts as unset.
 
 If the request fails for any reason, step 3 tells the partner not to transfer yet
 and to reload or write to `eps@eko.in`. Step 4 stays usable, because a partner may
 have already paid.
 
-> **Check after any env change:** hiding is per field, so an unset account number
-> or IFSC still renders the other rows with no warning, and the partner cannot
-> complete a transfer. Format checks also cannot catch a valid-looking wrong
+> **Check after any env change:** format checks cannot catch a valid-looking wrong
 > digit. Compare the live page against finance's record of the account.
 
 ## Fee calculation
@@ -200,10 +201,10 @@ cannot drift from the payments calculator.
 | `ACTIVATION_FEE_WEBHOOK_URL` | _(unset — feature dark)_ | https required off loopback. **Secret** — never ship to the browser |
 | `ACTIVATION_FEE_RECIPIENTS` | _(none — required with the URL)_ | Comma-separated. Absent, empty or malformed = boot error |
 | `ACTIVATION_FEE_TIMEOUT_MS` | `20000` | Abort for the webhook call |
+| `ACTIVATION_FEE_BANK_ACCOUNT_NAME` | _(required for the section)_ | Unset = "don't transfer yet" notice |
+| `ACTIVATION_FEE_BANK_ACCOUNT_NUMBER` | _(required for the section)_ | Same. 9-18 digits, no spaces. Malformed = boot error |
+| `ACTIVATION_FEE_BANK_IFSC` | _(required for the section)_ | Same. e.g. `ABCD0123456`. Malformed = boot error |
 | `ACTIVATION_FEE_BANK_NAME` | _(unset — row hidden)_ | Bank row |
-| `ACTIVATION_FEE_BANK_ACCOUNT_NAME` | _(unset — row hidden)_ | Account Name row |
-| `ACTIVATION_FEE_BANK_ACCOUNT_NUMBER` | _(unset — row hidden)_ | 9-18 digits, no spaces. Malformed = boot error |
-| `ACTIVATION_FEE_BANK_IFSC` | _(unset — row hidden)_ | e.g. `ABCD0123456`. Malformed = boot error |
 | `ACTIVATION_FEE_BANK_BRANCH_ADDRESS` | _(unset — row hidden)_ | Branch Address row |
 
 With no webhook the intimation route still mounts but answers

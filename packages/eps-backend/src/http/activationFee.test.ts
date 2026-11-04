@@ -684,7 +684,7 @@ describe("GET /activation-fee/bank-details", () => {
 		expect(await res.text()).not.toContain("12345678901234");
 	});
 
-	it("503s when no field is configured", async () => {
+	it("503s when the account is not configured", async () => {
 		const res = await get(harness().app);
 		expect(res.status).toBe(503);
 		const { error } = (await res.json()) as { error: { code: string } };
@@ -698,9 +698,14 @@ describe("GET /activation-fee/bank-details", () => {
 		expect(await res.json()).toEqual(BANK);
 	});
 
-	it("returns only the fields that are configured", async () => {
-		const res = await get(harness({ bank: { ifsc: "TEST0000001" } }).app);
-		expect(await res.json()).toEqual({ ifsc: "TEST0000001" });
+	it("omits optional fields that are not configured", async () => {
+		const required = {
+			accountName: "Test Payee Pvt Ltd",
+			accountNumber: "12345678901234",
+			ifsc: "TEST0000001",
+		};
+		const res = await get(harness({ bank: required }).app);
+		expect(await res.json()).toEqual(required);
 	});
 
 	it("does not depend on the webhook being configured", async () => {

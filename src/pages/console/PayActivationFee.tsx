@@ -30,8 +30,8 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 /**
- * The rows of the bank-account block. A field the deployment has not configured
- * has no row.
+ * The rows of the bank-account block. An optional field the deployment has not
+ * configured has no row.
  * @param details - Eko's collection account, from eps-backend.
  * @returns The rows to show, in reading order.
  */
@@ -48,7 +48,7 @@ function bankRows(
 			// Grouped for the eye only. Fourteen unbroken digits are what a partner
 			// mistypes into their bank's payee form; the clipboard still carries the
 			// bare number, which is the one their bank will accept.
-			display: accountNumber && groupDigits(accountNumber, [3, 3, 4, 4]),
+			display: groupDigits(accountNumber, [3, 3, 4, 4]),
 		},
 		{ label: "IFSC Code", value: ifsc },
 		{ label: "Branch Address", value: branchAddress },

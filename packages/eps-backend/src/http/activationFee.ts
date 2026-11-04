@@ -431,7 +431,7 @@ export function mountActivationFee(
 		eko: EkoClient;
 		kv: KV;
 		cfg?: Config["activationFee"];
-		/** The collection account shown to partners; absent when none is set. */
+		/** The collection account shown to partners; absent when incomplete. */
 		bank?: Config["activationFeeBank"];
 		/** Zoho record-URL base for the CRM links; omitted → no links. */
 		crmRecordBaseUrl?: string;

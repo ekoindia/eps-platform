@@ -136,12 +136,14 @@ describe("PayActivationFee — the standing information", () => {
 		]);
 	});
 
-	it("hides a row whose value is not configured", async () => {
-		const { branchAddress: _branchAddress, ...withoutAddress } = BANK;
-		bankDetails.mockResolvedValue(withoutAddress);
+	it("hides the optional rows when they are not configured", async () => {
+		const { branchAddress: _branchAddress, bankName: _bankName, ...required } =
+			BANK;
+		bankDetails.mockResolvedValue(required);
 		renderPage();
 		await screen.findByText("TEST0000001");
 		expect(screen.queryByText("Branch Address")).toBeNull();
+		expect(screen.queryByText("Bank")).toBeNull();
 		expect(screen.getByText("IFSC Code")).toBeInTheDocument();
 	});
 
