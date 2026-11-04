@@ -1,46 +1,112 @@
 import type { Context, Hono } from "hono";
 import type { Sessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
-import { stripSensitive } from "../clients/profile-fields";
-import type { ZohoClient, ZohoLead } from "../clients/zoho";
 import {
-	isWritableLeadField,
+	LEAD_FIELDS,
 	LEAD_PICKLISTS,
-	WRITABLE_LEAD_FIELDS,
-} from "../clients/zoho";
+	type LeadFieldSpec,
+	leadFieldSpec,
+	pickLeadFields,
+} from "../clients/lead-fields";
+import type { ZohoClient, ZohoLead } from "../clients/zoho";
 import type { KV } from "../store/kv";
 import { AppError } from "./errors";
 import { enforceRateLimit, RL_WINDOW_SEC } from "./rateLimit";
 import type { AppEnv } from "./requestId";
 import { requireDeveloperSession } from "./session-guards";
 
-/** Per-partner reads per window. A console page-load costs one. */
+/** Per-partner reads per window. A cache miss in the console costs one. */
 const CRM_READ_LIMIT = 60;
 /** Per-partner writes per window. Saving a form costs one. */
 const CRM_WRITE_LIMIT = 20;
 
-/** Longest string this service will forward into a Lead field. */
-const MAX_FIELD_LEN = 500;
-
 const DENIED = "This account cannot view its CRM record.";
 
+/** Names of every field a partner may write, for the 400 that names them. */
+const WRITABLE = Object.entries(LEAD_FIELDS as Record<string, LeadFieldSpec>)
+	.filter(([, spec]) => spec.write !== "never")
+	.map(([name]) => name);
+
+/** A Zoho value that counts as "set": anything but null, undefined or blank. */
+function isSet(value: unknown): boolean {
+	if (value === null || value === undefined) return false;
+	if (typeof value === "string") return value.trim() !== "";
+	if (Array.isArray(value)) return value.length > 0;
+	return true;
+}
+
+function invalid(key: string, why: string, details?: Record<string, unknown>) {
+	return new AppError(400, "INVALID_FIELD_VALUE", `"${key}" ${why}`, details);
+}
+
 /**
- * Narrows an untrusted PATCH body to the writable Lead fields.
+ * Checks one value against its field's Zoho type and length.
+ * @throws AppError 400 INVALID_FIELD_VALUE naming the field.
+ */
+function checkValue(key: string, spec: LeadFieldSpec, value: unknown): void {
+	switch (spec.type) {
+		case "picklist":
+			if (!spec.options?.includes(value as string)) {
+				throw invalid(key, "must be one of the listed options.", {
+					options: [...(spec.options ?? [])],
+				});
+			}
+			return;
+		case "integer":
+			if (
+				typeof value !== "number" ||
+				!Number.isInteger(value) ||
+				value < 0 ||
+				String(value).length > spec.maxLength
+			) {
+				throw invalid(
+					key,
+					`must be a whole number of up to ${spec.maxLength} digits.`,
+				);
+			}
+			return;
+		case "currency":
+			if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+				throw invalid(key, "must be a non-negative amount.");
+			}
+			return;
+		case "percent":
+			if (
+				typeof value !== "number" ||
+				!Number.isFinite(value) ||
+				value < 0 ||
+				value > 100
+			) {
+				throw invalid(key, "must be a percentage between 0 and 100.");
+			}
+			return;
+		default:
+			// text, textarea, website. URL shape stays Zoho's rule for website.
+			if (typeof value !== "string") throw invalid(key, "must be text.");
+			if (value.length > spec.maxLength) {
+				throw invalid(key, `is longer than ${spec.maxLength} characters.`);
+			}
+	}
+}
+
+/**
+ * Narrows an untrusted PATCH body to writable, well-typed Lead fields.
  *
- * Rejects rather than drops: an unknown key silently discarded looks to the
- * console exactly like a successful save. Picklist membership is checked here
- * against `LEAD_PICKLISTS` — Zoho's own handling of an unlisted value is not
- * something to lean on. Zoho still owns the remaining rules (date format,
- * per-field length, URL shape) and reports them through `updateLead`'s
- * per-record result.
+ * Every key must be on the `LEAD_FIELDS` whitelist and not read-only, and every
+ * value must fit that field's Zoho type and length. Rejects rather than drops:
+ * an unknown key silently discarded looks to the console exactly like a
+ * successful save.
  *
  * Nothing can be cleared: `null` and blank strings are refused. A partner may
  * replace a value with a valid one, never erase it — sales relies on these
  * fields staying filled, and the console never needs to send an empty value
  * (an unset field left unset is simply not a change).
  *
+ * Write-once fields pass here; whether they are still empty needs the Lead,
+ * which the route checks.
+ *
  * @param body - Untrusted JSON body.
- * @returns The allow-listed fields, ready to send.
+ * @returns The validated fields, ready to send.
  * @throws AppError 400 when the body or any field is unusable.
  */
 export function parseLeadPatch(body: unknown): Record<string, unknown> {
@@ -53,51 +119,23 @@ export function parseLeadPatch(body: unknown): Record<string, unknown> {
 	}
 	const out: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(body)) {
-		if (!isWritableLeadField(key)) {
+		const spec = leadFieldSpec(key);
+		if (!spec || spec.write === "never") {
 			throw new AppError(
 				400,
 				"FIELD_NOT_WRITABLE",
 				`"${key}" is not an editable field.`,
-				{ writable: [...WRITABLE_LEAD_FIELDS] },
+				{ writable: WRITABLE },
 			);
 		}
-		if (value === null || (typeof value === "string" && !value.trim())) {
+		if (!isSet(value)) {
 			throw new AppError(
 				400,
 				"FIELD_REQUIRED",
 				`"${key}" can't be left empty.`,
 			);
 		}
-		if (typeof value === "object") {
-			throw new AppError(
-				400,
-				"INVALID_FIELD_VALUE",
-				`"${key}" must be a text, number or boolean value.`,
-			);
-		}
-		if (typeof value === "number" && !Number.isFinite(value)) {
-			throw new AppError(
-				400,
-				"INVALID_FIELD_VALUE",
-				`"${key}" is not a finite number.`,
-			);
-		}
-		if (typeof value === "string" && value.length > MAX_FIELD_LEN) {
-			throw new AppError(
-				400,
-				"INVALID_FIELD_VALUE",
-				`"${key}" is longer than ${MAX_FIELD_LEN} characters.`,
-			);
-		}
-		const options = LEAD_PICKLISTS[key];
-		if (options && !options.includes(value as string)) {
-			throw new AppError(
-				400,
-				"INVALID_FIELD_VALUE",
-				`"${key}" must be one of the listed options.`,
-				{ options: [...options] },
-			);
-		}
+		checkValue(key, spec, value);
 		out[key] = value;
 	}
 	if (Object.keys(out).length === 0) {
@@ -106,26 +144,17 @@ export function parseLeadPatch(body: unknown): Record<string, unknown> {
 	return out;
 }
 
-/**
- * The partner's own Lead record, as `{ id, fields, picklists }`.
- *
- * `fields` runs through `stripSensitive` for the same reason `userDetail` does —
- * it is a passthrough of an upstream bag, and a credential-shaped key must not
- * reach the browser. `picklists` is `LEAD_PICKLISTS`, so the console's dropdowns
- * offer exactly what `parseLeadPatch` accepts.
- */
+/** `GET /crm/lead` — the whitelisted fields of the partner's own Lead. */
 interface LeadView {
 	id: string;
-	fields: Record<string, unknown> | null;
+	fields: Record<string, unknown>;
 	picklists: typeof LEAD_PICKLISTS;
 }
 
-function toView(id: string, lead: ZohoLead | null): LeadView {
-	return {
-		id,
-		fields: lead ? stripSensitive(lead) : null,
-		picklists: LEAD_PICKLISTS,
-	};
+/** `PATCH /crm/lead` — the fields just written, for the client to merge. */
+interface LeadUpdateView {
+	id: string;
+	updated: Record<string, unknown>;
 }
 
 /**
@@ -218,7 +247,11 @@ export function mountCrm(
 		);
 	}
 
-	/** GET /crm/lead → { id, fields } */
+	/**
+	 * GET /crm/lead → { id, fields, picklists }
+	 *
+	 * `fields` is the Lead narrowed to `LEAD_FIELDS` — never the whole record.
+	 */
 	app.get("/crm/lead", async (c) => {
 		const leadId = await resolveLeadId(c, CRM_READ_LIMIT, "read");
 		let lead: ZohoLead | null;
@@ -234,33 +267,57 @@ export function mountCrm(
 				"No CRM record is linked to this account.",
 			);
 		}
-		return c.json(toView(leadId, lead));
+		return c.json({
+			id: leadId,
+			fields: pickLeadFields(lead),
+			picklists: LEAD_PICKLISTS,
+		} satisfies LeadView);
 	});
 
 	/**
-	 * PATCH /crm/lead → { id, fields }
+	 * PATCH /crm/lead → { id, updated }
 	 *
-	 * `fields` is null when the write succeeded but the read-back did not: the
-	 * change IS committed, and answering 502 there would invite the console to
-	 * retry a save that already landed.
+	 * Answers with the fields just written rather than re-reading the Lead: the
+	 * console merges them into its cache, so a re-read would only be a second
+	 * Zoho call per save for data the client already has.
+	 *
+	 * Write-once fields cost one read first, to refuse them (409) when the Lead
+	 * already holds a value. Only those writes pay for it.
 	 */
 	app.patch("/crm/lead", async (c) => {
 		const leadId = await resolveLeadId(c, CRM_WRITE_LIMIT, "write");
 		const fields = parseLeadPatch(await c.req.json().catch(() => null));
+		const writeOnce = Object.keys(fields).filter(
+			(key) => leadFieldSpec(key)?.write === "once",
+		);
+		if (writeOnce.length > 0) {
+			let lead: ZohoLead | null;
+			try {
+				lead = await zoho.getLead(leadId);
+			} catch (err) {
+				throw crmUnavailable(c, err);
+			}
+			if (!lead) {
+				throw new AppError(
+					404,
+					"NO_CRM_LEAD",
+					"No CRM record is linked to this account.",
+				);
+			}
+			const locked = writeOnce.find((key) => isSet(lead[key]));
+			if (locked) {
+				throw new AppError(
+					409,
+					"FIELD_ALREADY_SET",
+					`"${locked}" is already recorded and can't be changed.`,
+				);
+			}
+		}
 		try {
 			await zoho.updateLead(leadId, fields);
 		} catch (err) {
 			throw crmUnavailable(c, err);
 		}
-		try {
-			const lead = await zoho.getLead(leadId);
-			return c.json(toView(leadId, lead));
-		} catch (err) {
-			console.error("[eps-backend] zoho crm read-back after write failed", {
-				rid: c.get("rid"),
-				err,
-			});
-			return c.json(toView(leadId, null));
-		}
+		return c.json({ id: leadId, updated: fields } satisfies LeadUpdateView);
 	});
 }

@@ -14,7 +14,7 @@ import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 // hand-written copy.
 vi.mock("@/lib/auth/client", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/lib/auth/client")>()),
-	authClient: { me: vi.fn(), logout: vi.fn() },
+	authClient: { me: vi.fn(), logout: vi.fn(), crmLead: vi.fn() },
 	setSessionExpiredHandler: vi.fn(),
 }));
 vi.mock("@/lib/zoho-chat", () => ({ setChatIdentity: vi.fn() }));
@@ -388,5 +388,67 @@ describe("AuthProvider session cache", () => {
 
 		// Nothing to hydrate from: it stays on the boot state.
 		await waitFor(() => expect(result.current.state.status).toBe("loading"));
+	});
+});
+
+describe("AuthProvider — CRM Lead", () => {
+	const WITH_LEAD: MeView = {
+		state: "active",
+		mobile: "9990000001",
+		profile: {
+			userDetail: { crm_lead_id: "5545974000000317001" },
+		} as unknown as MeView["profile"],
+		zohoId: null,
+	};
+
+	// The Lead must be there before any page asks — the homepage included.
+	it("loads the CRM Lead at sign-in when the profile links one", async () => {
+		localStorage.clear();
+		vi.mocked(authClient.me).mockResolvedValue(WITH_LEAD);
+		vi.mocked(authClient.crmLead).mockResolvedValue({
+			id: "5545974000000317001",
+			fields: { City: "Pune" },
+			picklists: {},
+		});
+		render(
+			<AuthProvider>
+				<Probe />
+			</AuthProvider>,
+		);
+		await waitFor(() => expect(authClient.crmLead).toHaveBeenCalledTimes(1));
+		await waitFor(() =>
+			expect(localStorage.getItem("eps.crm.lead")).toContain("Pune"),
+		);
+	});
+
+	it("makes no CRM request for a profile without a Lead", async () => {
+		vi.mocked(authClient.me).mockResolvedValue({
+			...WITH_LEAD,
+			profile: null,
+		});
+		render(
+			<AuthProvider>
+				<Probe />
+			</AuthProvider>,
+		);
+		await waitFor(() =>
+			expect(screen.getByTestId("s")).toHaveTextContent("authed:developer"),
+		);
+		expect(authClient.crmLead).not.toHaveBeenCalled();
+	});
+
+	// The cache is in localStorage, so it would otherwise outlive the browser.
+	it("clears the cached Lead when the session ends", async () => {
+		localStorage.setItem("eps.crm.lead", "{}");
+		vi.mocked(authClient.me).mockRejectedValue(new Error("401"));
+		render(
+			<AuthProvider>
+				<Probe />
+			</AuthProvider>,
+		);
+		await waitFor(() =>
+			expect(screen.getByTestId("s")).toHaveTextContent("anon"),
+		);
+		expect(localStorage.getItem("eps.crm.lead")).toBeNull();
 	});
 });

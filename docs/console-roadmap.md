@@ -226,7 +226,9 @@ Profile fields come from the `MeView` the layout already fetched, via
   (`CRM_DISABLED` / `NO_CRM_LEAD`) renders dashes — normal states, not errors.
   Any other failure keeps the profile rows and shows one inline notice.
 
-  Lives in `components/console/BusinessDetails.tsx`. Each card has an **Edit**
+  Lives in `components/console/BusinessDetails.tsx`, reading the Lead through the
+  shared `useCrmLead()` store (cached for a day — see `features/crm-lead.md`).
+  Each card has an **Edit**
   link — shown only once the Lead has loaded, since a 404 means there is no
   record to write. Editing is in place: picklists (Industry, Annual Turnover,
   Employees, Clients) become selects built from the `picklists` the backend
@@ -239,9 +241,8 @@ Profile fields come from the `MeView` the layout already fetched, via
   0–99, 255-char text. **A filled field can be overwritten, never emptied** — an
   empty draft errors, and a populated picklist drops its blank choice; the
   backend refuses `null`/blank too, so the rule holds outside the UI. A 400 shows the
-  backend's message; anything else a generic retry note, keeping the draft.
-  When the write lands but the read-back fails, the page shows the values just
-  sent.
+  backend's message (400/409); anything else a generic retry note, keeping the
+  draft. A successful save patches the shared cache, so every page sees it.
 
   Eloka's **personal details** (gender, DOB, qualification, marital status) were
   removed: they mean nothing for an enterprise partner. With them went the

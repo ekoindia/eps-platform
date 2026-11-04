@@ -1,66 +1,12 @@
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ApiError, authClient, type CrmLeadView } from "@/lib/auth/client";
+import { ApiError } from "@/lib/auth/client";
 import { profileCompanyType } from "@/lib/auth/identity";
+import type { CrmLeadState } from "@/lib/crm/lead-store";
+import { useCrmLead } from "@/lib/crm/use-crm-lead";
 import { SquarePen } from "lucide-react";
-import {
-	type Dispatch,
-	type ReactNode,
-	type SetStateAction,
-	useEffect,
-	useId,
-	useState,
-} from "react";
-
-/**
- * The partner's CRM Lead, as the page sees it.
- *
- * `none` covers both deliberate 404s — the deployment has no Zoho credentials
- * (`CRM_DISABLED`) or the profile links no Lead (`NO_CRM_LEAD`). Neither is a
- * failure the partner can do anything about, so both render as empty fields
- * rather than an error, and neither offers editing: there is no record to write.
- */
-type CrmState =
-	| { status: "loading" }
-	| {
-			status: "ok";
-			fields: Record<string, unknown>;
-			picklists: Record<string, readonly string[]>;
-	  }
-	| { status: "none" }
-	| { status: "error" };
-
-/**
- * Fetches the CRM Lead once; a late answer after unmount is dropped. Returns a
- * setter too, so a save can replace the record without a second fetch.
- */
-function useCrmLead(): [CrmState, Dispatch<SetStateAction<CrmState>>] {
-	const [state, setState] = useState<CrmState>({ status: "loading" });
-	useEffect(() => {
-		let current = true;
-		authClient
-			.crmLead()
-			.then(({ fields, picklists }) => {
-				if (!current) return;
-				setState(
-					fields
-						? { status: "ok", fields, picklists: picklists ?? {} }
-						: { status: "none" },
-				);
-			})
-			.catch((error: unknown) => {
-				if (!current) return;
-				const deliberate =
-					error instanceof ApiError && error.httpStatus === 404;
-				setState({ status: deliberate ? "none" : "error" });
-			});
-		return () => {
-			current = false;
-		};
-	}, []);
-	return [state, setState];
-}
+import { type ReactNode, useId, useState } from "react";
 
 /**
  * The raw CRM value as an editable string — `""` for unset or non-scalar.
@@ -277,12 +223,12 @@ function DetailSection({
 	title,
 	rows,
 	crm,
-	onSaved,
+	update,
 }: {
 	title: string;
 	rows: DetailRow[];
-	crm: CrmState;
-	onSaved: (view: CrmLeadView, sent: Record<string, unknown>) => void;
+	crm: CrmLeadState;
+	update: (changes: Record<string, unknown>) => Promise<void>;
 }) {
 	const baseId = useId();
 	const [form, setForm] = useState<FormState>({ mode: "view" });
@@ -324,14 +270,14 @@ function DetailSection({
 		}
 		setForm({ ...form, errors: {}, saving: true, failure: null });
 		try {
-			const view = await authClient.updateCrmLead(changed);
-			onSaved(view, changed);
+			await update(changed);
 			setForm({ mode: "view" });
 		} catch (error) {
-			// A 400 names the field in plain words (the backend writes them for
-			// this console); anything else is the CRM being unreachable.
+			// A 400/409 names the field in plain words (the backend writes them
+			// for this console); anything else is the CRM being unreachable.
 			const failure =
-				error instanceof ApiError && error.httpStatus === 400
+				error instanceof ApiError &&
+				(error.httpStatus === 400 || error.httpStatus === 409)
 					? error.message
 					: "Couldn't save to our records. Please try again shortly.";
 			setForm({ ...form, errors: {}, saving: false, failure });
@@ -373,7 +319,7 @@ function DetailSection({
 					);
 				} else if (name) {
 					content =
-						crm.status === "loading" ? (
+						crm.status === "loading" || crm.status === "idle" ? (
 							<span className="text-muted-foreground">…</span>
 						) : (
 							((row.kind === "url"
@@ -463,26 +409,7 @@ function DetailSection({
  */
 export function BusinessDetails() {
 	const me = useConsoleMe();
-	const [crm, setCrm] = useCrmLead();
-
-	/**
-	 * Adopts the server's re-read record. When the write landed but the
-	 * read-back failed (`fields: null`), the save still succeeded, so the values
-	 * just sent are merged into what the page already had.
-	 */
-	function onSaved(view: CrmLeadView, sent: Record<string, unknown>) {
-		// Functional update: two cards saved back to back must not each start
-		// from the record as it was before the other's save.
-		setCrm((prev) =>
-			prev.status === "ok"
-				? {
-						status: "ok",
-						fields: view.fields ?? { ...prev.fields, ...sent },
-						picklists: view.picklists ?? prev.picklists,
-					}
-				: prev,
-		);
-	}
+	const { state: crm, update } = useCrmLead();
 
 	const sections: { title: string; rows: DetailRow[] }[] = [
 		{
@@ -543,7 +470,7 @@ export function BusinessDetails() {
 					key={section.title}
 					{...section}
 					crm={crm}
-					onSaved={onSaved}
+					update={update}
 				/>
 			))}
 		</>

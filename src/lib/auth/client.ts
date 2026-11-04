@@ -121,18 +121,27 @@ export interface AadhaarKeyView {
 }
 
 /**
- * The signed-in partner's own Zoho CRM Lead (`GET /crm/lead`). `fields` is the
- * raw record keyed by Zoho `api_name`, so values are untyped: picklists arrive
- * as strings, numeric fields as numbers, unset fields as null.
+ * The signed-in partner's own Zoho CRM Lead (`GET /crm/lead`).
+ *
+ * `fields` holds ONLY the backend's whitelist (`LEAD_FIELDS` in eps-backend),
+ * keyed by Zoho `api_name`; a whitelisted field the Lead has no value for comes
+ * back as null. Values are Zoho's: picklists as strings, multi-selects as
+ * string arrays, numeric fields as numbers.
  */
 export interface CrmLeadView {
 	id: string;
-	fields: Record<string, unknown> | null;
+	fields: Record<string, unknown>;
 	/**
-	 * Allowed values per single-select picklist, keyed by `api_name`. Served by
-	 * the backend so a dropdown offers exactly what `PATCH /crm/lead` accepts.
+	 * Allowed values per writable picklist, keyed by `api_name`. A dropdown
+	 * built from these offers exactly what `PATCH /crm/lead` accepts.
 	 */
 	picklists: Record<string, readonly string[]>;
+}
+
+/** `PATCH /crm/lead` — the fields just written, to merge into a cached Lead. */
+export interface CrmLeadUpdateView {
+	id: string;
+	updated: Record<string, unknown>;
 }
 
 export interface AdminView {
@@ -742,17 +751,20 @@ export const authClient = {
 	crmLead: (): Promise<CrmLeadView> =>
 		request("/crm/lead", { method: "GET" }) as Promise<CrmLeadView>,
 	/**
-	 * Writes the given Lead fields (by `api_name`) and returns the re-read
-	 * record. `null` clears a field. 400 `FIELD_NOT_WRITABLE` /
-	 * `INVALID_FIELD_VALUE` name the offending field; 502 `CRM_UNAVAILABLE` when
-	 * Zoho refused or was unreachable. `fields` comes back null when the write
-	 * landed but the read-back failed — the save still succeeded.
+	 * Writes the given Lead fields (by `api_name`) and answers with them. Prefer
+	 * `updateCrmLead` from `@/lib/crm/lead-store`, which also patches the cache.
+	 *
+	 * 400 `FIELD_NOT_WRITABLE` / `INVALID_FIELD_VALUE` / `FIELD_REQUIRED` name
+	 * the offending field; 409 `FIELD_ALREADY_SET` for a write-once field that is
+	 * already recorded; 502 `CRM_UNAVAILABLE` when Zoho refused or was down.
 	 */
-	updateCrmLead: (fields: Record<string, unknown>): Promise<CrmLeadView> =>
+	updateCrmLead: (
+		fields: Record<string, unknown>,
+	): Promise<CrmLeadUpdateView> =>
 		request("/crm/lead", {
 			method: "PATCH",
 			body: JSON.stringify(fields),
-		}) as Promise<CrmLeadView>,
+		}) as Promise<CrmLeadUpdateView>,
 	/**
 	 * The developer's notifications, already filtered to NORMAL items,
 	 * normalized, deduped and capped by the backend.

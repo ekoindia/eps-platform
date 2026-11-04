@@ -9,6 +9,7 @@ import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Profile from "@/pages/console/Profile";
 import { ApiError } from "@/lib/auth/client";
+import { resetCrmLeadCache } from "@/lib/crm/lead-store";
 import type { MeView, Profile as ProfileData } from "@/lib/auth/client";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
 
@@ -58,7 +59,7 @@ const PROFILE: ProfileData = {
 	evalueAccountId: null,
 	detailBlocks: {},
 	accountStateId: 16,
-	userDetail: {},
+	userDetail: { crm_lead_id: "5545974000000317001" },
 };
 
 const ACTIVE: MeView = {
@@ -92,6 +93,17 @@ beforeEach(() => {
 	mockInteractions = null;
 	crmLead.mockReset();
 	updateCrmLead.mockReset();
+	// The store is module-level and caches to localStorage: start every test
+	// from nothing, as a fresh sign-in would.
+	localStorage.clear();
+	resetCrmLeadCache();
+	// The backend answers a save with exactly the fields it wrote.
+	updateCrmLead.mockImplementation(
+		async (updated: Record<string, unknown>) => ({
+			id: "1",
+			updated,
+		}),
+	);
 	// Default: a deployment with no CRM data, so suites that don't care about
 	// CRM render without a pending request.
 	crmLead.mockRejectedValue(new ApiError("NO_CRM_LEAD", "none", 404));
@@ -309,6 +321,7 @@ describe("Profile business details — editing", () => {
 		const { unmount } = renderProfile();
 		expect(screen.queryByRole("button", { name: /^Edit / })).toBeNull();
 		unmount();
+		resetCrmLeadCache();
 
 		crmLead.mockRejectedValue(new ApiError("NO_CRM_LEAD", "none", 404));
 		renderProfile();
@@ -330,12 +343,7 @@ describe("Profile business details — editing", () => {
 		expect(form.queryByLabelText("Company Type")).toBeNull();
 	});
 
-	it("saves only the changed field and shows the re-read value", async () => {
-		updateCrmLead.mockResolvedValue({
-			id: "1",
-			fields: { ...FIELDS, Industry: "IT/Software" },
-			picklists: PICKLISTS,
-		});
+	it("saves only the changed field and shows the new value", async () => {
 		const form = await openEditor("Business Profile");
 		fireEvent.change(form.getByLabelText("Industry"), {
 			target: { value: "IT/Software" },
@@ -362,11 +370,6 @@ describe("Profile business details — editing", () => {
 	// A Lead may hold an Industry sales set before the list was trimmed. It must
 	// display, and saving another field must not rewrite or blank it.
 	it("keeps a legacy picklist value selectable and never resends it", async () => {
-		updateCrmLead.mockResolvedValue({
-			id: "1",
-			fields: null,
-			picklists: PICKLISTS,
-		});
 		const form = await openEditor("Business Profile", {
 			...FIELDS,
 			Industry: "Large Enterprise",
@@ -385,11 +388,6 @@ describe("Profile business details — editing", () => {
 	});
 
 	it("sends a director count as a number", async () => {
-		updateCrmLead.mockResolvedValue({
-			id: "1",
-			fields: null,
-			picklists: PICKLISTS,
-		});
 		const form = await openEditor("Legal & Compliance");
 		fireEvent.change(form.getByLabelText("Number of Directors"), {
 			target: { value: "5" },
@@ -432,11 +430,6 @@ describe("Profile business details — editing", () => {
 	});
 
 	it("still overwrites a filled field with a valid value", async () => {
-		updateCrmLead.mockResolvedValue({
-			id: "1",
-			fields: null,
-			picklists: PICKLISTS,
-		});
 		const form = await openEditor("Legal & Compliance");
 		fireEvent.change(form.getByLabelText("Authorized Signatory"), {
 			target: { value: "Ravi Iyer" },
@@ -449,13 +442,8 @@ describe("Profile business details — editing", () => {
 		);
 	});
 
-	// The write landed even though the read-back failed — show what was saved.
-	it("shows the sent values when the read-back comes back empty", async () => {
-		updateCrmLead.mockResolvedValue({
-			id: "1",
-			fields: null,
-			picklists: PICKLISTS,
-		});
+	// The cache is patched with what was written; no second Zoho read.
+	it("shows the saved value at once, without refetching the Lead", async () => {
 		const form = await openEditor("Contact & Online Presence");
 		fireEvent.change(form.getByLabelText("Mobile App"), {
 			target: { value: "Acme Wallet" },
@@ -464,6 +452,7 @@ describe("Profile business details — editing", () => {
 		expect(
 			await within(card("Contact & Online Presence")).findByText("Acme Wallet"),
 		).toBeInTheDocument();
+		expect(crmLead).toHaveBeenCalledTimes(1);
 	});
 
 	it("upper-cases a GSTIN and blocks an invalid one before any request", async () => {
@@ -477,11 +466,6 @@ describe("Profile business details — editing", () => {
 		).toBeInTheDocument();
 		expect(updateCrmLead).not.toHaveBeenCalled();
 
-		updateCrmLead.mockResolvedValue({
-			id: "1",
-			fields: null,
-			picklists: PICKLISTS,
-		});
 		fireEvent.change(form.getByLabelText("GST Number"), {
 			target: { value: "29aabcu9603r1zm" },
 		});

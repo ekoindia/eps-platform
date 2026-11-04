@@ -220,3 +220,21 @@ export function profileCompanyType(
 	}
 	return null;
 }
+
+/**
+ * The partner's Zoho CRM Lead id, from the login profile.
+ *
+ * The backend resolves the same `user_detail.crm_lead_id` for itself and never
+ * takes an id from the browser — this copy only lets the console skip a CRM
+ * request that would certainly 404.
+ * @param profile - The signed-in developer's profile, or null.
+ * @returns The id, or null when the profile links no Lead.
+ */
+export function profileCrmLeadId(
+	profile: Profile | null | undefined,
+): string | null {
+	const raw = profile?.userDetail?.crm_lead_id;
+	if (typeof raw !== "string" && typeof raw !== "number") return null;
+	const id = String(raw).trim();
+	return id || null;
+}
