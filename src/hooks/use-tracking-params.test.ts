@@ -1,5 +1,8 @@
 import {
+	buildLeadWebsiteUrl,
+	captureFirstVisit,
 	captureTrackingParams,
+	getFirstVisitUrl,
 	getStoredTrackingParams,
 	TRACKING_TTL_MS,
 } from "@/hooks/use-tracking-params";
@@ -58,5 +61,50 @@ describe("tracking params storage", () => {
 		expect(getStoredTrackingParams()).toEqual({ gclid: "legacy" });
 		expect(sessionStorage.getItem(KEY)).toBeNull();
 		expect(JSON.parse(localStorage.getItem(KEY) ?? "").capturedAt).toBe(T0);
+	});
+});
+
+describe("first visit URL", () => {
+	beforeEach(() => {
+		localStorage.clear();
+		vi.useFakeTimers();
+		vi.setSystemTime(T0);
+	});
+	afterEach(() => vi.useRealTimers());
+
+	it("records the first landing, without the hash", () => {
+		captureFirstVisit("https://eps.eko.in/pricing/?x=1#calc");
+		captureFirstVisit("https://eps.eko.in/docs/");
+		expect(getFirstVisitUrl()).toBe("https://eps.eko.in/pricing/?x=1");
+	});
+
+	it("upgrades an organic first landing to a later ad landing, never back", () => {
+		captureFirstVisit("https://eps.eko.in/");
+		captureFirstVisit("https://eps.eko.in/aeps/?gclid=g1&utm_source=google");
+		captureFirstVisit("https://eps.eko.in/dmt/?fbclid=f1");
+		captureFirstVisit("https://eps.eko.in/docs/");
+		expect(getFirstVisitUrl()).toBe(
+			"https://eps.eko.in/aeps/?gclid=g1&utm_source=google",
+		);
+	});
+
+	it("expires after the TTL", () => {
+		captureFirstVisit("https://eps.eko.in/");
+		vi.setSystemTime(T0 + TRACKING_TTL_MS + 1);
+		expect(getFirstVisitUrl()).toBeNull();
+		captureFirstVisit("https://eps.eko.in/docs/");
+		expect(getFirstVisitUrl()).toBe("https://eps.eko.in/docs/");
+	});
+});
+
+describe("buildLeadWebsiteUrl", () => {
+	beforeEach(() => localStorage.clear());
+
+	it("cuts an over-budget URL to the limit, ending in an ellipsis", () => {
+		captureTrackingParams(`?gclid=${"g".repeat(600)}`);
+		const url = buildLeadWebsiteUrl(450);
+		expect(url).toHaveLength(450);
+		expect(url.endsWith("…")).toBe(true);
+		expect(url).toContain("?gclid=ggg");
 	});
 });

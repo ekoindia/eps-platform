@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { getStoredTrackingParams } from "@/hooks/use-tracking-params";
 import { ApiError, signupClient, type SignupState } from "@/lib/auth/client";
+import { refreshCrmLead } from "@/lib/crm/lead-store";
 import { cn } from "@/lib/utils";
 import { withRetries } from "@/lib/retry";
 import { panCategory } from "./panCategory";
@@ -102,6 +103,15 @@ export function SignupWizard() {
 			}
 		})();
 	}, []);
+
+	// Upstream edits the CRM Lead as each step lands, so every fresh state —
+	// first load and each step — re-reads it, ignoring the store's day-long
+	// cache. The read also records the visitor's marketing attribution on a
+	// Lead that lacks it (see lead-store). The Lead appears mid-signup, so
+	// nothing happens until the profile carries its id.
+	useEffect(() => {
+		if (state?.crmLeadId) refreshCrmLead(state.mobile, state.crmLeadId);
+	}, [state]);
 
 	// When onboarding completes the backend swaps in a developer session; pulling
 	// /me makes the app notice and route on to the console.

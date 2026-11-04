@@ -35,6 +35,33 @@ export async function requireDeveloperSession(
 }
 
 /**
+ * Like `requireDeveloperSession`, but also admits a **signup** session — a
+ * partner who has verified their OTP and is still onboarding. Only for routes
+ * that act on the caller's own record and are needed mid-signup (the CRM Lead
+ * read and its attribution fill); everything else stays developer-only.
+ *
+ * @param sessions - Session verifier.
+ * @param c - The request context.
+ * @param deniedMessage - Shown to an admin session; name the action.
+ * @returns The caller's mobile (`claim.sub`).
+ * @throws AppError 401 NO_SESSION when there is no valid access cookie.
+ * @throws AppError 403 NOT_DEVELOPER_SESSION for an admin session.
+ */
+export async function requirePartnerSession(
+	sessions: Sessions,
+	c: Context<AppEnv>,
+	deniedMessage: string,
+): Promise<string> {
+	const token = getCookie(c, ACCESS_COOKIE);
+	const claim = token ? await sessions.verifyAccess(token) : null;
+	if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
+	if (claim.role !== "developer" && claim.role !== "signup") {
+		throw new AppError(403, "NOT_DEVELOPER_SESSION", deniedMessage);
+	}
+	return claim.sub;
+}
+
+/**
  * Gate for admin-only reads that need no GitHub token (the search-log pages).
  * Same rule as the GitOps routes' first step: a verified access claim whose
  * role is `admin`. Mutations keep their stricter gate in `admin.ts`.

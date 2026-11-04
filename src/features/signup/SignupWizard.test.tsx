@@ -22,6 +22,9 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 	},
 }));
 
+const { refreshCrmLead } = vi.hoisted(() => ({ refreshCrmLead: vi.fn() }));
+vi.mock("@/lib/crm/lead-store", () => ({ refreshCrmLead }));
+
 const mockRefresh = vi.fn();
 vi.mock("@/lib/auth/AuthProvider", () => ({
 	useAuth: () => ({
@@ -393,5 +396,26 @@ describe("SignupWizard", () => {
 		expect(
 			screen.getByRole("heading", { name: "Set Secret PIN", level: 3 }),
 		).toBeInTheDocument();
+	});
+
+	it("refreshes the CRM Lead after each step once the profile has one", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(panPending);
+		vi.mocked(signupClient.submitPan).mockResolvedValue({
+			...pinPending,
+			crmLeadId: "5545974000000317001",
+		});
+		render(<SignupWizard />);
+		await findPanHeading();
+		expect(refreshCrmLead).not.toHaveBeenCalled();
+		fireEvent.change(screen.getByLabelText(/pan/i), {
+			target: { value: "ABCDE1234F" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+		await waitFor(() =>
+			expect(refreshCrmLead).toHaveBeenCalledWith(
+				"9990000001",
+				"5545974000000317001",
+			),
+		);
 	});
 });

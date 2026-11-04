@@ -8,12 +8,16 @@ import {
 	leadFieldSpec,
 	pickLeadFields,
 } from "../clients/lead-fields";
+import { attributionFromUrl, truncateUrl } from "../clients/lead-attribution";
 import type { ZohoClient, ZohoLead } from "../clients/zoho";
 import type { KV } from "../store/kv";
 import { AppError } from "./errors";
 import { enforceRateLimit, RL_WINDOW_SEC } from "./rateLimit";
 import type { AppEnv } from "./requestId";
-import { requireDeveloperSession } from "./session-guards";
+import {
+	requireDeveloperSession,
+	requirePartnerSession,
+} from "./session-guards";
 
 /** Per-partner reads per window. A cache miss in the console costs one. */
 const CRM_READ_LIMIT = 60;
@@ -144,6 +148,62 @@ export function parseLeadPatch(body: unknown): Record<string, unknown> {
 	return out;
 }
 
+/**
+ * Longest URL the attribution route accepts. Above any real landing URL;
+ * bounds the parse. A URL over its Zoho field but under this is trimmed.
+ */
+const ATTRIBUTION_URL_MAX = 8192;
+
+/**
+ * An absolute http(s) URL of at most `ATTRIBUTION_URL_MAX` chars, or null.
+ * @param value - Untrusted body value.
+ */
+function httpUrl(value: unknown): string | null {
+	if (typeof value !== "string" || value.length > ATTRIBUTION_URL_MAX)
+		return null;
+	try {
+		const { protocol } = new URL(value);
+		return protocol === "https:" || protocol === "http:" ? value : null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Narrows an untrusted `POST /crm/lead/attribution` body to Lead fields: the
+ * attribution derived from `url`, plus `sourceWebsite` as `Source_Website`.
+ * Both URLs are trimmed to their Zoho field with a trailing `…`
+ * (`truncateUrl`) rather than refused. An unusable `sourceWebsite` is
+ * dropped; an unusable `url` is a 400, since without it there is nothing to
+ * record.
+ * @param body - Untrusted JSON body `{ url, sourceWebsite? }`.
+ * @throws AppError 400 INVALID_FIELD_VALUE when `url` is not an http(s) URL
+ *   of at most `ATTRIBUTION_URL_MAX` characters.
+ */
+export function parseAttributionBody(body: unknown): Record<string, string> {
+	const src =
+		body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+	const url = httpUrl(src.url);
+	if (!url) {
+		throw invalid(
+			"url",
+			`must be an http(s) URL of up to ${ATTRIBUTION_URL_MAX} characters.`,
+		);
+	}
+	const sourceWebsite = httpUrl(src.sourceWebsite);
+	return {
+		...attributionFromUrl(url),
+		...(sourceWebsite
+			? {
+					Source_Website: truncateUrl(
+						sourceWebsite,
+						LEAD_FIELDS.Source_Website.maxLength,
+					),
+				}
+			: {}),
+	};
+}
+
 /** `GET /crm/lead` — the whitelisted fields of the partner's own Lead. */
 interface LeadView {
 	id: string;
@@ -201,8 +261,9 @@ export function mountCrm(
 		c: Context<AppEnv>,
 		limit: number,
 		bucket: string,
+		guard: typeof requireDeveloperSession = requireDeveloperSession,
 	): Promise<string> {
-		const mobile = await requireDeveloperSession(sessions, c, DENIED);
+		const mobile = await guard(sessions, c, DENIED);
 		await enforceRateLimit(
 			kv,
 			`rl:crm:${bucket}:${mobile}`,
@@ -251,9 +312,16 @@ export function mountCrm(
 	 * GET /crm/lead → { id, fields, picklists }
 	 *
 	 * `fields` is the Lead narrowed to `LEAD_FIELDS` — never the whole record.
+	 * Signup sessions may read too: the wizard refreshes the Lead after every
+	 * onboarding step, since upstream edits it as each step lands.
 	 */
 	app.get("/crm/lead", async (c) => {
-		const leadId = await resolveLeadId(c, CRM_READ_LIMIT, "read");
+		const leadId = await resolveLeadId(
+			c,
+			CRM_READ_LIMIT,
+			"read",
+			requirePartnerSession,
+		);
 		let lead: ZohoLead | null;
 		try {
 			lead = await zoho.getLead(leadId);
@@ -319,5 +387,59 @@ export function mountCrm(
 			throw crmUnavailable(c, err);
 		}
 		return c.json({ id: leadId, updated: fields } satisfies LeadUpdateView);
+	});
+
+	/**
+	 * POST /crm/lead/attribution → { id, updated }
+	 *
+	 * Records the visitor's marketing attribution — what the Zoho Form and its
+	 * Deluge function used to capture — for Leads created by the console's own
+	 * signup. Body `{ url, sourceWebsite? }`: `url` is the first landing URL the
+	 * browser kept, and the backend derives the rest (`attributionFromUrl`).
+	 *
+	 * Fill-empty only, and never a 409: fields the Lead already holds are left
+	 * out of the write, so the call is idempotent and the browser can repeat it
+	 * every onboarding step without tracking what landed. `updated` lists what
+	 * was actually written and may be `{}`.
+	 *
+	 * Not atomic: Zoho has no conditional update, so a value another writer sets
+	 * between the read and the write here is overwritten. The window is one
+	 * round trip and the values are equivalent marketing data, so it is
+	 * accepted rather than locked.
+	 *
+	 * Open to signup sessions — the Lead appears mid-signup, at the PAN step.
+	 */
+	app.post("/crm/lead/attribution", async (c) => {
+		const leadId = await resolveLeadId(
+			c,
+			CRM_WRITE_LIMIT,
+			"write",
+			requirePartnerSession,
+		);
+		const fields = parseAttributionBody(await c.req.json().catch(() => null));
+		let lead: ZohoLead | null;
+		try {
+			lead = await zoho.getLead(leadId);
+		} catch (err) {
+			throw crmUnavailable(c, err);
+		}
+		if (!lead) {
+			throw new AppError(
+				404,
+				"NO_CRM_LEAD",
+				"No CRM record is linked to this account.",
+			);
+		}
+		const updated = Object.fromEntries(
+			Object.entries(fields).filter(([key]) => !isSet(lead[key])),
+		);
+		if (Object.keys(updated).length > 0) {
+			try {
+				await zoho.updateLead(leadId, updated);
+			} catch (err) {
+				throw crmUnavailable(c, err);
+			}
+		}
+		return c.json({ id: leadId, updated } satisfies LeadUpdateView);
 	});
 }

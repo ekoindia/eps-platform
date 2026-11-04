@@ -185,6 +185,11 @@ export interface SignupState {
 	 * `currentRole` is the authority on progress.
 	 */
 	pan?: string;
+	/**
+	 * The profile's Zoho CRM Lead id, once upstream has created the Lead (around
+	 * the PAN step). The wizard refreshes the lead store whenever it is set.
+	 */
+	crmLeadId?: string;
 }
 
 /** City and state for a PIN code; either is null when upstream did not name it. */
@@ -773,6 +778,20 @@ export const authClient = {
 		request("/crm/lead", {
 			method: "PATCH",
 			body: JSON.stringify(fields),
+		}) as Promise<CrmLeadUpdateView>,
+	/**
+	 * Records marketing attribution on the Lead: the backend derives the UTM /
+	 * ad fields from `url` (the first landing URL) and writes only fields the
+	 * Lead does not hold yet. Idempotent; `updated` may be `{}`. Open to signup
+	 * sessions. Prefer the lead store, which calls this itself.
+	 */
+	syncCrmAttribution: (body: {
+		url: string;
+		sourceWebsite?: string;
+	}): Promise<CrmLeadUpdateView> =>
+		request("/crm/lead/attribution", {
+			method: "POST",
+			body: JSON.stringify(body),
 		}) as Promise<CrmLeadUpdateView>,
 	/**
 	 * The developer's notifications, already filtered to NORMAL items,

@@ -1,17 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { captureFirstVisit } from "@/hooks/use-tracking-params";
 import { ApiError } from "@/lib/auth/client";
 import {
 	CRM_NONE_TTL_MS,
 	CRM_TTL_MS,
 	crmLeadSnapshot,
+	refreshCrmLead,
 	resetCrmLeadCache,
 	startCrmLead,
 	updateCrmLead,
 } from "./lead-store";
 
-const { crmLead, updateCrmLeadApi } = vi.hoisted(() => ({
+const { crmLead, updateCrmLeadApi, syncCrmAttribution } = vi.hoisted(() => ({
 	crmLead: vi.fn(),
 	updateCrmLeadApi: vi.fn(),
+	syncCrmAttribution: vi.fn(),
 }));
 vi.mock("@/lib/auth/client", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@/lib/auth/client")>();
@@ -21,6 +24,7 @@ vi.mock("@/lib/auth/client", async (importOriginal) => {
 			...actual.authClient,
 			crmLead,
 			updateCrmLead: updateCrmLeadApi,
+			syncCrmAttribution,
 		},
 	};
 });
@@ -49,6 +53,7 @@ beforeEach(() => {
 	resetCrmLeadCache();
 	crmLead.mockReset();
 	updateCrmLeadApi.mockReset();
+	syncCrmAttribution.mockReset();
 	crmLead.mockResolvedValue(VIEW);
 });
 
@@ -235,3 +240,87 @@ function resetMemoryOnly() {
 	resetCrmLeadCache();
 	if (raw) localStorage.setItem(KEY, raw);
 }
+
+describe("refreshCrmLead", () => {
+	it("re-reads even when a fresh cached Lead exists", async () => {
+		startCrmLead(OWNER, LEAD);
+		await settle();
+		crmLead.mockResolvedValue({
+			...VIEW,
+			fields: { ...VIEW.fields, City: "Delhi" },
+		});
+		refreshCrmLead(OWNER, LEAD);
+		await settle();
+		expect(crmLead).toHaveBeenCalledTimes(2);
+		expect(crmLeadSnapshot()).toMatchObject({ fields: { City: "Delhi" } });
+		// The session upgrade's start keeps this read.
+		startCrmLead(OWNER, LEAD);
+		expect(crmLead).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe("attribution sync", () => {
+	const LANDING = "https://eps.eko.in/aeps/?gclid=G1";
+	const WRITTEN = { First_Visited_URL: LANDING, Ad_ID: "G1" };
+
+	beforeEach(() => {
+		captureFirstVisit(LANDING);
+		syncCrmAttribution.mockResolvedValue({ id: LEAD, updated: WRITTEN });
+	});
+
+	it("records attribution once and merges it, in memory and on disk", async () => {
+		startCrmLead(OWNER, LEAD);
+		await settle();
+		await settle();
+		expect(syncCrmAttribution).toHaveBeenCalledTimes(1);
+		expect(syncCrmAttribution.mock.calls[0][0]).toMatchObject({ url: LANDING });
+		expect(crmLeadSnapshot()).toMatchObject({ fields: WRITTEN });
+		expect(stored().result.fields).toMatchObject(WRITTEN);
+		refreshCrmLead(OWNER, LEAD);
+		await settle();
+		expect(syncCrmAttribution).toHaveBeenCalledTimes(1);
+	});
+
+	// A refresh that read the Lead before the write landed must not undo it.
+	it("overlays its writes on a read that raced it", async () => {
+		startCrmLead(OWNER, LEAD);
+		await settle();
+		await settle();
+		refreshCrmLead(OWNER, LEAD); // CRM still answers without the fields
+		await settle();
+		expect(crmLeadSnapshot()).toMatchObject({ fields: WRITTEN });
+	});
+
+	it("skips a Lead that already holds its attribution", async () => {
+		crmLead.mockResolvedValue({
+			...VIEW,
+			fields: {
+				...VIEW.fields,
+				First_Visited_URL: "https://eps.eko.in/",
+				Source_Website: "https://eps.eko.in/",
+			},
+		});
+		startCrmLead(OWNER, LEAD);
+		await settle();
+		expect(syncCrmAttribution).not.toHaveBeenCalled();
+	});
+
+	it("skips when the browser kept no landing URL", async () => {
+		localStorage.clear();
+		startCrmLead(OWNER, LEAD);
+		await settle();
+		expect(syncCrmAttribution).not.toHaveBeenCalled();
+	});
+
+	it("retries on the next read after a failure", async () => {
+		syncCrmAttribution.mockRejectedValueOnce(new Error("502"));
+		startCrmLead(OWNER, LEAD);
+		await settle();
+		await settle();
+		refreshCrmLead(OWNER, LEAD);
+		await settle();
+		await settle();
+		expect(syncCrmAttribution).toHaveBeenCalledTimes(2);
+		expect(crmLeadSnapshot()).toMatchObject({ fields: WRITTEN });
+	});
+});

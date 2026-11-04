@@ -10,6 +10,7 @@ record directly:
 | --- | --- |
 | `GET /crm/lead` | The partner's own Lead, **whitelisted fields only**, as `{ id, fields, picklists }` |
 | `PATCH /crm/lead` | Writes whitelisted, writable fields; answers `{ id, updated }` |
+| `POST /crm/lead/attribution` | Records marketing attribution derived from the first landing URL — empty fields only; answers `{ id, updated }` |
 
 The frontend never calls these directly: one shared store loads the Lead at
 sign-in, caches it for a day, and serves every page through `useCrmLead()`
@@ -34,11 +35,15 @@ for a partner sales has not yet created a Lead for, not an error.
 
 ## Auth and limits
 
-- `requireDeveloperSession` (`src/http/session-guards.ts`) — access cookie, verified
-  claim, role `developer`. Admin and signup sessions get `403`.
+- `PATCH` uses `requireDeveloperSession` (`src/http/session-guards.ts`) — access
+  cookie, verified claim, role `developer`. Admin and signup sessions get `403`.
+- `GET` and `POST /attribution` use `requirePartnerSession`: role `developer`
+  **or `signup`**. The Lead appears mid-signup (around the PAN step), and the
+  wizard reads it and records attribution before the session is a developer
+  one. Admin sessions still get `403`.
 - Rate limited **before** the upstream profile call, so a caller cannot spend
   Eko-side capacity before being told to slow down. 60 reads / 20 writes per
-  partner per 10-minute window.
+  partner per 10-minute window; attribution shares the write bucket.
 - CSRF: the access cookie is `SameSite=Lax` (`COOKIE_SAMESITE`), so a cross-site
   `PATCH` never carries it. Deploying with `COOKIE_SAMESITE=None` would make
   these routes forgeable and needs a token first — one more reason the deploy
@@ -77,7 +82,9 @@ Notes on individual fields:
   fact. **Note `Activation_Fee_Discount` is partner-writable too**, so treat it
   as a claim as well.
 - **Attribution** fields are write-once: the frontend may capture them, but a
-  partner cannot later rewrite their own marketing attribution.
+  partner cannot later rewrite their own marketing attribution. They are
+  normally written by `POST /crm/lead/attribution`, not `PATCH` — see
+  *Marketing attribution*.
 
 Adding a field: check the exact `api_name`, `data_type` and `length` in
 `GET /crm/v2/settings/fields?module=Leads` first — Zoho accepts an unknown
@@ -118,6 +125,78 @@ and only sends fields the partner changed.
 Every `GET` carries the writable options as `picklists`, so dropdowns are built
 from the server's list. There is one definition, on the server.
 
+## Marketing attribution
+
+Leads created through the Zoho Form / SalesIQ chat got their attribution from
+the form plus a Deluge function (`update_seo_utm_info_from_visitor_url`) that
+runs on Lead creation and derives the UTM fields from `First_Visited_URL`.
+Signups through the console pass neither — upstream creates the Lead itself —
+so the console records the same fields directly.
+
+**What the browser keeps.** `captureFirstVisit`
+(`src/hooks/use-tracking-params.ts`) records the document's landing URL in
+localStorage `eps_first_visit` for 30 days: first-touch, except an organic
+first landing is replaced by a later ad-attributed one, so a paid click is not
+lost to an earlier unattributed visit. Only a real document landing counts —
+never the URL the app rewrites when it re-appends stored tracking params.
+
+**When it is sent.** The lead store calls `POST /crm/lead/attribution` whenever
+it serves a Lead (fetched or cached) with no `First_Visited_URL` or no
+`Source_Website`, and the browser holds a landing URL — at most once per Lead
+per page load. Body:
+
+| Key | Value |
+| --- | --- |
+| `url` | the stored first landing URL → `First_Visited_URL` and the derived fields |
+| `sourceWebsite` | `buildLeadWebsiteUrl()` → `Source_Website` — the exact value the Zoho Form sends as `Website`: current page + stored tracking params + pricing-calculator selection, budgeted to 450 chars |
+
+**Derivation** (`attributionFromUrl`, `src/clients/lead-attribution.ts`) is a
+rule-for-rule port of the Deluge function:
+
+| Field | From the URL |
+| --- | --- |
+| `SEO_Page_Name` | path after the domain, no leading `/` (root → skipped) |
+| `utm_source` | `utm_source`, else `fbclid` → `fb`, `li_fat_id` → `linkedin`, `gclid` → `google` |
+| `utm_campaign` | `utm_campaign`, else `gad_campaignid` |
+| `Ad_ID` | `gclid` > `fbclid` > `li_fat_id` (the click id, not the creative) |
+| `Campaign_Name` | `campaign_name` |
+| `utm_medium`, `utm_term`, `utm_content`, `utm_adgroup`, `utm_matchtype`, `utm_device` | same-named param |
+
+Deliberate departures: values arrive URL-decoded, and every field is derived
+from the **full** URL. A value longer than its Zoho field is handled by kind:
+
+- **URL fields** (`First_Visited_URL` 3000, `Source_Website` 450) are
+  **trimmed**, not dropped (`truncateUrl`): cut to the field's length with
+  `…` (U+2026) as the last character, never splitting a `%XX` escape. The
+  page and the first query params survive; the `…` marks the last param's
+  value as incomplete — don't treat it as a real value. Params past the cut
+  are still derived into their own fields. The route accepts URLs up to 8,192
+  chars (400 above) before trimming.
+- **Every other field** is dropped (`utm_matchtype`/`utm_device` hold 2
+  chars): a truncated campaign or click id would look valid and mean nothing.
+
+`buildLeadWebsiteUrl` applies the same `…` mark on its own last-resort cut,
+so the Zoho Form's `Website` value follows the same convention.
+
+**Fill-empty, never 409.** The route reads the Lead and writes only the fields
+it does not already hold, so the call is idempotent and repeating it every
+onboarding step is harmless. `updated` lists what was written and may be `{}`.
+Values sales or upstream set are never touched. **Not atomic**: Zoho has no
+conditional update, so a value another writer sets between that read and the
+write is overwritten — a one-round-trip window over equivalent data, accepted.
+
+The store overlays what a sync wrote onto any later read still missing it, so
+a refresh that raced the write cannot cache the Lead without it for a day.
+
+## Onboarding refresh
+
+Upstream edits the Lead as each signup step lands. `SignupState` carries
+`crmLeadId` once the profile has one, and the wizard calls
+`refreshCrmLead(mobile, crmLeadId)` on every fresh state — first load and
+after each step — which re-reads the Lead ignoring the 24h TTL. When signup
+completes and the session becomes a developer one, `AuthProvider`'s
+`startCrmLead` sees the same partner already loaded and keeps that read.
+
 ## Using it in the frontend
 
 ```ts
@@ -139,7 +218,8 @@ The store is `src/lib/crm/lead-store.ts`, mirroring the notifications store:
 module-level state read through `useSyncExternalStore`. `AuthProvider` starts
 it as soon as a developer session resolves (so the Lead is loaded on the public
 homepage too) and resets it whenever the session ends. When the profile has no
-`crm_lead_id`, no request is made at all.
+`crm_lead_id`, no request is made at all. During signup the wizard drives it
+instead (`refreshCrmLead`, see *Onboarding refresh*).
 
 ## Cache
 

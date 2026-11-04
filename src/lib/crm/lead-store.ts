@@ -1,3 +1,7 @@
+import {
+	buildLeadWebsiteUrl,
+	getFirstVisitUrl,
+} from "@/hooks/use-tracking-params";
 import { ApiError, authClient } from "@/lib/auth/client";
 
 /**
@@ -23,6 +27,14 @@ import { ApiError, authClient } from "@/lib/auth/client";
  *
  * A save patches the cached fields in place rather than refetching. It does not
  * restart the TTL: the record as a whole is still as old as the last read.
+ *
+ * ## Attribution
+ *
+ * Whenever a Lead is served with no `First_Visited_URL` or `Source_Website`
+ * and the browser kept a first landing URL, the store asks the backend to
+ * record the visitor's marketing attribution (`POST /crm/lead/attribution`)
+ * and merges what was written — once per Lead per page load. That replaces
+ * what the Zoho Form used to capture, for Leads the console's signup creates.
  */
 
 /** What any reader sees. */
@@ -87,6 +99,14 @@ let fetchedAt = 0;
 let generation = 0;
 const listeners = new Set<() => void>();
 let listeningToStorage = false;
+/** The Lead an attribution sync is in flight for. */
+let syncing: string | null = null;
+/**
+ * What the last attribution sync wrote, per Lead. Overlaid on later reads: a
+ * refresh that started before the write landed would otherwise serve the
+ * Lead without it — and, worse, cache that for a day.
+ */
+let synced: { leadId: string; fields: Record<string, unknown> } | null = null;
 
 function emit(next: CrmLeadState): void {
 	state = next;
@@ -164,6 +184,46 @@ function onStorage(event: StorageEvent): void {
 	emit(envelope.result);
 }
 
+/** `fields` with the last sync's writes filled into any still-null slot. */
+function withSynced(fields: Record<string, unknown>): Record<string, unknown> {
+	if (!synced || synced.leadId !== leadId) return fields;
+	const merged = { ...fields };
+	for (const [key, value] of Object.entries(synced.fields)) {
+		merged[key] ??= value;
+	}
+	return merged;
+}
+
+/**
+ * Records attribution on a Lead that lacks it; see *Attribution* above.
+ * Best-effort: a failure leaves the Lead as it was, and the next fetch or
+ * refresh tries again.
+ */
+function syncAttribution(fields: Record<string, unknown>): void {
+	const target = leadId;
+	if (!target || syncing === target || synced?.leadId === target) return;
+	if (fields.First_Visited_URL != null && fields.Source_Website != null) return;
+	const url = getFirstVisitUrl();
+	if (!url) return;
+	syncing = target;
+	authClient
+		.syncCrmAttribution({ url, sourceWebsite: buildLeadWebsiteUrl() })
+		.then(({ updated }) => {
+			if (target !== leadId) return;
+			synced = { leadId: target, fields: updated };
+			if (state.status !== "ok") return;
+			const next: Cached = { ...state, fields: withSynced(state.fields) };
+			writeEnvelope(next);
+			emit(next);
+		})
+		.catch(() => {
+			// Best-effort; see above.
+		})
+		.finally(() => {
+			if (syncing === target) syncing = null;
+		});
+}
+
 function fetchLead(): void {
 	const current = generation;
 	emit(LOADING);
@@ -173,12 +233,13 @@ function fetchLead(): void {
 			if (current !== generation) return;
 			const result: Cached = {
 				status: "ok",
-				fields,
+				fields: withSynced(fields),
 				picklists: picklists ?? {},
 			};
 			fetchedAt = Date.now();
 			writeEnvelope(result);
 			emit(result);
+			syncAttribution(result.fields);
 		})
 		.catch((error: unknown) => {
 			if (current !== generation) return;
@@ -219,8 +280,26 @@ export function startCrmLead(
 	if (cached && isFresh(cached, Date.now())) {
 		fetchedAt = cached.fetchedAt;
 		emit(cached.result);
+		if (cached.result.status === "ok") syncAttribution(cached.result.fields);
 		return;
 	}
+	fetchLead();
+}
+
+/**
+ * Re-reads the Lead from the API, ignoring the cache's TTL.
+ *
+ * For onboarding: upstream edits the Lead as each signup step lands, so the
+ * wizard calls this after every step once the profile has a Lead. When the
+ * session then becomes a developer one, `startCrmLead` finds the same partner
+ * already loaded and keeps this read.
+ * @param nextOwner - The partner's mobile; tags the cache entry.
+ * @param nextLeadId - The profile's `crm_lead_id`.
+ */
+export function refreshCrmLead(nextOwner: string, nextLeadId: string): void {
+	generation += 1;
+	owner = nextOwner;
+	leadId = nextLeadId;
 	fetchLead();
 }
 
@@ -254,6 +333,8 @@ export function resetCrmLeadCache(): void {
 	owner = "";
 	leadId = null;
 	fetchedAt = 0;
+	syncing = null;
+	synced = null;
 	clearStorage();
 	emit(IDLE);
 }

@@ -124,12 +124,17 @@ describe("GET /crm/lead", () => {
 		expect(res.status).toBe(401);
 	});
 
-	it("403 for an admin or signup session", async () => {
-		for (const role of ["admin", "signup"]) {
-			const { app } = harness({ role });
-			const res = await app.request("/crm/lead", { headers: COOKIE });
-			expect(res.status).toBe(403);
-		}
+	it("403 for an admin session", async () => {
+		const { app } = harness({ role: "admin" });
+		const res = await app.request("/crm/lead", { headers: COOKIE });
+		expect(res.status).toBe(403);
+	});
+
+	// The wizard refreshes the Lead after each onboarding step.
+	it("serves a signup session too", async () => {
+		const { app } = harness({ role: "signup" });
+		const res = await app.request("/crm/lead", { headers: COOKIE });
+		expect(res.status).toBe(200);
 	});
 
 	it("404 when Zoho is not configured for this deployment", async () => {
@@ -300,15 +305,146 @@ describe("PATCH /crm/lead", () => {
 		expect(last).toBe(429);
 	});
 
-	it("401 without a session, and 403 for an admin session", async () => {
+	it("401 without a session, and 403 for an admin or signup session", async () => {
 		expect(
 			(await harness({ role: null }).app.request("/crm/lead", patch({})))
 				.status,
 		).toBe(401);
-		expect(
-			(await harness({ role: "admin" }).app.request("/crm/lead", patch({})))
-				.status,
-		).toBe(403);
+		for (const role of ["admin", "signup"]) {
+			expect(
+				(await harness({ role }).app.request("/crm/lead", patch({}))).status,
+			).toBe(403);
+		}
+	});
+});
+
+describe("POST /crm/lead/attribution", () => {
+	const URL_GADS = "https://eps.eko.in/aeps/?gclid=G1&utm_campaign=q4";
+	const SOURCE = "https://eps.eko.in/signup/?gclid=G1&utm_campaign=q4";
+	const post = (payload: unknown) => ({
+		method: "POST",
+		headers: { ...COOKIE, "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	});
+
+	it("derives the fields and writes them, for a signup session", async () => {
+		const { app, zoho } = harness({ role: "signup" });
+		const res = await app.request(
+			"/crm/lead/attribution",
+			post({ url: URL_GADS, sourceWebsite: SOURCE }),
+		);
+		expect(res.status).toBe(200);
+		const expected = {
+			First_Visited_URL: URL_GADS,
+			SEO_Page_Name: "aeps/",
+			utm_source: "google",
+			utm_campaign: "q4",
+			Ad_ID: "G1",
+			Source_Website: SOURCE,
+		};
+		expect(zoho.updateLead).toHaveBeenCalledWith(LEAD_ID, expected);
+		expect(await body(res)).toEqual({ id: LEAD_ID, updated: expected });
+	});
+
+	it("writes only fields the Lead does not already hold", async () => {
+		const { app, zoho } = harness({
+			zoho: {
+				getLead: vi.fn(async () => ({
+					id: LEAD_ID,
+					utm_source: "partner-referral",
+					Ad_ID: "",
+				})),
+			},
+		});
+		await app.request("/crm/lead/attribution", post({ url: URL_GADS }));
+		const written = vi.mocked(zoho.updateLead).mock.calls[0][1];
+		expect(written).not.toHaveProperty("utm_source");
+		expect(written).toMatchObject({ Ad_ID: "G1" });
+	});
+
+	it("answers updated {} and writes nothing when all is recorded", async () => {
+		const { app, zoho } = harness({
+			zoho: {
+				getLead: vi.fn(async () => ({
+					id: LEAD_ID,
+					First_Visited_URL: "https://eps.eko.in/",
+				})),
+			},
+		});
+		const res = await app.request(
+			"/crm/lead/attribution",
+			post({ url: "https://eps.eko.in/docs/" }),
+		);
+		expect(res.status).toBe(200);
+		expect(await body(res)).toEqual({
+			id: LEAD_ID,
+			updated: { SEO_Page_Name: "docs/" },
+		});
+		const { app: app2, zoho: zoho2 } = harness({
+			zoho: {
+				getLead: vi.fn(async () => ({
+					id: LEAD_ID,
+					First_Visited_URL: "https://eps.eko.in/",
+				})),
+			},
+		});
+		const res2 = await app2.request(
+			"/crm/lead/attribution",
+			post({ url: "https://eps.eko.in/" }),
+		);
+		expect(await body(res2)).toEqual({ id: LEAD_ID, updated: {} });
+		expect(zoho2.updateLead).not.toHaveBeenCalled();
+		expect(zoho.updateLead).toHaveBeenCalledTimes(1);
+	});
+
+	it("400s on a missing or non-http url, and drops a bad sourceWebsite", async () => {
+		for (const url of [undefined, "javascript:alert(1)", "/relative"]) {
+			const { app, zoho } = harness();
+			const res = await app.request("/crm/lead/attribution", post({ url }));
+			expect(res.status).toBe(400);
+			expect(zoho.getLead).not.toHaveBeenCalled();
+		}
+		const { app, zoho } = harness();
+		await app.request(
+			"/crm/lead/attribution",
+			post({ url: "https://eps.eko.in/", sourceWebsite: "ftp://x" }),
+		);
+		expect(vi.mocked(zoho.updateLead).mock.calls[0][1]).toEqual({
+			First_Visited_URL: "https://eps.eko.in/",
+		});
+	});
+
+	it("trims an over-long Source_Website instead of dropping it", async () => {
+		const { app, zoho } = harness();
+		const long = `https://eps.eko.in/signup/?gclid=G1&sel=${"a".repeat(600)}`;
+		await app.request(
+			"/crm/lead/attribution",
+			post({ url: "https://eps.eko.in/", sourceWebsite: long }),
+		);
+		const written = vi.mocked(zoho.updateLead).mock.calls[0][1] as Record<
+			string,
+			string
+		>;
+		expect(written.Source_Website).toHaveLength(450);
+		expect(written.Source_Website).toBe(`${long.slice(0, 449)}…`);
+	});
+
+	it("400s on a url past the 8K sanity cap", async () => {
+		const { app } = harness();
+		const res = await app.request(
+			"/crm/lead/attribution",
+			post({ url: `https://eps.eko.in/?q=${"x".repeat(8200)}` }),
+		);
+		expect(res.status).toBe(400);
+	});
+
+	it("403 for an admin session", async () => {
+		const { app } = harness({ role: "admin" });
+		const res = await app.request(
+			"/crm/lead/attribution",
+			post({ url: URL_GADS }),
+		);
+		expect(res.status).toBe(403);
 	});
 });
 
