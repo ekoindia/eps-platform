@@ -298,6 +298,65 @@ describe("connect-api auth provider config", () => {
 	});
 });
 
+describe("loadConfig — activation-fee bank details", () => {
+	const account = "12345678901234";
+	const ifsc = "TEST0000001";
+
+	it("leaves the block absent when every var is unset", () => {
+		expect(loadConfig(base).activationFeeBank).toBeUndefined();
+	});
+
+	it("keeps only the fields that are set", () => {
+		expect(
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_BANK_NAME: "Test Bank",
+				ACTIVATION_FEE_BANK_BRANCH_ADDRESS: "1 Test Road, Testville",
+			}).activationFeeBank,
+		).toEqual({
+			bankName: "Test Bank",
+			branchAddress: "1 Test Road, Testville",
+		});
+	});
+
+	it("treats blank values as unset", () => {
+		expect(
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_BANK_NAME: "   ",
+				ACTIVATION_FEE_BANK_ACCOUNT_NUMBER: "",
+				ACTIVATION_FEE_BANK_IFSC: " ",
+			}).activationFeeBank,
+		).toBeUndefined();
+	});
+
+	it("trims surrounding whitespace before validating", () => {
+		expect(
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_BANK_ACCOUNT_NUMBER: ` ${account} `,
+				ACTIVATION_FEE_BANK_IFSC: ` ${ifsc} `,
+			}).activationFeeBank,
+		).toEqual({ accountNumber: account, ifsc });
+	});
+
+	it.each([
+		["ACTIVATION_FEE_BANK_ACCOUNT_NUMBER", "1234 5678 9012"],
+		["ACTIVATION_FEE_BANK_ACCOUNT_NUMBER", "12345"],
+		["ACTIVATION_FEE_BANK_IFSC", "test0000001"],
+		["ACTIVATION_FEE_BANK_IFSC", "TEST1000001"],
+	])("refuses to boot on a malformed %s without echoing it", (name, value) => {
+		let message = "";
+		try {
+			loadConfig({ ...base, [name]: value });
+		} catch (error) {
+			message = (error as Error).message;
+		}
+		expect(message).toContain(name);
+		expect(message).not.toContain(value);
+	});
+});
+
 describe("loadConfig — activation fee", () => {
 	const url = "https://automaton8n.eko.in/webhook/abc";
 

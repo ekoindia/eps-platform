@@ -418,11 +418,11 @@ export function buildEmailSubject(profile: EkoProfile): string {
 }
 
 /**
- * Mounts the activation-fee intimation route.
+ * Mounts the activation-fee routes: the bank details and the intimation.
  * @param app - The Hono app.
  * @param deps - Sessions for the auth gate, the Eko client for the caller's own
- * profile, KV for rate limiting, and the activation-fee config (absent when the
- * feature is not configured for this deployment).
+ * profile, KV for rate limiting, the activation-fee config (absent when the
+ * feature is not configured for this deployment), and the collection account.
  */
 export function mountActivationFee(
 	app: Hono<AppEnv>,
@@ -431,12 +431,37 @@ export function mountActivationFee(
 		eko: EkoClient;
 		kv: KV;
 		cfg?: Config["activationFee"];
+		/** The collection account shown to partners; absent when none is set. */
+		bank?: Config["activationFeeBank"];
 		/** Zoho record-URL base for the CRM links; omitted → no links. */
 		crmRecordBaseUrl?: string;
 		fetchImpl?: typeof fetch;
 	},
 ): void {
-	const { sessions, eko, kv, cfg } = deps;
+	const { sessions, eko, kv, cfg, bank } = deps;
+
+	/**
+	 * GET /activation-fee/bank-details → the configured account fields
+	 *
+	 * Behind a session so the account stays out of anything readable without one.
+	 * Independent of `cfg`: a deployment with no webhook still says where to pay.
+	 */
+	app.get("/activation-fee/bank-details", async (c) => {
+		await requireDeveloperSession(
+			sessions,
+			c,
+			"This account cannot view activation-fee payment details.",
+		);
+		if (!bank) {
+			throw new AppError(
+				503,
+				"ACTIVATION_FEE_BANK_UNAVAILABLE",
+				"Eko's bank details aren't available right now. Please email eps@eko.in.",
+			);
+		}
+		c.header("Cache-Control", "no-store");
+		return c.json(bank);
+	});
 
 	/**
 	 * POST /activation-fee/intimate → { message }

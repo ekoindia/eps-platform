@@ -137,6 +137,14 @@ export interface Config {
 		recipients: string[];
 		timeoutMs: number;
 	};
+	/**
+	 * Eko's activation-fee collection account, as the partner is shown it. Kept
+	 * apart from `activationFee` because the page shows where to pay even on a
+	 * deployment with no webhook to report the payment through. Each field is
+	 * independent; one left unset is hidden from the page. Absent when all are
+	 * unset. See {@link parseActivationFeeBank}.
+	 */
+	activationFeeBank?: ActivationFeeBank;
 	github: {
 		clientId: string;
 		clientSecret: string;
@@ -280,6 +288,50 @@ function zohoConfig(
 		accountsUrl,
 		crmRecordBaseUrl,
 	};
+}
+
+/** The activation-fee collection account. Unset fields are omitted. */
+export interface ActivationFeeBank {
+	bankName?: string;
+	accountName?: string;
+	accountNumber?: string;
+	ifsc?: string;
+	branchAddress?: string;
+}
+
+/**
+ * Reads the activation-fee collection account from the environment.
+ *
+ * Partners transfer real money on the strength of these values, so a malformed
+ * account number or IFSC fails at boot. The messages name the variable and never
+ * the value, which would otherwise land in boot logs.
+ * @param env - The process environment.
+ * @returns The configured fields, or undefined when none is set.
+ * @throws Error when the account number or IFSC is set but malformed.
+ */
+function parseActivationFeeBank(
+	env: NodeJS.ProcessEnv,
+): ActivationFeeBank | undefined {
+	const accountNumber = env.ACTIVATION_FEE_BANK_ACCOUNT_NUMBER?.trim();
+	if (accountNumber && !/^\d{9,18}$/.test(accountNumber)) {
+		throw new Error(
+			"ACTIVATION_FEE_BANK_ACCOUNT_NUMBER must be 9-18 digits with no spaces",
+		);
+	}
+	const ifsc = env.ACTIVATION_FEE_BANK_IFSC?.trim();
+	if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+		throw new Error(
+			"ACTIVATION_FEE_BANK_IFSC must be 4 capital letters, a zero, then 6 capital letters or digits",
+		);
+	}
+	const fields = Object.entries({
+		bankName: env.ACTIVATION_FEE_BANK_NAME?.trim(),
+		accountName: env.ACTIVATION_FEE_BANK_ACCOUNT_NAME?.trim(),
+		accountNumber,
+		ifsc,
+		branchAddress: env.ACTIVATION_FEE_BANK_BRANCH_ADDRESS?.trim(),
+	}).filter(([, value]) => value);
+	return fields.length > 0 ? Object.fromEntries(fields) : undefined;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv): Config {
@@ -578,6 +630,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		contextMcp,
 		chat,
 		activationFee,
+		activationFeeBank: parseActivationFeeBank(env),
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,
 			clientSecret: env.GITHUB_CLIENT_SECRET!,

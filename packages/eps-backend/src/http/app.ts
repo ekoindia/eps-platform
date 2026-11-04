@@ -762,6 +762,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		eko,
 		kv,
 		cfg: cfg.activationFee,
+		bank: cfg.activationFeeBank,
 		crmRecordBaseUrl: cfg.zoho.crmRecordBaseUrl,
 	});
 

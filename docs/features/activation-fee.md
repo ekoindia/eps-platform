@@ -23,9 +23,9 @@ claim, and finance reconciles that claim against the bank statement.
 2. **Your one-time activation fee** — computed from the selection: undiscounted
    fee, the running discount, GST, and the **amount to transfer** called out on
    its own. No number is hardcoded on the page; see *Fee calculation* below.
-3. **Transfer the amount** — Eko's HDFC collection account, as copyable rows.
-   Hardcoded in `src/pages/console/PayActivationFee.tsx`: this is the one fact
-   that must read identically in UAT, in production, and in an old screenshot.
+3. **Transfer the amount** — Eko's collection account, as copyable rows: bank,
+   account name, account number, IFSC code, branch address. The values come from
+   `GET /activation-fee/bank-details`; see *Bank details* below.
 4. **Tell us about the transfer** — amount (prefilled from step 2), date, mode
    (IMPS / NEFT / RTGS / Intra-Bank Transfer, commonest first), UTR, the name of
    the depositor, and an optional transaction slip.
@@ -60,6 +60,30 @@ company's account, and finance reconciles against the statement.
 Payment modes are normalised server-side through a map keyed by the uppercased
 input, so casing from the browser does not matter while the label finance reads
 stays `Intra-Bank Transfer` rather than `INTRA-BANK TRANSFER`.
+
+## Bank details
+
+The account is not in this repo, which is public. It lives in eps-backend's
+environment and reaches the page through `GET /activation-fee/bank-details`,
+which requires a developer session. `VITE_*` was rejected: Vite inlines those
+values into JS chunks anyone can download without signing in.
+
+This keeps the account out of source and anonymous assets. It is not a secret
+from partners: any signed-in developer can read and share it. Values committed
+before this change remain in git history and in any old frontend build or cache.
+
+Each field is independent. One left unset has no row on the page, and a blank or
+whitespace-only value counts as unset. With all five unset the route answers
+`503 ACTIVATION_FEE_BANK_UNAVAILABLE`.
+
+If the request fails for any reason, step 3 tells the partner not to transfer yet
+and to reload or write to `eps@eko.in`. Step 4 stays usable, because a partner may
+have already paid.
+
+> **Check after any env change:** hiding is per field, so an unset account number
+> or IFSC still renders the other rows with no warning, and the partner cannot
+> complete a transfer. Format checks also cannot catch a valid-looking wrong
+> digit. Compare the live page against finance's record of the account.
 
 ## Fee calculation
 
@@ -176,12 +200,21 @@ cannot drift from the payments calculator.
 | `ACTIVATION_FEE_WEBHOOK_URL` | _(unset — feature dark)_ | https required off loopback. **Secret** — never ship to the browser |
 | `ACTIVATION_FEE_RECIPIENTS` | _(none — required with the URL)_ | Comma-separated. Absent, empty or malformed = boot error |
 | `ACTIVATION_FEE_TIMEOUT_MS` | `20000` | Abort for the webhook call |
+| `ACTIVATION_FEE_BANK_NAME` | _(unset — row hidden)_ | Bank row |
+| `ACTIVATION_FEE_BANK_ACCOUNT_NAME` | _(unset — row hidden)_ | Account Name row |
+| `ACTIVATION_FEE_BANK_ACCOUNT_NUMBER` | _(unset — row hidden)_ | 9-18 digits, no spaces. Malformed = boot error |
+| `ACTIVATION_FEE_BANK_IFSC` | _(unset — row hidden)_ | e.g. `ABCD0123456`. Malformed = boot error |
+| `ACTIVATION_FEE_BANK_BRANCH_ADDRESS` | _(unset — row hidden)_ | Branch Address row |
 
-Unset means the route still mounts but answers `503 ACTIVATION_FEE_DISABLED`, so
-the page a partner was linked to still renders the bank details and explains
-itself rather than 404-ing.
+With no webhook the intimation route still mounts but answers
+`503 ACTIVATION_FEE_DISABLED`, so the page a partner was linked to still renders
+the bank details and explains itself rather than 404-ing. The bank vars are
+independent of the webhook.
 
-The two vars are a pair: setting the webhook without recipients fails at boot.
+Set the bank vars and deploy eps-backend before the frontend. In the other order
+partners see the "couldn't load" notice until the backend lands.
+
+The webhook and recipients are a pair: setting the webhook without recipients fails at boot.
 There is **no default recipient list in source** on purpose — who gets told
 about a partner's payment is a deployment decision, and a baked-in default would
 mail whoever was on the team the day this was written from every environment
@@ -218,10 +251,10 @@ returned to the browser.
 | --- | --- |
 | `src/pages/console/PayActivationFee.tsx` | The page |
 | `src/lib/console/feeProducts.ts` | Picker options, derived from pricing |
-| `src/lib/auth/client.ts` | `authClient.activationFee.intimate` |
+| `src/lib/auth/client.ts` | `authClient.activationFee.bankDetails` / `.intimate` |
 | `src/components/console/NextStepsCard.tsx` | The Console Home CTA into this page |
-| `packages/eps-backend/src/http/activationFee.ts` | Route, validation, mail body |
-| `packages/eps-backend/src/config.ts` | `activationFee` config block |
+| `packages/eps-backend/src/http/activationFee.ts` | Routes, validation, mail body |
+| `packages/eps-backend/src/config.ts` | `activationFee` and `activationFeeBank` config blocks |
 
 The route is registered in **both** `src/App.tsx` (lazy) and
 `src/AppServer.tsx` (eager). `/console` is never prerendered, so `ssg/routes.ts`

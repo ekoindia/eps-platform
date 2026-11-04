@@ -698,6 +698,15 @@ async function request(
 	return parse(res);
 }
 
+/** Eko's activation-fee collection account, as eps-backend's env configures it. */
+export interface ActivationFeeBankDetails {
+	bankName?: string;
+	accountName?: string;
+	accountNumber?: string;
+	ifsc?: string;
+	branchAddress?: string;
+}
+
 /** Pre-built API client with typed methods for OTP auth, session management, and user profile. */
 export const authClient = {
 	/** `otp` comes back only on dev/UAT backends, for testing without an SMS. */
@@ -843,6 +852,11 @@ export const authClient = {
 	 * it transferred, never on whose behalf.
 	 */
 	activationFee: {
+		/** Eko's collection account. Fields the deployment has not set are absent. */
+		bankDetails: (signal?: AbortSignal): Promise<ActivationFeeBankDetails> =>
+			request("/activation-fee/bank-details", {
+				signal,
+			}) as Promise<ActivationFeeBankDetails>,
 		/** `form` carries a `payload` JSON part plus an optional `attachment`. */
 		intimate: (
 			form: FormData,

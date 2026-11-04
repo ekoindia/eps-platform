@@ -47,6 +47,7 @@ function harness(
 		role?: string | null;
 		/** `null` means "this deployment has no webhook"; omit for the default. */
 		cfg?: Config["activationFee"] | null;
+		bank?: Config["activationFeeBank"];
 		crmRecordBaseUrl?: string;
 		profileResult?: ProfileResult;
 		kv?: KV;
@@ -99,6 +100,7 @@ function harness(
 		eko,
 		kv: opts.kv ?? createInMemoryKV(),
 		cfg: opts.cfg === null ? undefined : (opts.cfg ?? ACTIVATION_CFG),
+		bank: opts.bank,
 		crmRecordBaseUrl:
 			opts.crmRecordBaseUrl === undefined
 				? "https://crm.zoho.in/crm/org60006414357"
@@ -654,5 +656,55 @@ describe("POST /activation-fee/intimate — the Zoho CRM row", () => {
 		const body = await bodyOf(sent);
 		expect(body).not.toContain("<script>");
 		expect(body).not.toContain('"><');
+	});
+});
+
+describe("GET /activation-fee/bank-details", () => {
+	const BANK: Config["activationFeeBank"] = {
+		bankName: "Test Bank",
+		accountName: "Test Payee Pvt Ltd",
+		accountNumber: "12345678901234",
+		ifsc: "TEST0000001",
+		branchAddress: "1 Test Road, Testville",
+	};
+	const get = (app: Hono<AppEnv>) =>
+		app.request("/activation-fee/bank-details", {
+			headers: { cookie: "eps_at=x" },
+		});
+
+	it("401s without a session and shows no account", async () => {
+		const res = await get(harness({ role: null, bank: BANK }).app);
+		expect(res.status).toBe(401);
+		expect(await res.text()).not.toContain("12345678901234");
+	});
+
+	it("403s a session that is not a developer's", async () => {
+		const res = await get(harness({ role: "admin", bank: BANK }).app);
+		expect(res.status).toBe(403);
+		expect(await res.text()).not.toContain("12345678901234");
+	});
+
+	it("503s when no field is configured", async () => {
+		const res = await get(harness().app);
+		expect(res.status).toBe(503);
+		const { error } = (await res.json()) as { error: { code: string } };
+		expect(error.code).toBe("ACTIVATION_FEE_BANK_UNAVAILABLE");
+	});
+
+	it("returns the account uncached", async () => {
+		const res = await get(harness({ bank: BANK }).app);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("cache-control")).toBe("no-store");
+		expect(await res.json()).toEqual(BANK);
+	});
+
+	it("returns only the fields that are configured", async () => {
+		const res = await get(harness({ bank: { ifsc: "TEST0000001" } }).app);
+		expect(await res.json()).toEqual({ ifsc: "TEST0000001" });
+	});
+
+	it("does not depend on the webhook being configured", async () => {
+		const res = await get(harness({ cfg: null, bank: BANK }).app);
+		expect(res.status).toBe(200);
 	});
 });
