@@ -169,7 +169,8 @@ from the **full** URL. A value longer than its Zoho field is handled by kind:
   **trimmed**, not dropped (`truncateUrl`): cut to the field's length with
   `…` (U+2026) as the last character, never splitting a `%XX` escape. The
   page and the first query params survive; the `…` marks the last param's
-  value as incomplete — don't treat it as a real value. Params past the cut
+  value as incomplete — don't treat it as a real value. Zoho's website-type
+  fields accept the `…` (confirmed against the live org, 2026-11-04). Params past the cut
   are still derived into their own fields. The route accepts URLs up to 8,192
   chars (400 above) before trimming.
 - **Every other field** is dropped (`utm_matchtype`/`utm_device` hold 2
