@@ -295,7 +295,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			"Backend-only Python client for every EPS API, dependency-free and typed, with HMAC signing built in.",
 		order: 2,
 		packageName: "eps-sdk",
-		minRuntime: "Python 3.9 or newer",
+		minRuntime: "Python 3.10 or newer",
 		dependencies:
 			"None — standard library only (`urllib`, `hmac`, `hashlib`, `mimetypes`).",
 		sourceUrl: `${REPO}/sdk-python`,
