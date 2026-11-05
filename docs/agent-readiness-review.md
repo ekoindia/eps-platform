@@ -55,7 +55,7 @@ Format per row: what works → gap (with code location) → fix → owner → pr
 
 **Gaps**
 - ~~Nothing under `/.well-known/`~~ — fixed 2026-10-08 (5.1/5.5, §6.12): `api-catalog` added, everything else 404s. Was: every probed path (`agent-card.json`, `openapi`, `api-catalog`, `mcp.json`) and `/ai-sitemap.xml` return **200 with the HTML SPA shell**. A scanner that parses that as JSON records a failure *and* "returns HTML" — two marks against us where a 404 would cost one.
-- `/llms-full.txt` is a Vercel rewrite to `/index.md` (`vercel.json:57-60`), i.e. the link index, not full content; nginx has no rule at all.
+- ~~`/llms-full.txt` is a Vercel rewrite to `/index.md`~~ — 2026-10-23: the rewrite was dead (the plugin writes a real `llms-full.txt`, a copy of `/index.md`) and was removed. A full concat was rejected as too large (~306k tokens); see 5.3.
 - HTML `<head>` carries only the markdown alternate — no `rel="service-desc"` to OpenAPI, no link to the bundle.
 - `llms.txt` has no endpoint-level entries; the 113 endpoint `.md` twins are only reachable via `/docs.md`.
 - `sitemap.xml` is HTML routes only.
@@ -247,7 +247,7 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 |---|---|---|---|---|
 | ✅ 5.1 | **Done 2026-10-08.** `public/.well-known/api-catalog` (RFC 9727 linkset → openapi, docs, llms.txt, eps.json, both MCPs + context REST face) served as `application/linkset+json`; unknown `/.well-known/*` is a real 404 on all four deploy targets. No `agent-card.json` (we do not implement A2A) | Scanner check passes; stops soft-404s | S | ⚠ don't invent an A2A card |
 | 5.2 | `<head>`: `<link rel="service-desc" href="/openapi.json" type="application/vnd.oai.openapi+json">`, `rel="alternate" type="application/json" href="/agent/eps.json"`, `type="text/plain" href="/llms.txt"` | Discovery from any page | XS | — |
-| 5.3 | Real `/llms-full.txt`: deterministic concat of docs `.md` twins (products → docs → recipes), size-capped or sectioned; nginx rule | One-fetch context for agents without MCP | S–M | build time; keep ordering stable |
+| ❌ 5.3 | **Won't do (2026-10-23).** All public twins together are ~1.2 MB, about 306k tokens, which most agents would truncate or skip. `/llms-full.txt` stays a copy of `/index.md`; full content is per page (twins, MCP, `/agent/*`). See `docs/kiosk-learnings-backport.md` item 3 | — | — | revisit as sectioned files if agents ask |
 | 5.4 | `llms.txt`: per-product endpoint `.md` list; `/ai` and `llms.txt` link `mcp.eko.in/context/openapi.json` + `/tools/*` | Endpoint-level + REST-face discovery | S | sitemap stays HTML-only (no SEO value in JSON) |
 | ✅ 5.5 | **Done 2026-10-08.** `/ai-sitemap.xml` → real 404 (non-standard; `llms.txt` + api-catalog are the machine map). `llms.txt` now links the api-catalog and `mcp.eko.in/context/openapi.json` | Removes a false positive | XS | — |
 
@@ -272,7 +272,7 @@ Each step: **Impact** · **Touches** · **Effort** S/M/L · **Risk** · **Depend
 | URL | Status | Content-Type | CORS | Size | Verdict |
 |---|---|---|---|---|---|
 | `/llms.txt` | 200 | text/plain | `*` | 9.4 KB | ✅ |
-| `/llms-full.txt` | 200 | text/plain | `*` | 12.5 KB | 🟡 identical to `/index.md` |
+| `/llms-full.txt` | 200 | text/plain | `*` | 12.5 KB | ✅ identical to `/index.md` by design (5.3 won't do) |
 | `/robots.txt` | 200 | text/plain | `*` | 100 B | ✅ allows `/`, points at sitemap |
 | `/sitemap.xml` | 200 | application/xml | `*` | 27.7 KB | ✅ HTML routes only |
 | `/ai-sitemap.xml` | 200 | **text/html** | `*` | 2.9 KB | ❌ SPA shell (soft-404) |

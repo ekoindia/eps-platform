@@ -10,7 +10,7 @@ Items are ranked by benefit. Each one can ship as its own PR, except that **0 mu
 
 ## 0. Preflight: move `vercel.json` off the legacy `routes` key
 
-**Production host is settled: Vercel.** On 2026-10-19, `https://eps.eko.in` answered with `server: Vercel` and `x-vercel-id`, and the `.md` headers from `vercel.json` were live. So the mixed config deploys today. Vercel's docs still say `routes` can't be combined with `redirects`, `rewrites`, `headers`, `cleanUrls` or `trailingSlash`, which makes this a forward-compatibility fix, not a blocker. Items 3, 5, 8, 11 and 12 don't have to wait for it. Item 4 shipped without it.
+**Production host is settled: Vercel.** On 2026-10-19, `https://eps.eko.in` answered with `server: Vercel` and `x-vercel-id`, and the `.md` headers from `vercel.json` were live. So the mixed config deploys today. Vercel's docs still say `routes` can't be combined with `redirects`, `rewrites`, `headers`, `cleanUrls` or `trailingSlash`, which makes this a forward-compatibility fix, not a blocker. Items 5, 8, 11 and 12 don't have to wait for it. Items 4 and 13 shipped without it.
 
 - [x] Find out which host serves `https://eps.eko.in` in production. It is Vercel; recorded in `docs/configuration.md`.
 - [ ] Check whether `/api/*` actually reaches eps-backend in production. On 2026-10-19, `https://eps.eko.in/api/health` returned 404. That may just mean the backend has no `/health` route; confirm with a known route such as `/api/me`.
@@ -98,7 +98,26 @@ Clickjacking and XSS mitigations matter here.
 - The `/docs` Test Request dialog works, and so do SalesIQ chat and `/signup`.
 - A test violation (an inline `<img src="https://example.com/x.png">` injected from DevTools) appears in the report log.
 
-### 3. A real `llms-full.txt`
+### 3. A real `llms-full.txt` ❌ Won't do (2026-10-23)
+
+**Decision:** keep `/llms-full.txt` as a copy of `/index.md`, the site link index. Only the dead rewrite was removed.
+
+**Why:**
+- All public twins together (the 160 that item 13 advertises) are ~1.2 MB, about 306k tokens:
+  - docs 566 KB
+  - products 354 KB
+  - industries 127 KB
+  - solutions 68 KB
+  - everything else ~80 KB
+- That is more than many agents' whole context, so most would truncate the file or skip it.
+- About 550 KB of it is marketing pages, which a developer agent doesn't need.
+- Agents already get full content per page: from the `.md` twins (discoverable from a `HEAD` request since item 13), the context MCP, and `/agent/*`.
+
+**Rewrite:** the `/llms-full.txt` → `/index.md` rewrite was dead config. The plugin writes a real `dist/llms-full.txt`, and on Vercel a real file is served ahead of a rewrite. Prod returned `filename="llms-full.txt"` with the same etag as `/index.md`. The rewrite was removed from `vercel.json`, the only host file that had it.
+
+**Revisit if:** agents ask for a single file. Then split it by section: a developer-core file plus per-section files, each with its token count listed in `llms.txt`.
+
+<details><summary>Original plan (superseded)</summary>
 
 `/llms-full.txt` is a rewrite to `/index.md`, which is a **link index**, not full content. `docs/agent-readiness-review.md` already lists this as open (Phase 5.3). For an API platform this is the most useful single file an agent can fetch: every product page, recipe, error code and doc in one request, with no crawl.
 
@@ -115,6 +134,8 @@ Clickjacking and XSS mitigations matter here.
 **Accept:**
 - `curl -s https://eps.eko.in/llms-full.txt | grep -c '^Source: '` equals the number of indexable twins.
 - `docs/agent-readiness-review.md` Phase 5.3 is marked done.
+
+</details>
 
 ### 4. A canonical header on every `.md` twin ✅ (2026-10-19)
 
@@ -348,6 +369,6 @@ These kiosk items don't fit eps-platform:
 
 - `docs/configuration.md`: production host (item 0 ✅), security headers and CSP rules (2), trailing-slash policy (8).
 - `docs/static-page-generation.md`: `404.html` and the scoped fallback (1), Lighthouse budget (10), hydration triggers (11).
-- `docs/markdown-generation.md`: `llms-full.txt` (3), twin `Link` headers (4 ✅, 13 ✅).
-- `docs/agent-readiness-review.md`: mark Phase 5.3 done (3).
+- `docs/markdown-generation.md`: `llms-full.txt` (3, won't do; recorded), twin `Link` headers (4 ✅, 13 ✅).
+- `docs/agent-readiness-review.md`: Phase 5.3 closed as won't-do (3) ✅.
 - `README.md` "Gotchas": the SPA-fallback sentence changes after item 1.

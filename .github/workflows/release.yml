@@ -324,9 +324,9 @@ jobs:
       # What consumers install is the DIST ARCHIVE, not the repo tree: the baked
       # surface must be in it and `.gitattributes` export-ignore must have kept
       # tests out. Asserting that here beats finding out from a broken install.
-      # Release gate. The matching ci.yml job is deliberately excluded from the
-      # required `ci-ok` check, and a tag can be cut from any commit, so the
-      # tests are re-run here against exactly what is about to be published.
+      # Release gate. A tag can be cut from any commit, bypassing the required
+      # `ci-ok` check, so the tests are re-run here against exactly what is about
+      # to be published.
       # Runs BEFORE the cleanup below, because it is what creates the mess.
       - name: Test ${{ matrix.label }} SDK
         working-directory: ${{ matrix.dir }}
@@ -428,8 +428,8 @@ jobs:
           grep -qx "version = \"$version\"" pyproject.toml
           echo "building eps-sdk $version"
 
-      # Release gate — the ci.yml python-sdk job is deliberately non-blocking,
-      # and a tag can be cut from any commit, so re-run against what ships.
+      # Release gate — a tag can be cut from any commit, bypassing `ci-ok`, so
+      # re-run against what ships.
       - name: Run conformance suite
         run: PYTHONPATH=src python -m unittest discover -s tests -v
 

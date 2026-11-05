@@ -5,45 +5,6 @@ import { withTimeout } from "./http";
 export type ZohoLead = Record<string, unknown>;
 
 /**
- * Lead fields a signed-in partner may write through `PATCH /crm/lead`.
- *
- * An allowlist, not a denylist: Zoho accepts an unknown `api_name` silently, so
- * anything not named here is refused before it reaches the CRM rather than
- * quietly writing nothing. Verified against
- * `GET /crm/v2/settings/fields?module=Leads` — re-check there before adding.
- */
-export const WRITABLE_LEAD_FIELDS = [
-	"Company",
-	"Business_Type",
-	"Pro_Required",
-	"Website",
-	"GST_No",
-	"Activation_Fee_Discount",
-	"Activation_Fee_Status",
-	"Activation_Fee_Paid_INR",
-	"UTR_No",
-	"Go_Live_Disposition",
-	"Date_of_Go_live",
-	"Integration_Status",
-	"Developer_s_Name",
-	"Developer_s_Email",
-	"Developer_s_Phone_No",
-	"Programming_Language",
-	"Profession",
-	"Authorized_Signatory_Full_name",
-	"Authorized_Signatory_Phone_Number",
-] as const;
-
-export type WritableLeadField = (typeof WRITABLE_LEAD_FIELDS)[number];
-
-const WRITABLE = new Set<string>(WRITABLE_LEAD_FIELDS);
-
-/** True when `name` is a Lead field this service is willing to write. */
-export function isWritableLeadField(name: string): name is WritableLeadField {
-	return WRITABLE.has(name);
-}
-
-/**
  * A Zoho call that failed. Carries the upstream detail for the server log; the
  * routes deliberately do NOT forward `message` to the browser, since it can
  * name CRM internals.

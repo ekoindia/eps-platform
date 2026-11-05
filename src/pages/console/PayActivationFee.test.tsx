@@ -13,7 +13,7 @@ import type { MeView } from "@/lib/auth/client";
 // Mocked at the module boundary, per repo convention — never `fetch`.
 vi.mock("@/lib/auth/client", async (orig) => ({
 	...(await orig<typeof import("@/lib/auth/client")>()),
-	authClient: { activationFee: { intimate: vi.fn() } },
+	authClient: { activationFee: { intimate: vi.fn(), bankDetails: vi.fn() } },
 }));
 
 // The uploader pulls in canvas, pdf.js and the dialog provider — none of which
@@ -38,6 +38,18 @@ vi.mock("@/components/FileUpload", () => ({
 
 const { authClient } = await import("@/lib/auth/client");
 const intimate = authClient.activationFee.intimate as ReturnType<typeof vi.fn>;
+const bankDetails = authClient.activationFee.bankDetails as ReturnType<
+	typeof vi.fn
+>;
+
+/** Made-up account. The real one lives only in eps-backend's environment. */
+const BANK = {
+	bankName: "Test Bank",
+	accountName: "Test Payee Pvt Ltd",
+	accountNumber: "12345678901234",
+	ifsc: "TEST0000001",
+	branchAddress: "1 Test Road, Testville",
+};
 
 const ACTIVE: MeView = {
 	state: "active",
@@ -92,6 +104,7 @@ function sentPayload(): Record<string, unknown> {
 
 beforeEach(() => {
 	intimate.mockResolvedValue({ message: "Thanks — sent to Team Eko." });
+	bankDetails.mockResolvedValue(BANK);
 });
 
 afterEach(() => {
@@ -99,18 +112,59 @@ afterEach(() => {
 });
 
 describe("PayActivationFee — the standing information", () => {
-	it("shows Eko's bank account in full", () => {
+	it("shows Eko's bank account in full", async () => {
 		renderPage();
-		expect(screen.getByText("HDFC Bank")).toBeInTheDocument();
-		expect(screen.getByText("Eko Bharat Ventures Pvt Ltd")).toBeInTheDocument();
-		expect(screen.getByText("HDFC0009141")).toBeInTheDocument();
+		expect(await screen.findByText("Test Bank")).toBeInTheDocument();
+		expect(screen.getByText("Test Payee Pvt Ltd")).toBeInTheDocument();
+		expect(screen.getByText("TEST0000001")).toBeInTheDocument();
+		expect(screen.getByText("1 Test Road, Testville")).toBeInTheDocument();
 	});
 
-	it("groups the account number so it can be read off the screen", () => {
+	it("lists the branch address straight after the IFSC code", async () => {
 		renderPage();
-		expect(screen.getByText("000 320 0003 9765")).toBeInTheDocument();
+		await screen.findByText("Test Bank");
+		expect(
+			screen
+				.getAllByRole("button", { name: /^copy /i })
+				.map((button) => button.getAttribute("aria-label")),
+		).toEqual([
+			"Copy Bank",
+			"Copy Account Name",
+			"Copy Account Number",
+			"Copy IFSC Code",
+			"Copy Branch Address",
+		]);
+	});
+
+	it("hides the optional rows when they are not configured", async () => {
+		const { branchAddress: _branchAddress, bankName: _bankName, ...required } =
+			BANK;
+		bankDetails.mockResolvedValue(required);
+		renderPage();
+		await screen.findByText("TEST0000001");
+		expect(screen.queryByText("Branch Address")).toBeNull();
+		expect(screen.queryByText("Bank")).toBeNull();
+		expect(screen.getByText("IFSC Code")).toBeInTheDocument();
+	});
+
+	it("says not to transfer when the account can't be loaded", async () => {
+		bankDetails.mockRejectedValue(new Error("503"));
+		renderPage();
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			/don.t transfer yet/i,
+		);
+		expect(screen.queryByText("Account Number")).toBeNull();
+		// A partner who has already paid can still report it.
+		expect(
+			screen.getByRole("button", { name: /send payment/i }),
+		).toBeInTheDocument();
+	});
+
+	it("groups the account number so it can be read off the screen", async () => {
+		renderPage();
+		expect(await screen.findByText("123 456 7890 1234")).toBeInTheDocument();
 		// The grouped form is a reading aid, not the number itself.
-		expect(screen.queryByText("00032000039765")).toBeNull();
+		expect(screen.queryByText("12345678901234")).toBeNull();
 	});
 
 	it("copies the account number ungrouped, the way a bank wants it", async () => {
@@ -118,10 +172,10 @@ describe("PayActivationFee — the standing information", () => {
 		vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
 		renderPage();
 		fireEvent.click(
-			screen.getByRole("button", { name: /copy account number/i }),
+			await screen.findByRole("button", { name: /copy account number/i }),
 		);
-		// Pasting "000 320 0003 9765" into a payee form is a failed transfer.
-		await waitFor(() => expect(writeText).toHaveBeenCalledWith("00032000039765"));
+		// Pasting "123 456 7890 1234" into a payee form is a failed transfer.
+		await waitFor(() => expect(writeText).toHaveBeenCalledWith("12345678901234"));
 		vi.unstubAllGlobals();
 	});
 

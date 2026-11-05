@@ -39,7 +39,7 @@ npx -y @ekoindia/eps-context-mcp
 # Backend SDKs (server-side only — signing key must stay secret)
 npm install @ekoindia/eps-sdk          # Node.js
 composer require ekoindia/eps-sdk      # PHP 8.1+
-pip install eps-sdk                    # Python 3.9+
+pip install eps-sdk                    # Python 3.10+
 go get github.com/ekoindia/eps-sdk-go  # Go 1.22+
 # Java 17+: com.github.ekoindia:eps-sdk-java via JitPack (see packages/sdk-java)
 

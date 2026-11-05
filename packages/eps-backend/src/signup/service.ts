@@ -44,6 +44,14 @@ export interface SignupState {
 	 * the wire to a half-onboarded session.
 	 */
 	pan?: string;
+	/**
+	 * The profile's Zoho CRM Lead id (`user_detail.crm_lead_id`), once upstream
+	 * has created the Lead — it appears mid-signup, around the PAN step. Not
+	 * PII: an opaque record id the partner's own CRM routes resolve anyway.
+	 * Forwarded so the wizard knows when to refresh the Lead and record its
+	 * marketing attribution (`docs/features/crm-lead.md`).
+	 */
+	crmLeadId?: string;
 }
 
 /** Shape upstream PANs must match before being forwarded to the client. */
@@ -190,6 +198,8 @@ export function createSignupService(deps: {
 		const name = profile.name || undefined;
 		const email = profile.email || undefined;
 		const pan = panOf(profile);
+		const crmLeadId =
+			String(profile.userDetail.crm_lead_id ?? "").trim() || undefined;
 		if (profile.onboarding === 0) {
 			return {
 				mobile,
@@ -199,6 +209,7 @@ export function createSignupService(deps: {
 				name,
 				email,
 				pan,
+				crmLeadId,
 			};
 		}
 		const pending = new Set(profile.roleList.map((x) => Number(x)));
@@ -211,6 +222,7 @@ export function createSignupService(deps: {
 			name,
 			email,
 			pan,
+			crmLeadId,
 		};
 	}
 

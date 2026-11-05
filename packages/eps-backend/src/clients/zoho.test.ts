@@ -1,7 +1,7 @@
 import type { Mock } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import type { Config } from "../config";
-import { createZohoClient, isWritableLeadField, ZohoError } from "./zoho";
+import { createZohoClient, ZohoError } from "./zoho";
 
 const OFF: Config["zoho"] = {
 	enabled: false,
@@ -256,15 +256,5 @@ describe("createZohoClient — updateLead", () => {
 		await expect(
 			createZohoClient(ON, f).updateLead("1234567890", { Company: "x" }),
 		).rejects.toBeInstanceOf(ZohoError);
-	});
-});
-
-describe("isWritableLeadField", () => {
-	it("accepts an allow-listed field and refuses everything else", () => {
-		expect(isWritableLeadField("Company")).toBe(true);
-		expect(isWritableLeadField("Developer_s_Email")).toBe(true);
-		expect(isWritableLeadField("Lead_Status")).toBe(false);
-		expect(isWritableLeadField("Owner")).toBe(false);
-		expect(isWritableLeadField("toString")).toBe(false);
 	});
 });

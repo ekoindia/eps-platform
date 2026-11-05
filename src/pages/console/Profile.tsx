@@ -1,15 +1,12 @@
 import { PageMeta } from "@/components/PageMeta";
+import { BusinessDetails } from "@/components/console/BusinessDetails";
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import {
-	accountIdentity,
-	detailField,
-	profileCompleteness,
-} from "@/lib/auth/identity";
+import { accountIdentity, profileCompleteness } from "@/lib/auth/identity";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { groupChildren } from "@/lib/connect/interactions";
 import { cn, formatMobile } from "@/lib/utils";
-import { ChevronRight, Phone, SquarePen } from "lucide-react";
+import { ChevronRight, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 
 /**
@@ -17,13 +14,6 @@ import { Link } from "react-router-dom";
  * Same id the console rail links to; here the individual sub-flows are shown.
  */
 const MANAGE_ACCOUNT_ID = 536;
-
-/**
- * User Profile (401) — Eloka's personal-details editor. We do not reimplement
- * its form: when the user is entitled to the flow, the Connect widget renders
- * upstream's own.
- */
-const USER_PROFILE_ID = 401;
 
 /**
  * Labels for the user types that can reach this console.
@@ -153,68 +143,16 @@ function ManageMyAccount() {
 	);
 }
 
-/** The four personal fields Eloka shows, in Eloka's order. */
-const PERSONAL_FIELDS: ReadonlyArray<{ field: string; label: string }> = [
-	{ field: "gender", label: "Gender" },
-	{ field: "dob", label: "Date of Birth" },
-	{ field: "qualification", label: "Qualification" },
-	{ field: "marital_status", label: "Marital Status" },
-];
-
 /**
- * Personal details, read from the `personal_detail` block the backend forwards.
+ * Console Profile page — the signed-in partner's identity, their business
+ * details (login profile + CRM Lead), and their Manage-My-Account flows.
  *
- * Editing deliberately links out to the Connect widget instead of posting
- * interaction 401 from here: the BFF exposes no profile-write endpoint, and
- * upstream already owns the form. When the user is not entitled to 401 there is
- * no edit affordance at all — a pencil that cannot save is worse than none.
- */
-function PersonalDetails() {
-	const me = useConsoleMe();
-	const interactions = useRoleTransactionList();
-	const canEdit = Boolean(interactions?.[String(USER_PROFILE_ID)]);
-	const values = PERSONAL_FIELDS.map((entry) => ({
-		...entry,
-		value: detailField(me.profile?.detailBlocks, "personal", entry.field),
-	}));
-
-	return (
-		<section className="flex flex-col gap-4 rounded-lg border p-4">
-			<div className="flex items-center justify-between gap-3">
-				<h3 className="text-sm font-semibold text-eko-navy">
-					Personal Details
-				</h3>
-				{canEdit ? (
-					<Link
-						to={`/console/transaction/${USER_PROFILE_ID}`}
-						className="flex items-center gap-1.5 text-sm font-medium text-eko-navy underline underline-offset-4 hover:no-underline"
-					>
-						<SquarePen className="h-4 w-4" aria-hidden="true" />
-						Edit
-					</Link>
-				) : null}
-			</div>
-			<dl className="grid grid-cols-2 gap-x-4 gap-y-5">
-				{values.map(({ field, label, value }) => (
-					<div key={field} className="flex flex-col gap-0.5">
-						<dt className="text-sm text-muted-foreground">{label}</dt>
-						<dd className="text-sm font-medium">{value ?? "—"}</dd>
-					</div>
-				))}
-			</dl>
-		</section>
-	);
-}
-
-/**
- * Console Profile page — the signed-in partner's identity, their
- * Manage-My-Account flows, and their personal details.
- *
- * Reads the session `ConsoleLayout` already fetched; no request of its own.
+ * Profile fields come from the session `ConsoleLayout` already fetched; the CRM
+ * fields cost one `GET /crm/lead`.
  */
 export default function Profile() {
 	return (
-		<div className="flex max-w-3xl flex-col gap-6">
+		<div className="flex flex-col gap-6">
 			<PageMeta title="My Profile | Eko Console" />
 			<div className="flex flex-col gap-1">
 				<h2 className="text-lg font-semibold text-eko-navy">My Profile</h2>
@@ -222,9 +160,12 @@ export default function Profile() {
 					Your account details, as registered with Eko.
 				</p>
 			</div>
-			<IdentityCard />
-			<div className="grid gap-6 lg:grid-cols-2">
-				<PersonalDetails />
+			{/* Auto-fill: as many ~22rem cards per row as fit — one on a phone,
+			    two on a laptop, three or four on a wide monitor. `min(100%, …)`
+			    keeps a card from overflowing a viewport narrower than 22rem. */}
+			<div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,22rem),1fr))] gap-6">
+				<IdentityCard />
+				<BusinessDetails />
 				<ManageMyAccount />
 			</div>
 		</div>

@@ -163,7 +163,7 @@ composer require ekoindia/eps-sdk
 
 ### `eps-sdk` (Python SDK)
 
-Backend-only Python SDK (`eps_sdk`, Python >= 3.9), same signing contract,
+Backend-only Python SDK (`eps_sdk`, Python >= 3.10), same signing contract,
 verified against the cross-language golden vector. Standard library only — no
 runtime dependencies.
 

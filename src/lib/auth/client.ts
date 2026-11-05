@@ -120,6 +120,30 @@ export interface AadhaarKeyView {
 	key: string;
 }
 
+/**
+ * The signed-in partner's own Zoho CRM Lead (`GET /crm/lead`).
+ *
+ * `fields` holds ONLY the backend's whitelist (`LEAD_FIELDS` in eps-backend),
+ * keyed by Zoho `api_name`; a whitelisted field the Lead has no value for comes
+ * back as null. Values are Zoho's: picklists as strings, multi-selects as
+ * string arrays, numeric fields as numbers.
+ */
+export interface CrmLeadView {
+	id: string;
+	fields: Record<string, unknown>;
+	/**
+	 * Allowed values per writable picklist, keyed by `api_name`. A dropdown
+	 * built from these offers exactly what `PATCH /crm/lead` accepts.
+	 */
+	picklists: Record<string, readonly string[]>;
+}
+
+/** `PATCH /crm/lead` — the fields just written, to merge into a cached Lead. */
+export interface CrmLeadUpdateView {
+	id: string;
+	updated: Record<string, unknown>;
+}
+
 export interface AdminView {
 	role: "admin";
 	login: string | null;
@@ -161,6 +185,11 @@ export interface SignupState {
 	 * `currentRole` is the authority on progress.
 	 */
 	pan?: string;
+	/**
+	 * The profile's Zoho CRM Lead id, once upstream has created the Lead (around
+	 * the PAN step). The wizard refreshes the lead store whenever it is set.
+	 */
+	crmLeadId?: string;
 }
 
 /** City and state for a PIN code; either is null when upstream did not name it. */
@@ -674,6 +703,15 @@ async function request(
 	return parse(res);
 }
 
+/** Eko's activation-fee collection account, as eps-backend's env configures it. */
+export interface ActivationFeeBankDetails {
+	accountName: string;
+	accountNumber: string;
+	ifsc: string;
+	bankName?: string;
+	branchAddress?: string;
+}
+
 /** Pre-built API client with typed methods for OTP auth, session management, and user profile. */
 export const authClient = {
 	/** `otp` comes back only on dev/UAT backends, for testing without an SMS. */
@@ -719,6 +757,42 @@ export const authClient = {
 		request("/credentials/aadhaar-key", {
 			method: "GET",
 		}) as Promise<AadhaarKeyView>,
+	/**
+	 * The partner's own Zoho CRM Lead. 404 `CRM_DISABLED` when the deployment has
+	 * no Zoho credentials, 404 `NO_CRM_LEAD` when the profile links no Lead —
+	 * both normal states a caller should render as "no CRM data", not an error.
+	 */
+	crmLead: (): Promise<CrmLeadView> =>
+		request("/crm/lead", { method: "GET" }) as Promise<CrmLeadView>,
+	/**
+	 * Writes the given Lead fields (by `api_name`) and answers with them. Prefer
+	 * `updateCrmLead` from `@/lib/crm/lead-store`, which also patches the cache.
+	 *
+	 * 400 `FIELD_NOT_WRITABLE` / `INVALID_FIELD_VALUE` / `FIELD_REQUIRED` name
+	 * the offending field; 409 `FIELD_ALREADY_SET` for a write-once field that is
+	 * already recorded; 502 `CRM_UNAVAILABLE` when Zoho refused or was down.
+	 */
+	updateCrmLead: (
+		fields: Record<string, unknown>,
+	): Promise<CrmLeadUpdateView> =>
+		request("/crm/lead", {
+			method: "PATCH",
+			body: JSON.stringify(fields),
+		}) as Promise<CrmLeadUpdateView>,
+	/**
+	 * Records marketing attribution on the Lead: the backend derives the UTM /
+	 * ad fields from `url` (the first landing URL) and writes only fields the
+	 * Lead does not hold yet. Idempotent; `updated` may be `{}`. Open to signup
+	 * sessions. Prefer the lead store, which calls this itself.
+	 */
+	syncCrmAttribution: (body: {
+		url: string;
+		sourceWebsite?: string;
+	}): Promise<CrmLeadUpdateView> =>
+		request("/crm/lead/attribution", {
+			method: "POST",
+			body: JSON.stringify(body),
+		}) as Promise<CrmLeadUpdateView>,
 	/**
 	 * The developer's notifications, already filtered to NORMAL items,
 	 * normalized, deduped and capped by the backend.
@@ -797,6 +871,11 @@ export const authClient = {
 	 * it transferred, never on whose behalf.
 	 */
 	activationFee: {
+		/** Eko's collection account. 503 unless name, number and IFSC are all set. */
+		bankDetails: (signal?: AbortSignal): Promise<ActivationFeeBankDetails> =>
+			request("/activation-fee/bank-details", {
+				signal,
+			}) as Promise<ActivationFeeBankDetails>,
 		/** `form` carries a `payload` JSON part plus an optional `attachment`. */
 		intimate: (
 			form: FormData,

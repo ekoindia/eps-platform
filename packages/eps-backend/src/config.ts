@@ -137,6 +137,14 @@ export interface Config {
 		recipients: string[];
 		timeoutMs: number;
 	};
+	/**
+	 * Eko's activation-fee collection account, as the partner is shown it. Kept
+	 * apart from `activationFee` because the page shows where to pay even on a
+	 * deployment with no webhook to report the payment through. Absent unless the
+	 * account name, number and IFSC are all set, so a partner is never shown part
+	 * of an account. See {@link parseActivationFeeBank}.
+	 */
+	activationFeeBank?: ActivationFeeBank;
 	github: {
 		clientId: string;
 		clientSecret: string;
@@ -279,6 +287,68 @@ function zohoConfig(
 		refreshToken,
 		accountsUrl,
 		crmRecordBaseUrl,
+	};
+}
+
+/** The activation-fee collection account. Unset optional fields are omitted. */
+export interface ActivationFeeBank {
+	accountName: string;
+	accountNumber: string;
+	ifsc: string;
+	bankName?: string;
+	branchAddress?: string;
+}
+
+/**
+ * Reads the activation-fee collection account from the environment.
+ *
+ * Partners transfer real money on the strength of these values, so a malformed
+ * account number or IFSC fails at boot. A missing one does not: the rest of the
+ * backend can run without it, so the account is withheld and a warning names what
+ * is missing. Messages name the variable and never the value, which would
+ * otherwise land in boot logs.
+ * @param env - The process environment.
+ * @returns The account, or undefined when a required field is unset.
+ * @throws Error when the account number or IFSC is set but malformed.
+ */
+function parseActivationFeeBank(
+	env: NodeJS.ProcessEnv,
+): ActivationFeeBank | undefined {
+	const accountNumber = env.ACTIVATION_FEE_BANK_ACCOUNT_NUMBER?.trim();
+	if (accountNumber && !/^\d{9,18}$/.test(accountNumber)) {
+		throw new Error(
+			"ACTIVATION_FEE_BANK_ACCOUNT_NUMBER must be 9-18 digits with no spaces",
+		);
+	}
+	const ifsc = env.ACTIVATION_FEE_BANK_IFSC?.trim();
+	if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+		throw new Error(
+			"ACTIVATION_FEE_BANK_IFSC must be 4 capital letters, a zero, then 6 capital letters or digits",
+		);
+	}
+	const accountName = env.ACTIVATION_FEE_BANK_ACCOUNT_NAME?.trim();
+	const bankName = env.ACTIVATION_FEE_BANK_NAME?.trim();
+	const branchAddress = env.ACTIVATION_FEE_BANK_BRANCH_ADDRESS?.trim();
+	if (!accountName || !accountNumber || !ifsc) {
+		// All unset is a deployment that simply has not configured this.
+		if (accountName || accountNumber || ifsc || bankName || branchAddress) {
+			const missing = [
+				!accountName && "ACTIVATION_FEE_BANK_ACCOUNT_NAME",
+				!accountNumber && "ACTIVATION_FEE_BANK_ACCOUNT_NUMBER",
+				!ifsc && "ACTIVATION_FEE_BANK_IFSC",
+			].filter(Boolean);
+			console.warn(
+				`[eps-backend] activation-fee bank details withheld, missing: ${missing.join(", ")}`,
+			);
+		}
+		return undefined;
+	}
+	return {
+		accountName,
+		accountNumber,
+		ifsc,
+		...(bankName && { bankName }),
+		...(branchAddress && { branchAddress }),
 	};
 }
 
@@ -578,6 +648,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		contextMcp,
 		chat,
 		activationFee,
+		activationFeeBank: parseActivationFeeBank(env),
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,
 			clientSecret: env.GITHUB_CLIENT_SECRET!,

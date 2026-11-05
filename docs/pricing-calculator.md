@@ -385,6 +385,13 @@ Implemented in `src/hooks/use-tracking-params.ts`:
   values, trimmed, ≤200 chars, never blocking account creation — as fields on
   the SimpliBank `createPartialAccount` (521) request under the same names.
   Calculator selection is deliberately not sent.
+- **First visited URL**: `captureFirstVisit` records the document's landing
+  URL once per page load (localStorage `eps_first_visit`, `{ url,
+  capturedAt }`, hash dropped, same 30-day TTL). First-touch, except an
+  organic first landing is replaced by a later ad-attributed one. Only the
+  real landing is recorded — the capture effect's own param re-append never
+  counts. Feeds the CRM Lead's attribution fields after console signup; see
+  `docs/features/crm-lead.md` → *Marketing attribution*.
 - **URL re-append**: `useCaptureTrackingParams` (App root) re-appends stored
   tracking params to the URL after every internal navigation (replace, no
   history spam) — Zoho SalesIQ records page URLs, so attribution survives
@@ -398,7 +405,8 @@ Implemented in `src/hooks/use-tracking-params.ts`:
 - **Zoho form**: `buildLeadWebsiteUrl()` builds the CRM `Website` field
   (max 450 chars). Priority: origin+path → tracking params → calculator
   selection; degrades full `sel` → `apis=` ids only → no calculator;
-  tracking params are never dropped.
+  tracking params are never dropped — as a last resort the URL is cut to 450
+  chars ending in `…` (the last param's value is then incomplete).
 - **SalesIQ chat**: `openZohoChat` pushes `visitor.info` with tracking
   params + `apis_interested` before opening (best-effort). For a logged-in
   user it also pushes `visitor.name/email/contactnumber` so the operator sees

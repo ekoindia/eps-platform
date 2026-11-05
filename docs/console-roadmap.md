@@ -156,7 +156,7 @@ Two failure modes are deliberately distinct: an ineligible account answers **403
 | Route | Page | Contents |
 |---|---|---|
 | `/console` | `pages/console/ConsoleHome.tsx` | Lifecycle overview card (`STATE_COPY`) |
-| `/console/profile` | `pages/console/Profile.tsx` | My Profile — identity, onboarding progress, personal details |
+| `/console/profile` | `pages/console/Profile.tsx` | My Profile — identity, onboarding progress, business details (profile + CRM) |
 | `/console/documents` | `pages/console/Documents.tsx` | Upload Documents — KYC pack, see [`features/kyc-documents.md`](./features/kyc-documents.md) |
 | `/console/credentials` | `pages/console/Credentials.tsx` | Shared UAT keypair + production-key status + prod Aadhaar RSA key (active only) |
 | `/console/transactions` | `pages/console/Transactions.tsx` | Transaction history — see [`features/transaction-history.md`](./features/transaction-history.md) |
@@ -166,7 +166,9 @@ deliberately excluded from prerendering — the console is `noindex` and behind
 auth.
 
 The layout caps no width: each sub-page sets its own (`max-w-2xl` on Home and
-Credentials), because the transactions table needs the full column. A layout that
+Credentials; none on Profile, whose cards sit in an auto-fill grid of ~22rem
+columns so a wide screen fits three or four per row), because the transactions
+table needs the full column. A layout that
 legislates width for pages it doesn't know about forces the next wide page to
 fight it.
 
@@ -194,8 +196,8 @@ to the console. It is reached from **My Profile** in the header account dropdown
 (`components/auth/UserMenu.tsx`), shown only for a developer session — an admin's
 `/me` carries no Eko profile. There is no rail entry.
 
-The page issues no request of its own; it reads the `MeView` the layout already
-fetched, via `useConsoleMe()`. Three blocks:
+Profile fields come from the `MeView` the layout already fetched, via
+`useConsoleMe()`; the CRM fields cost one `GET /crm/lead`. Blocks:
 
 - **Identity card** — name, user type, user code and mobile, over the brand
   gradient. Initials come from `accountIdentity()`, the same derivation the
@@ -209,10 +211,42 @@ fetched, via `useConsoleMe()`. Three blocks:
 - **Manage My Account** — the children of interaction 536, read from the cached
   interaction list with `groupChildren()`. The rows are upstream's and follow the
   user's role; each deep-links to `/console/transaction/536/<childId>`.
-- **Personal details** — gender, DOB, qualification, marital status, from the
-  `personal_detail` block (below). Editing links out to `/console/transaction/401`
-  when the user is entitled to that flow, rather than reimplementing upstream's
-  form: the BFF exposes no profile-write endpoint.
+- **Business details** — three cards mixing the login profile with the
+  partner's Zoho CRM Lead (see [`features/crm-lead.md`](./features/crm-lead.md)):
+
+  | Card | Field | Source |
+  | --- | --- | --- |
+  | Business Profile | Company Type | profile — `company_type` code mapped via `COMPANY_TYPES` (`profileCompanyType()`) |
+  | | Industry, Annual Turnover, Employees, Clients | CRM `Industry`, `Annual_Turnover`, `Number_of_Employees`, `Number_of_Clients` |
+  | Legal & Compliance | GST Number, Number of Directors, Authorized Signatory | CRM `GST_No`, `Count_of_Directors`, `Authorized_Signatory_Full_name` |
+  | Contact & Online Presence | Email | profile `email` |
+  | | Website, Mobile App | CRM `Website` (linked only when http/https), `Mobile_App_Name` |
+
+  Profile rows render at once; CRM rows show `…` until the Lead loads. A 404
+  (`CRM_DISABLED` / `NO_CRM_LEAD`) renders dashes — normal states, not errors.
+  Any other failure keeps the profile rows and shows one inline notice.
+
+  Lives in `components/console/BusinessDetails.tsx`, reading the Lead through the
+  shared `useCrmLead()` store (cached for a day — see `features/crm-lead.md`).
+  Each card has an **Edit**
+  link — shown only once the Lead has loaded, since a 404 means there is no
+  record to write. Editing is in place: picklists (Industry, Annual Turnover,
+  Employees, Clients) become selects built from the `picklists` the backend
+  returns; the rest become inputs. Profile rows (Company Type, Email) stay
+  read-only — this console does not write the Eko profile.
+
+  Save sends **only changed fields** via `PATCH /crm/lead`, so an untouched
+  field is never rewritten and an unchanged form sends nothing. Client checks
+  before sending: GSTIN shape (upper-cased), http(s) website, director count
+  0–99, 255-char text. **A filled field can be overwritten, never emptied** — an
+  empty draft errors, and a populated picklist drops its blank choice; the
+  backend refuses `null`/blank too, so the rule holds outside the UI. A 400 shows the
+  backend's message (400/409); anything else a generic retry note, keeping the
+  draft. A successful save patches the shared cache, so every page sees it.
+
+  Eloka's **personal details** (gender, DOB, qualification, marital status) were
+  removed: they mean nothing for an enterprise partner. With them went the
+  `/console/transaction/401` edit link and `detailField()`.
 
 #### Profile detail blocks
 
@@ -222,7 +256,8 @@ them to the page. The block names are an **allowlist**
 (`PROFILE_DETAIL_BLOCKS` in `clients/eko.ts`), not a passthrough of every sibling
 key: whatever lands there is readable by anything running in the page, so a block
 upstream adds later must be reviewed before it ships. Contents stay untyped and
-are read with `detailField()`, which tolerates upstream's singular/plural spelling.
+are read field-by-field where needed (e.g. `profileCompanyType()`, `profileGstNumber()`
+scan `userDetail` and every block, since upstream does not pin which one a field lands in).
 
 #### Session cache
 

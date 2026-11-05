@@ -1,5 +1,5 @@
 import { generateKeyPairSync, randomBytes } from "node:crypto";
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { loadConfig } from "./config";
 
 const base = {
@@ -295,6 +295,107 @@ describe("connect-api auth provider config", () => {
 				"http://localhost:5173/agent/eps.json",
 			);
 		});
+	});
+});
+
+describe("loadConfig — activation-fee bank details", () => {
+	const account = "12345678901234";
+	const ifsc = "TEST0000001";
+	const accountName = "Test Payee Pvt Ltd";
+	const required = {
+		ACTIVATION_FEE_BANK_ACCOUNT_NAME: accountName,
+		ACTIVATION_FEE_BANK_ACCOUNT_NUMBER: account,
+		ACTIVATION_FEE_BANK_IFSC: ifsc,
+	};
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("stays silent and absent when every var is unset", () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		expect(loadConfig(base).activationFeeBank).toBeUndefined();
+		expect(warn).not.toHaveBeenCalled();
+	});
+
+	it("omits the optional fields when they are unset", () => {
+		expect(loadConfig({ ...base, ...required }).activationFeeBank).toEqual({
+			accountName,
+			accountNumber: account,
+			ifsc,
+		});
+	});
+
+	it("includes the optional fields when they are set", () => {
+		expect(
+			loadConfig({
+				...base,
+				...required,
+				ACTIVATION_FEE_BANK_NAME: "Test Bank",
+				ACTIVATION_FEE_BANK_BRANCH_ADDRESS: "1 Test Road, Testville",
+			}).activationFeeBank,
+		).toEqual({
+			accountName,
+			accountNumber: account,
+			ifsc,
+			bankName: "Test Bank",
+			branchAddress: "1 Test Road, Testville",
+		});
+	});
+
+	it.each(Object.keys(required))(
+		"withholds the account and warns when %s is missing",
+		(name) => {
+			const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+			expect(
+				loadConfig({
+					...base,
+					...required,
+					ACTIVATION_FEE_BANK_NAME: "Test Bank",
+					[name]: "   ",
+				}).activationFeeBank,
+			).toBeUndefined();
+			expect(warn.mock.calls[0][0]).toContain(name);
+			expect(warn.mock.calls[0][0]).not.toContain("Test Bank");
+		},
+	);
+
+	it("treats blank optional values as unset", () => {
+		expect(
+			loadConfig({
+				...base,
+				...required,
+				ACTIVATION_FEE_BANK_NAME: "   ",
+				ACTIVATION_FEE_BANK_BRANCH_ADDRESS: "",
+			}).activationFeeBank,
+		).toEqual({ accountName, accountNumber: account, ifsc });
+	});
+
+	it("trims surrounding whitespace before validating", () => {
+		expect(
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_BANK_ACCOUNT_NAME: ` ${accountName} `,
+				ACTIVATION_FEE_BANK_ACCOUNT_NUMBER: ` ${account} `,
+				ACTIVATION_FEE_BANK_IFSC: ` ${ifsc} `,
+			}).activationFeeBank,
+		).toEqual({ accountName, accountNumber: account, ifsc });
+	});
+
+	it.each([
+		["ACTIVATION_FEE_BANK_ACCOUNT_NUMBER", "1234 5678 9012"],
+		["ACTIVATION_FEE_BANK_ACCOUNT_NUMBER", "12345"],
+		["ACTIVATION_FEE_BANK_IFSC", "test0000001"],
+		["ACTIVATION_FEE_BANK_IFSC", "TEST1000001"],
+	])("refuses to boot on a malformed %s without echoing it", (name, value) => {
+		let message = "";
+		try {
+			loadConfig({ ...base, [name]: value });
+		} catch (error) {
+			message = (error as Error).message;
+		}
+		expect(message).toContain(name);
+		expect(message).not.toContain(value);
 	});
 });
 

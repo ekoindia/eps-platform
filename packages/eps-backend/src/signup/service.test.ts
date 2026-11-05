@@ -212,6 +212,31 @@ describe("project surfaces profile name/email", () => {
 		const svc = createSignupService({ eko, cfg });
 		expect((await svc.getState("9990000001")).pan).toBeUndefined();
 	});
+
+	it("forwards the CRM Lead id once upstream has created the Lead", async () => {
+		const withLead = createSignupService({
+			eko: ekoStub({
+				getProfile: vi
+					.fn()
+					.mockResolvedValue(
+						withUserDetail({ crm_lead_id: "5545974000000317001" }),
+					),
+			}),
+			cfg,
+		});
+		expect((await withLead.getState("9990000001")).crmLeadId).toBe(
+			"5545974000000317001",
+		);
+		const without = createSignupService({
+			eko: ekoStub({
+				getProfile: vi
+					.fn()
+					.mockResolvedValue(withUserDetail({ crm_lead_id: " " })),
+			}),
+			cfg,
+		});
+		expect((await without.getState("9990000001")).crmLeadId).toBeUndefined();
+	});
 });
 
 describe("lookupPincode", () => {

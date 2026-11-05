@@ -28,7 +28,8 @@ import {
 	startNotificationsPolling,
 } from "@/lib/notifications";
 import { resetWalletBalanceCache } from "@/lib/wallet-balance";
-import { chatIdentity } from "@/lib/auth/identity";
+import { chatIdentity, profileCrmLeadId } from "@/lib/auth/identity";
+import { resetCrmLeadCache, startCrmLead } from "@/lib/crm/lead-store";
 import {
 	clearCachedSession,
 	readCachedSession,
@@ -272,7 +273,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// ticket, so one account's activity must not be attachable to the next
 		// user's ticket on a shared tab.
 		clearCallLog();
+		// One partner's CRM Lead — GST number, signatory, payment claim. This one
+		// sits in localStorage, so it would otherwise outlive the browser too.
+		resetCrmLeadCache();
 	}, [state.status]);
+
+	// Loads the partner's CRM Lead at sign-in, so it is there before any page —
+	// including the public homepage — asks. Usually a cache hit: the store keeps
+	// the Lead for a day. Idempotent, and re-keys when the identity changes
+	// (an OTP verify can switch accounts without passing through `anon`).
+	useEffect(() => {
+		if (state.status !== "authed" || state.role !== "developer") return;
+		startCrmLead(state.me.mobile, profileCrmLeadId(state.me.profile));
+	}, [state]);
 
 	// The notification poll runs once per tab and is owned here rather than by a
 	// component: three surfaces read the list (the header bell twice over, and the

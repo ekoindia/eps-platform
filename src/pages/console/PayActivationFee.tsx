@@ -5,7 +5,7 @@ import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
 import { groupDigits, Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authClient } from "@/lib/auth/client";
+import { authClient, type ActivationFeeBankDetails } from "@/lib/auth/client";
 import { profileGstNumber } from "@/lib/auth/identity";
 import {
 	calcActivationFee,
@@ -18,30 +18,43 @@ import { cn } from "@/lib/utils";
 import { Callout } from "@/components/docs/Callout";
 import { CopyButton } from "@/pages/ai/CommandBlock";
 import { CircleCheck, Landmark, Search, Wallet } from "lucide-react";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+	useEffect,
+	useMemo,
+	useState,
+	type FormEvent,
+	type ReactNode,
+} from "react";
 import { PageMeta } from "@/components/PageMeta";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 /**
- * Eko's collection account. Hardcoded on purpose: it is the one fact on this
- * page that must never vary by environment, feature flag or API response — a
- * partner transferring money needs to read the same account number in UAT, in
- * production and in a screenshot from six months ago.
+ * The rows of the bank-account block. An optional field the deployment has not
+ * configured has no row.
+ * @param details - Eko's collection account, from eps-backend.
+ * @returns The rows to show, in reading order.
  */
-const BANK_DETAILS: { label: string; value: string; display?: string }[] = [
-	{ label: "Bank", value: "HDFC Bank" },
-	{ label: "Account Name", value: "Eko Bharat Ventures Pvt Ltd" },
-	{
-		label: "Account Number",
-		value: "00032000039765",
-		// Grouped for the eye only. Fourteen unbroken digits are what a partner
-		// mistypes into their bank's payee form; the clipboard still carries the
-		// bare number, which is the one their bank will accept.
-		display: groupDigits("00032000039765", [3, 3, 4, 4]),
-	},
-	{ label: "IFSC Code", value: "HDFC0009141" },
-];
+function bankRows(
+	details: ActivationFeeBankDetails,
+): { label: string; value: string; display?: string }[] {
+	const { bankName, accountName, accountNumber, ifsc, branchAddress } = details;
+	const rows = [
+		{ label: "Bank", value: bankName },
+		{ label: "Account Name", value: accountName },
+		{
+			label: "Account Number",
+			value: accountNumber,
+			// Grouped for the eye only. Fourteen unbroken digits are what a partner
+			// mistypes into their bank's payee form; the clipboard still carries the
+			// bare number, which is the one their bank will accept.
+			display: groupDigits(accountNumber, [3, 3, 4, 4]),
+		},
+		{ label: "IFSC Code", value: ifsc },
+		{ label: "Branch Address", value: branchAddress },
+	];
+	return rows.flatMap((row) => (row.value ? [{ ...row, value: row.value }] : []));
+}
 
 /**
  * The rails a partner can transfer over, commonest first. Mirrors the backend's
@@ -193,7 +206,7 @@ function BankRow({
 			<span className="w-32 shrink-0 font-mono text-xs text-muted-foreground">
 				{label}
 			</span>
-			<code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 font-mono text-xs">
+			<code className="min-w-0 flex-1 break-words rounded bg-muted px-2 py-1 font-mono text-xs">
 				{display ?? value}
 			</code>
 			<CopyButton text={value} label={`Copy ${label}`} />
@@ -450,6 +463,20 @@ export default function PayActivationFee() {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<unknown>(null);
 	const [done, setDone] = useState(false);
+	const [bank, setBank] = useState<
+		ActivationFeeBankDetails | "loading" | "failed"
+	>("loading");
+
+	useEffect(() => {
+		const controller = new AbortController();
+		authClient.activationFee
+			.bankDetails(controller.signal)
+			.then(setBank)
+			.catch(() => {
+				if (!controller.signal.aborted) setBank("failed");
+			});
+		return () => controller.abort();
+	}, []);
 
 	const fee = useMemo(() => calcActivationFee(form.products), [form.products]);
 
@@ -663,25 +690,46 @@ export default function PayActivationFee() {
 						<Landmark aria-hidden className="size-4 text-eko-navy" />
 						Eko&rsquo;s bank account
 					</p>
-					<div className="flex flex-col gap-2">
-						{BANK_DETAILS.map((row) => (
-							<BankRow
-								key={row.label}
-								label={row.label}
-								value={row.value}
-								display={row.display}
-							/>
-						))}
-					</div>
-					<Callout type="danger" className="my-0">
-						<p className="text-sm">
-							<strong className="font-semibold">
-								Do not use this bank account to load your E-value wallet
-								balance.
-							</strong>{" "}
-							This account is only for payment of the one-time activation fee.
+					{bank === "loading" ? (
+						<p className="text-sm text-muted-foreground" role="status">
+							Loading account details…
 						</p>
-					</Callout>
+					) : bank === "failed" ? (
+						<p className="text-sm text-destructive" role="alert">
+							We couldn&rsquo;t load Eko&rsquo;s bank details, so please
+							don&rsquo;t transfer yet. Reload this page, or write to{" "}
+							<a
+								href="mailto:eps@eko.in"
+								className="underline underline-offset-2"
+							>
+								eps@eko.in
+							</a>
+							.
+						</p>
+					) : (
+						<>
+							<div className="flex flex-col gap-2">
+								{bankRows(bank).map((row) => (
+									<BankRow
+										key={row.label}
+										label={row.label}
+										value={row.value}
+										display={row.display}
+									/>
+								))}
+							</div>
+							<Callout type="danger" className="my-0">
+								<p className="text-sm">
+									<strong className="font-semibold">
+										Do not use this bank account to load your E-value wallet
+										balance.
+									</strong>{" "}
+									This account is only for payment of the one-time activation
+									fee.
+								</p>
+							</Callout>
+						</>
+					)}
 				</div>
 			</Section>
 
