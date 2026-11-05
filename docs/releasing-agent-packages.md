@@ -452,10 +452,9 @@ The jobs then run **concurrently**:
   filters, each a subset of `code`): download the `sdk-surface` artifact from
   `build-and-test-packages`, then run that language's conformance suite —
   PHPUnit; stdlib `unittest` plus a wheel-contents check; `gofmt`, `go vet` and
-  `go test`. Both are
-  deliberately **excluded from `ci-ok`** so a non-JS SDK failure never blocks the
-  `dev → main` merge that gates the npm release. That is not a release loophole:
-  every SDK release job re-runs its own tests before publishing.
+  `go test`. All are in **`ci-ok`**, so an SDK failure blocks the `dev → main`
+  merge. Every SDK release job also re-runs its own tests before publishing,
+  because a hand-cut tag can come from any commit.
 - **`build-and-test-packages`** (owns the Valkey service container): `npm ci` →
   `npm run build` → uploads the baked `sdk-surface.json` as the `sdk-surface`
   artifact → `npm test` for `@ekoindia/eps-context-mcp`, `@ekoindia/eps-sdk`,
@@ -483,16 +482,19 @@ The jobs then run **concurrently**:
 > hand-off that re-serializes the two. `eps-backend` and `eps-mock-server` do not
 > need the baked data, but they are fast and ride along.
 
-- **`ci-ok`** — the single **required** status check. It `needs` every job above
-  except `php-sdk`, runs with `if: always()`, and fails if any of them reports
+- **`ci-ok`** — the single **required** status check. It `needs` every job above,
+  runs with `if: always()`, and fails if any of them reports
   anything other than `success` or `skipped`. It also asserts `changes` itself
   succeeded, so a broken gate (which would skip everything downstream) can never
   pass the pipeline silently.
 
-> **Isolation:** `php-sdk` is its own status check and is deliberately **not** in
-> `ci-ok`'s `needs`, so a PHP failure never blocks the `dev → main` merge that
-> gates the npm release. Future SDK jobs follow the same pattern (own check,
-> optional).
+> **SDK jobs block merges:** they used to sit outside `ci-ok` so a non-JS SDK
+> failure could not hold up the npm release. That isolation did not hold: a failed
+> SDK job still fails the CI run, and the deploy workflows require a successful
+> run, so a merge passed `ci-ok` and then silently skipped its deploys. The cost of
+> the current setup is that an SDK failure, including a runner image change, now
+> holds up the merge and the npm release until fixed. Future SDK jobs go in
+> `needs` too.
 >
 > **Branch protection:** require only **`CI / CI OK`**. Because every other job
 > is intentionally skippable via a path filter, requiring them individually would

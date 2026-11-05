@@ -532,12 +532,10 @@ jobs:
   # path filter, so this one aggregates them: it always runs, and it is the only
   # name branch protection needs to know about.
   #
-  # `php-sdk`, `python-sdk`, `go-sdk` and `java-sdk` are deliberately NOT in `needs` — they stay
-  # independent, non-blocking checks so a non-JS SDK failure never blocks the
-  # dev → main merge that gates the npm release (see
-  # docs/releasing-agent-packages.md §5). Leaving them out also keeps this gate
-  # from waiting on their build dependency. They are not a release loophole:
-  # every SDK release job re-runs its own tests before publishing.
+  # The SDK jobs are in `needs` so an SDK failure blocks the dev → main merge (see
+  # docs/releasing-agent-packages.md §5). Without them a failed SDK job passed
+  # this check yet still failed the CI run, which silently skipped the deploys
+  # that require a successful run.
   ci-ok:
     name: CI OK
     runs-on: ubuntu-latest
@@ -549,6 +547,10 @@ jobs:
       - test-web
       - build-and-test-packages
       - docker
+      - php-sdk
+      - python-sdk
+      - go-sdk
+      - java-sdk
     steps:
       - name: Verify no job failed
         env:
