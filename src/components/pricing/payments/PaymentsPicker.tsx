@@ -116,7 +116,7 @@ const PickerRow = ({
  * (the only gesture a touch device has) opens and instantly shuts one.
  */
 const RateExplainer = ({ product }: { product: EarningsProduct }) => {
-	const noun = product.family === "AePS" ? "transaction" : "bill";
+	const noun = product.family === "BBPS" ? "bill" : "transaction";
 
 	return (
 		<Popover>

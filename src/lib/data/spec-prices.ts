@@ -150,6 +150,14 @@ export const SPEC_COMMISSIONS: Readonly<Record<string, SpecPrice>> =
 				},
 			},
 			{
+				ids: ["upi-cash-withdrawal"],
+				price: {
+					label: EARNS,
+					hint: `You earn ${EARNINGS_PRODUCTS_MAP["upi-cash-withdrawal"].notes} per withdrawal.`,
+					href: earningsHref("upi-cash-withdrawal"),
+				},
+			},
+			{
 				ids: ["aeps-fingpay-mini-statement"],
 				price: {
 					label: EARNS,

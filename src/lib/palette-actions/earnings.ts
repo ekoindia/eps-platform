@@ -46,8 +46,10 @@ const wordMatches = (query: string, product: string): boolean =>
 	query.startsWith(product) || (query.length >= 4 && product.startsWith(query));
 
 /**
- * The calculator product a query names: the one sharing the most words with
- * it, earliest on a tie (so plain "aeps" → cash withdrawal, "bbps" → electricity).
+ * The calculator product a query names: the one matching the most of the
+ * query's words, earliest on a tie (so plain "aeps" → cash withdrawal, "bbps" →
+ * electricity). Counting query words, not product words, keeps one query word
+ * from scoring twice ("cash" against AePS's "cash" and "cashout").
  * @param query - The query or its subject.
  * @returns A calculator id (`dmt`, `credit-card` or an EARNINGS_PRODUCTS id), or null.
  */
@@ -56,8 +58,8 @@ export function earningsProductOf(query: string): string | null {
 	let best: string | null = null;
 	let bestScore = 0;
 	for (const [id, productWords] of PRODUCT_WORDS) {
-		const score = productWords.filter((pw) =>
-			queryWords.some((qw) => wordMatches(qw, pw)),
+		const score = queryWords.filter((qw) =>
+			productWords.some((pw) => wordMatches(qw, pw)),
 		).length;
 		if (score > bestScore) {
 			best = id;

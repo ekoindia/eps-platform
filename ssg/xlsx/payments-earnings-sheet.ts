@@ -19,6 +19,16 @@ import {
 	type PricingXlsxData,
 } from "./shared";
 
+/** "0.4% up to ₹3,000; ₹13 flat above ₹3,000" — a cashout row's basis text. */
+const slabBasis = (slabs: AmountSlab[]): string =>
+	slabs
+		.map((slab) =>
+			slab.flat !== undefined
+				? `₹${slab.flat} flat above ₹${(slab.from - 1).toLocaleString("en-IN")}`
+				: `${(slab.pct ?? 0) * 100}% up to ₹${(slab.upTo ?? 0).toLocaleString("en-IN")}`,
+		)
+		.join("; ");
+
 /** Default avg txn amounts pre-filled in the input column */
 const AEPS_DEFAULT_AVG = 2000;
 
@@ -87,7 +97,7 @@ export async function buildPaymentsEarningsSheet(
 		{ width: 52 },
 	];
 
-	const { aeps, bbps } = data;
+	const { aeps, bbps, upiCashWithdrawal } = data;
 	const offlineLabel = modeOfflineLabel(bbps.offlineSettlementHours);
 	const gstPct = Math.round(data.gstRate * 100);
 	const tdsPct = Math.round(data.tdsRate * 100);
@@ -97,7 +107,7 @@ export async function buildPaymentsEarningsSheet(
 		ws,
 		row,
 		"H",
-		"Eko Platform Services — Payments & BC Earnings Calculator (DMT · AePS · BBPS)",
+		"Eko Platform Services — Payments & BC Earnings Calculator (DMT · AePS · UPI Cash Withdrawal · BBPS)",
 	);
 	row++;
 
@@ -133,19 +143,14 @@ export async function buildPaymentsEarningsSheet(
 
 	// -- Product groups -------------------------------------------------------
 	const cashoutMax = aeps.cashoutSlabs[aeps.cashoutSlabs.length - 1].upTo ?? 0;
+	const upiSlabs = upiCashWithdrawal.slabs;
 	const groups: { label: string; rows: EarningsRowDef[] }[] = [
 		{
 			label: "AePS — Aadhaar-Enabled Payment System",
 			rows: [
 				{
 					name: "AePS Cash Withdrawal",
-					basis: aeps.cashoutSlabs
-						.map((slab) =>
-							slab.flat !== undefined
-								? `₹${slab.flat} flat above ₹${(slab.from - 1).toLocaleString("en-IN")}`
-								: `${(slab.pct ?? 0) * 100}% up to ₹${(slab.upTo ?? 0).toLocaleString("en-IN")}`,
-						)
-						.join("; "),
+					basis: slabBasis(aeps.cashoutSlabs),
 					defaultAvg: AEPS_DEFAULT_AVG,
 					avgRange: [aeps.cashoutSlabs[0].from, cashoutMax],
 					perTxn: (avgRef: string) =>
@@ -156,6 +161,19 @@ export async function buildPaymentsEarningsSheet(
 					basis: `₹${aeps.miniStatementCommission.toFixed(2)} flat`,
 					defaultAvg: null,
 					perTxn: () => aeps.miniStatementCommission,
+				},
+			],
+		},
+		{
+			label: "UPI Cash Withdrawal",
+			rows: [
+				{
+					name: "UPI Cash Withdrawal",
+					basis: slabBasis(upiSlabs),
+					defaultAvg: AEPS_DEFAULT_AVG,
+					avgRange: [upiSlabs[0].from, upiSlabs[upiSlabs.length - 1].upTo ?? 0],
+					perTxn: (avgRef: string) =>
+						`IF(${avgRef}="","",${slabFormula(upiSlabs, avgRef)})`,
 				},
 			],
 		},

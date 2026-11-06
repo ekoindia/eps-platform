@@ -133,6 +133,9 @@ async function loadPricingData(
 			miniStatementCommission: paymentsMod.AEPS_MINI_STATEMENT_COMMISSION,
 			settlementCharges: paymentsMod.AEPS_SETTLEMENT_CHARGES,
 		},
+		upiCashWithdrawal: {
+			slabs: paymentsMod.UPI_CASH_WITHDRAWAL_SLABS,
+		},
 		bbps: {
 			categories: paymentsMod.BBPS_CATEGORIES,
 			modeParam: paymentsMod.BBPS_MODE_PARAM,

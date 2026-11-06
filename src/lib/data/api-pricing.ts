@@ -157,7 +157,7 @@ export const applySetupFeeDiscount = (paise: number, raw: number): number =>
  */
 export const setupFeeFaqAnswer = (raw: number): string => {
 	const percent = clampDiscountPercent(raw);
-	const standard = `A one-time setup fee of **₹${VERIFICATION_SETUP_FEE.toLocaleString("en-IN")} per verification API** (excl. GST) applies, plus ₹20,000 per BC/Payments API family for DMT, AePS and BBPS.`;
+	const standard = `A one-time setup fee of **₹${VERIFICATION_SETUP_FEE.toLocaleString("en-IN")} per verification API** (excl. GST) applies, plus ₹20,000 per BC/Payments API family for DMT, AePS, UPI Cash Withdrawal and BBPS.`;
 	if (percent >= 100) {
 		return `${standard} It is **fully waived right now** as a limited-time offer — you pay ₹0 to activate. The [calculator](/pricing) shows the exact one-time fee for your selection.`;
 	}

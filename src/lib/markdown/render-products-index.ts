@@ -36,6 +36,7 @@ import {
 	BBPS_MODE_PARAM,
 	BBPS_OFFLINE_SETTLEMENT_HOURS,
 	TDS_RATE,
+	UPI_CASH_WITHDRAWAL_SLABS,
 } from "@/lib/data/payments-pricing";
 import type { ProductPageDataShape } from "./render-product";
 import {
@@ -222,24 +223,32 @@ const dmtPricing = (fmt: MarkdownFormat): string => {
 };
 
 /** AePS commission pricing — cashout slabs plus mini-statement rate. */
-const aepsPricing = (fmt: MarkdownFormat): string => {
-	const miniStatement = `Mini statement: ${formatRate(AEPS_MINI_STATEMENT_COMMISSION)} per transaction.`;
-	if (fmt === "txt") {
-		// Inline numbered slabs: "range: commission".
-		const lines = AEPS_CASHOUT_SLABS.map(
-			(slab, i) => `  ${i + 1}. ${slabRange(slab)}: ${slabValue(slab)}`,
-		);
-		return [lines.join("\n"), miniStatement].join("\n\n");
-	}
-	return [
-		table(
-			["Transaction bracket (INR)", "Cashout commission"],
-			AEPS_CASHOUT_SLABS.map((slab) => [slabRange(slab), slabValue(slab)]),
-			fmt,
-		),
-		miniStatement,
+/** Cash-withdrawal commission slabs: numbered lines (txt) or a table (md). */
+const cashoutSlabs = (
+	slabs: typeof AEPS_CASHOUT_SLABS,
+	fmt: MarkdownFormat,
+): string =>
+	fmt === "txt"
+		? slabs
+				.map((slab, i) => `  ${i + 1}. ${slabRange(slab)}: ${slabValue(slab)}`)
+				.join("\n")
+		: table(
+				["Transaction bracket (INR)", "Cashout commission"],
+				slabs.map((slab) => [slabRange(slab), slabValue(slab)]),
+				fmt,
+			);
+
+const aepsPricing = (fmt: MarkdownFormat): string =>
+	[
+		cashoutSlabs(AEPS_CASHOUT_SLABS, fmt),
+		`Mini statement: ${formatRate(AEPS_MINI_STATEMENT_COMMISSION)} per transaction.`,
 	].join("\n\n");
-};
+
+const upiCashWithdrawalPricing = (fmt: MarkdownFormat): string =>
+	[
+		cashoutSlabs(UPI_CASH_WITHDRAWAL_SLABS, fmt),
+		"Same commercials as AePS cash withdrawal; withdrawals are ₹100–₹5,000 in multiples of ₹100.",
+	].join("\n\n");
 
 /** Both-mode commission for one BBPS category, e.g. "₹0.72" or "slab: rate; …". */
 const bbpsCommissionInline = (
@@ -291,6 +300,7 @@ const bbpsPricing = (fmt: MarkdownFormat): string => {
 const pricingBlock = (product: ApiProductRef, fmt: MarkdownFormat): string => {
 	if (product.id === "dmt") return dmtPricing(fmt);
 	if (product.id === "aeps") return aepsPricing(fmt);
+	if (product.id === "upi-cash-withdrawal") return upiCashWithdrawalPricing(fmt);
 	if (product.id === "bbps") return bbpsPricing(fmt);
 	if (product.category === "verification")
 		return verificationPricing(product, fmt);
@@ -322,7 +332,7 @@ const productSection = (
 			? "**Pricing (commission, excl. GST):**"
 			: product.id === "dmt"
 				? `**Pricing (fee incl. GST; commission before TDS @ ${Math.round(TDS_RATE * 100)}%):**`
-				: product.id === "aeps"
+				: product.id === "aeps" || product.id === "upi-cash-withdrawal"
 					? "**Pricing (commission):**"
 					: "**Pricing:**";
 	const pricing = `${pricingLabel}\n${pricingBlock(product, fmt)}`;
@@ -456,10 +466,11 @@ export const PRODUCTS_TXT_PARTS: ProductsIndexPart[] = [
 	},
 	{
 		slug: "products-payments",
-		title: "Eko EPS Payments & Banking APIs (BBPS, DMT, AePS) — Reference",
+		title:
+			"Eko EPS Payments & Banking APIs (BBPS, DMT, AePS, UPI Cash Withdrawal) — Reference",
 		shortLabel: "Payments & banking",
-		lede: "Production-ready payments & agent-banking APIs from Eko EPS — bill payments, domestic money transfer and Aadhaar-enabled cash withdrawal that pay YOU a commission per transaction, built for India's digital economy. This document contains the full details of every payments & banking API so it can be used standalone; per-product pages are linked in each section.",
-		productIds: ["bbps", "dmt", "aeps"],
+		lede: "Production-ready payments & agent-banking APIs from Eko EPS — bill payments, domestic money transfer, Aadhaar-enabled and UPI cash withdrawal that pay YOU a commission per transaction, built for India's digital economy. This document contains the full details of every payments & banking API so it can be used standalone; per-product pages are linked in each section.",
+		productIds: ["bbps", "dmt", "aeps", "upi-cash-withdrawal"],
 	},
 ];
 
@@ -549,7 +560,7 @@ function renderProductsIndex(
 			? "Verification APIs are a cost you pay per call"
 			: undefined,
 		hasCommission
-			? `DMT, AePS and BBPS pay YOU a commission per transaction (TDS @ ${Math.round(TDS_RATE * 100)}% is deducted from commission payouts)`
+			? `DMT, AePS, UPI Cash Withdrawal and BBPS pay YOU a commission per transaction (TDS @ ${Math.round(TDS_RATE * 100)}% is deducted from commission payouts)`
 			: undefined,
 	].filter(Boolean);
 	const ratesWord = hasCommission ? "rates and commissions" : "rates";

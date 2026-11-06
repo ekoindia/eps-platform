@@ -64,8 +64,8 @@ const ALL_FAQS = [
 ];
 
 const PAGE_DESCRIPTION = CONNECTED_BANKING_ENABLED
-	? "Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS and BBPS, credit card bill payment fees and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
-	: "Transparent pricing for 25+ verification APIs and partner commissions for DMT, AePS and BBPS, plus credit card bill payment fees. Estimate your monthly cost or earnings with our interactive calculators.";
+	? "Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS, UPI Cash Withdrawal and BBPS, credit card bill payment fees and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
+	: "Transparent pricing for 25+ verification APIs and partner commissions for DMT, AePS, UPI Cash Withdrawal and BBPS, plus credit card bill payment fees. Estimate your monthly cost or earnings with our interactive calculators.";
 
 const PricingPage = () => {
 	const jsonLdSchemas = generatePricingJsonLd(ALL_FAQS);
@@ -106,10 +106,10 @@ const PricingPage = () => {
 							</h1>
 							<p className="text-xl text-white/70 max-w-2xl mx-auto mb-8">
 								{SETUP_FEE_DISCOUNT_PERCENT >= 100
-									? "Pay per use for verification APIs — setup fee waived for a limited time. Earn commission on every DMT, AePS and BBPS transaction."
+									? "Pay per use for verification APIs — setup fee waived for a limited time. Earn commission on every DMT, AePS, UPI Cash Withdrawal and BBPS transaction."
 									: SETUP_FEE_DISCOUNTED
-										? `Pay per use for verification APIs — ${SETUP_FEE_DISCOUNT_PERCENT}% off the one-time setup fee for a limited time. Earn commission on every DMT, AePS and BBPS transaction.`
-										: "Pay per use for verification APIs. Earn commission on every DMT, AePS and BBPS transaction."}
+										? `Pay per use for verification APIs — ${SETUP_FEE_DISCOUNT_PERCENT}% off the one-time setup fee for a limited time. Earn commission on every DMT, AePS, UPI Cash Withdrawal and BBPS transaction.`
+										: "Pay per use for verification APIs. Earn commission on every DMT, AePS, UPI Cash Withdrawal and BBPS transaction."}
 							</p>
 							<div className="flex flex-wrap justify-center gap-3">
 								{SETUP_FEE_DISCOUNTED && (

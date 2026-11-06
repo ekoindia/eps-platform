@@ -255,6 +255,60 @@ export const ALL_RECIPES: Recipe[] = [
 		],
 	},
 	{
+		id: "upi-cash-withdrawal",
+		slug: "upi-cash-withdrawal",
+		name: "UPI Cash Withdrawal",
+		summary:
+			'Generate a single-use UPI QR for the withdrawal amount, show it to the customer, then poll the status API on the returned schedule — hand over cash only when `tx_status` is "0".',
+		productId: "upi-cash-withdrawal",
+		steps: [
+			{
+				specSlug: "upi-cash-withdrawal",
+				purpose:
+					"Validate the amount first (₹100–₹5,000, multiples of ₹100, no paise), then send it with the retailer's live GPS fix. Render `qr_string` as `data:image/png;base64,…` for the customer to scan from a second device, and persist `tid`. A QR means no money has moved yet. Never show a QR twice or re-initiate against the same `tid`. On a timeout with no `tid`, the customer never saw a QR: wait out its ~60 s validity and start a new transaction.",
+				branches: [
+					{
+						onResponseTypeId: 99012,
+						goto: "upi-cash-withdrawal-status",
+						note: "QR issued — wait `status_check_start_in` seconds, then poll.",
+					},
+					{
+						onResponseTypeId: 99014,
+						goto: "done",
+						note: "Initiation failed — stop, do not dispense. Log and show `data.description`.",
+					},
+					{
+						onResponseTypeId: 99015,
+						goto: "done",
+						note: "Invalid amount — stop, fix the amount; nothing to poll.",
+					},
+					{
+						onResponseTypeId: 99016,
+						goto: "done",
+						note: "Not enabled for this retailer — stop; a provisioning task, retrying won't help.",
+					},
+				],
+			},
+			{
+				specSlug: "upi-cash-withdrawal-status",
+				purpose:
+					'Poll by `tid` every `status_check_gap` seconds, at most `status_check_attempts` times. Compare `data.tx_status` to the string "0"; anything else — "1", "2", an unknown value, a timeout — is NOT paid. Pending (99019) after the last scheduled poll: stop, treat as not paid, re-query once after a few minutes, and escalate to Eko support with `tid` if still pending after ~30 minutes.',
+				branches: [
+					{
+						onResponseTypeId: 99013,
+						goto: "done",
+						note: "Paid — dispense the cash and store `bank_ref_num`.",
+					},
+					{
+						onResponseTypeId: 99018,
+						goto: "done",
+						note: "Failed — nothing debited; do not dispense.",
+					},
+				],
+			},
+		],
+	},
+	{
 		id: "bbps-bill-payment",
 		slug: "bbps-bill-payment",
 		name: "BBPS — Pay a Utility Bill",

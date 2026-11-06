@@ -74,7 +74,7 @@ const SLIP_MAX_BYTES = 5 * 1024 * 1024;
  * setup fee on **KYC & Verification APIs**: one amount for a single API, a
  * larger one for several. The balance is spendable against usage for 12 months,
  * so this is a commitment rather than a charge — which is the whole reason it
- * can stand in for the fee. DMT, AePS and BBPS are outside it: their per-family
+ * can stand in for the fee. DMT, AePS, UPI Cash Withdrawal and BBPS are outside it: their per-family
  * fee is payable either way.
  */
 const WAIVER_TOPUP = { single: 50_000, multiple: 100_000 } as const;
@@ -398,14 +398,14 @@ function WaiverNotice({
 			</div>
 			{unwaivedLabels.length > 0 ? (
 				<p className="text-xs font-medium text-eko-navy">
-					Not covered: {unwaivedLabels.join(", ")}. Money Transfer, AePS and
-					Bill Payments carry their one-time fee per API whichever way you go —
+					Not covered: {unwaivedLabels.join(", ")}. Money Transfer, AePS, UPI
+					Cash Withdrawal and Bill Payments carry their one-time fee per API whichever way you go —
 					the waiver applies to the verification APIs in your selection only.
 				</p>
 			) : (
 				<p className="text-xs text-muted-foreground">
-					Money Transfer (DMT), AePS and Bill Payments (BBPS) are outside the
-					waiver — their one-time fee is payable per API.
+					Money Transfer (DMT), AePS, UPI Cash Withdrawal and Bill Payments
+					(BBPS) are outside the waiver — their one-time fee is payable per API.
 				</p>
 			)}
 			<p className="text-xs text-muted-foreground">

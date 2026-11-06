@@ -19,7 +19,7 @@
 
 </div>
 
-**The AI-ready developer platform for [Eko Platform Services](https://eps.eko.in) — India's fintech APIs** (AePS, DMT, BBPS, PPI wallets, KYC & verification, agent banking).
+**The AI-ready developer platform for [Eko Platform Services](https://eps.eko.in) — India's fintech APIs** (AePS, UPI cash withdrawal, DMT, BBPS, PPI wallets, KYC & verification, agent banking).
 
 A single source-of-truth **data layer** describes every EPS API once. From it, the build generates everything a developer — or their AI coding agent — needs to integrate: backend SDKs, an MCP server, drop-in AI context packs, an offline mock server, OpenAPI + Postman, LLM-readable docs, and the marketing + developer-docs website itself. Edit the data, and every artifact regenerates in sync.
 

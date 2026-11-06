@@ -32,7 +32,7 @@ const TOC: { sheet: string; purpose: string; enabled?: boolean }[] = [
 	{
 		sheet: SHEETS.paymentsEarnings,
 		purpose:
-			"Estimate your monthly EARNINGS from AePS and BBPS — these products pay you a commission per transaction.",
+			"Estimate your monthly EARNINGS from AePS, UPI Cash Withdrawal and BBPS — these products pay you a commission per transaction.",
 	},
 	{
 		sheet: SHEETS.creditCard,
@@ -51,7 +51,7 @@ const TOC: { sheet: string; purpose: string; enabled?: boolean }[] = [
 	},
 	{
 		sheet: SHEETS.paymentsRateCard,
-		purpose: "Static reference: AePS commissions and BBPS category rates.",
+		purpose: "Static reference: AePS and UPI Cash Withdrawal commissions and BBPS category rates.",
 	},
 	{
 		sheet: SHEETS.bbpsOperators,
@@ -85,7 +85,7 @@ export async function buildIndexSheet(
 		row,
 		"B",
 		"Offline companion to the live pricing page. Covers verification APIs (a cost you pay per call) " +
-			"DMT / AePS / BBPS (which pay YOU a commission per transaction), credit card bill payments (a fee per payment)" +
+			"DMT / AePS / UPI Cash Withdrawal / BBPS (which pay YOU a commission per transaction), credit card bill payments (a fee per payment)" +
 			(CONNECTED_BANKING_ENABLED ? " and Connected Banking." : "."),
 	);
 	row++;

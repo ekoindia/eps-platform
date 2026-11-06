@@ -16,6 +16,7 @@ import {
 	BBPS_MODE_PARAM,
 	BBPS_OFFLINE_SETTLEMENT_HOURS,
 	TDS_RATE,
+	UPI_CASH_WITHDRAWAL_SLABS,
 	type AmountSlab,
 } from "@/lib/data/payments-pricing";
 import { formatINRRate } from "@/lib/utils";
@@ -164,7 +165,7 @@ const BbpsModeExplainer = () => (
 );
 
 /**
- * Static, crawlable commission tables for AePS and BBPS — rendered
+ * Static, crawlable commission tables for AePS, UPI Cash Withdrawal and BBPS — rendered
  * server-side (SSG) so rates are indexable. The "+" buttons hand off to the
  * payments earnings calculator above.
  */
@@ -205,6 +206,41 @@ export const PaymentsRateTable = () => (
 								</TableCell>
 								<TableCell className="text-right text-muted-foreground tabular-nums">
 									{slabValue(slab)} + GST (charge)
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			</SectionCard>
+		</div>
+
+		{/* UPI Cash Withdrawal */}
+		<div className="max-w-3xl mx-auto">
+			<SectionCard
+				title="UPI Cash Withdrawal"
+				subtitle="Same commission as AePS cashout · ₹100–₹5,000 in multiples of ₹100"
+				action={
+					<AddButton productId="upi-cash-withdrawal" name="UPI Cash Withdrawal" />
+				}
+				delay={50}
+			>
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Transaction bracket</TableHead>
+							<TableHead className="text-right">Commission</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{UPI_CASH_WITHDRAWAL_SLABS.map((slab) => (
+							<TableRow key={slab.from}>
+								<TableCell className="py-2.5 font-medium tabular-nums">
+									{slabRange(slab)}
+								</TableCell>
+								<TableCell className="text-right font-semibold text-eko-success tabular-nums">
+									{slab.flat !== undefined
+										? `${formatINRRate(slab.flat)} flat`
+										: slabValue(slab)}
 								</TableCell>
 							</TableRow>
 						))}

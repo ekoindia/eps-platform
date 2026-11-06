@@ -53,6 +53,23 @@ export const AEPS_CASHOUT_SLABS: AmountSlab[] = [
 	{ from: 3001, upTo: 10000, flat: 13 },
 ];
 
+/** UPI Cash Withdrawal amount range (₹): whole rupees, multiples of ₹100. */
+export const UPI_CW_MIN = 100;
+export const UPI_CW_MAX = 5000;
+
+/**
+ * UPI Cash Withdrawal commission slabs. Commercials are the same as AePS
+ * cash withdrawal, so these are the AePS slabs cut to UPI's ₹100–₹5,000
+ * range — never a copy: an AePS rate change flows through.
+ */
+export const UPI_CASH_WITHDRAWAL_SLABS: AmountSlab[] = AEPS_CASHOUT_SLABS.filter(
+	(slab) => slab.from <= UPI_CW_MAX,
+).map((slab, index) => ({
+	...slab,
+	from: index === 0 ? UPI_CW_MIN : slab.from,
+	upTo: Math.min(slab.upTo ?? UPI_CW_MAX, UPI_CW_MAX),
+}));
+
 /** Commission per AePS mini-statement transaction (₹, excl. GST) */
 export const AEPS_MINI_STATEMENT_COMMISSION = 0.75;
 
@@ -269,7 +286,7 @@ export interface EarningsProduct {
 	/** Unique, URL-stable id, e.g. "dmt" or a BbpsCategory id */
 	id: string;
 	/** Product family — drives picker/rate-card grouping */
-	family: "AePS" | "BBPS";
+	family: "AePS" | "UPI" | "BBPS";
 	/** Display name */
 	name: string;
 	/** Whether the commission depends on the average transaction amount */
@@ -296,7 +313,7 @@ export interface EarningsProduct {
 
 /**
  * One-time setup fee per BC/Payments API family (INR, excl. GST). Charged
- * once per family — DMT, AePS and BBPS are one API each, however many BBPS
+ * once per family — DMT, AePS, UPI Cash Withdrawal and BBPS are one API each, however many BBPS
  * bill categories a partner enables. DMT charges this same fee via
  * `calcDmtQuote` in `dmt-pricing.ts`.
  */
@@ -327,6 +344,18 @@ export const EARNINGS_PRODUCTS: EarningsProduct[] = [
 		defaultMonthlyTxns: 1000,
 		maxTxnAmount: 10000,
 		notes: "0.40% up to ₹3,000; ₹13 flat for ₹3,001–₹10,000",
+	},
+	{
+		// After aeps-cashout: ⌘K ties on "cash withdrawal" resolve to AePS.
+		id: "upi-cash-withdrawal",
+		family: "UPI",
+		name: "UPI Cash Withdrawal",
+		needsAmount: true,
+		amountDependent: variesWithAmount(UPI_CASH_WITHDRAWAL_SLABS),
+		defaultAvgAmount: 2000,
+		defaultMonthlyTxns: 1000,
+		maxTxnAmount: UPI_CW_MAX,
+		notes: "0.40% up to ₹3,000; ₹13 flat for ₹3,001–₹5,000",
 	},
 	{
 		id: "aeps-mini",
@@ -364,7 +393,7 @@ export const BBPS_CATEGORIES_MAP: Record<string, BbpsCategory> =
 
 /** Earnings products grouped by family in display order */
 export const EARNINGS_GROUPS: { label: string; products: EarningsProduct[] }[] =
-	(["AePS", "BBPS"] as const).map((family) => ({
+	(["AePS", "UPI", "BBPS"] as const).map((family) => ({
 		label: family,
 		products: EARNINGS_PRODUCTS.filter((product) => product.family === family),
 	}));
@@ -409,6 +438,8 @@ export const commissionPerTxn = (
 ): number => {
 	if (productId === "aeps-cashout")
 		return commissionForAmount(AEPS_CASHOUT_SLABS, avgAmount);
+	if (productId === "upi-cash-withdrawal")
+		return commissionForAmount(UPI_CASH_WITHDRAWAL_SLABS, avgAmount);
 	if (productId === "aeps-mini") return AEPS_MINI_STATEMENT_COMMISSION;
 	const category = BBPS_CATEGORIES_MAP[productId];
 	return category
@@ -467,14 +498,14 @@ export interface EarningsQuote {
 }
 
 /**
- * "Is there a setup fee for DMT, AePS and BBPS?" answer, in the three
+ * "Is there a setup fee for DMT, AePS, UPI Cash Withdrawal and BBPS?" answer, in the three
  * discount states. The volume-commitment waiver is a standing commercial
  * term, so it holds whether or not a campaign is running.
  * @param raw - Discount percentage
  */
 export const bcSetupFeeFaqAnswer = (raw: number): string => {
 	const percent = clampDiscountPercent(raw);
-	const standard = `Yes — a one-time setup fee of **₹${BC_SETUP_FEE.toLocaleString("en-IN")} per API family** (excl. GST) applies. DMT, AePS and BBPS are one API each, so enabling six BBPS bill categories still carries a single BBPS fee.`;
+	const standard = `Yes — a one-time setup fee of **₹${BC_SETUP_FEE.toLocaleString("en-IN")} per API family** (excl. GST) applies. DMT, AePS, UPI Cash Withdrawal and BBPS are one API each, so enabling six BBPS bill categories still carries a single BBPS fee.`;
 	if (percent >= 100) {
 		return `${standard} It is **fully waived right now** as a limited-time offer — you pay ₹0 to activate.`;
 	}
@@ -487,7 +518,7 @@ export const bcSetupFeeFaqAnswer = (raw: number): string => {
 
 /**
  * One-time setup fee for a payments selection. Charged once per API family
- * (DMT / AePS / BBPS), so enabling six BBPS bill categories is still a single
+ * (DMT / AePS / UPI Cash Withdrawal / BBPS), so enabling six BBPS bill categories is still a single
  * BBPS API. Products parked at zero transactions do not activate a fee.
  * @param productIds - Selected EarningsProduct ids with non-zero volume
  */
@@ -584,6 +615,10 @@ export const PAYMENTS_FAQS: PricingFaq[] = [
 		a: "AePS cash withdrawals earn 0.40% of the amount for transactions of ₹101–₹3,000 and a flat ₹13 for ₹3,001–₹10,000. Mini statements earn ₹0.75 per transaction. Fund settlements carry a small charge of ₹5–₹10 + GST depending on the settlement amount.",
 	},
 	{
+		q: "How does UPI Cash Withdrawal commission work?",
+		a: "UPI Cash Withdrawal has the same commercials as AePS cash withdrawal: 0.40% of the amount for transactions up to ₹3,000 and a flat ₹13 for ₹3,001–₹5,000 (the UPI maximum). Withdrawals run from ₹100 to ₹5,000 in multiples of ₹100. On success the retailer's wallet is credited with the amount plus commission, less TDS.",
+	},
+	{
 		q: "What is the difference between instant and 6-hour BBPS bill payment?",
 		a: `Every BBPS bill payment runs in one of two modes, chosen per transaction with the \`communication\` parameter on both Fetch Bill and Pay Bill. \`communication=0\` (the default) is **online** — the bill is settled instantly at the standard commission. \`communication=1\` is **offline** — the bill takes a minimum of ${BBPS_OFFLINE_SETTLEMENT_HOURS} working hours to settle with the biller, and pays a **higher commission**. Offline is available on electricity, water, piped gas, mobile postpaid, landline and LIC premiums; other categories are instant-only.`,
 	},
@@ -592,7 +627,7 @@ export const PAYMENTS_FAQS: PricingFaq[] = [
 		a: "The calculator uses category-level rates (conservative, lowest operator rate where rates vary). The downloadable Excel rate card lists commission for every BBPS operator — 100+ billers across electricity, insurance, EMI, FASTag, prepaid and more.",
 	},
 	{
-		q: "Is there a setup fee for DMT, AePS and BBPS?",
+		q: "Is there a setup fee for DMT, AePS, UPI Cash Withdrawal and BBPS?",
 		a: bcSetupFeeFaqAnswer(SETUP_FEE_DISCOUNT_PERCENT),
 	},
 	{

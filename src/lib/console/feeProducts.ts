@@ -37,7 +37,7 @@ export interface FeeProductGroup {
  * The BC / Payments families, which are charged a flat one-time fee **per
  * family** rather than per API.
  *
- * The three families are named here because `PRICED_APIS` covers the
+ * The four families are named here because `PRICED_APIS` covers the
  * verification catalogue only; the fee itself comes from `BC_SETUP_FEE` in
  * `payments-pricing.ts`, which is what the /pricing payments calculator
  * charges, so the two cannot drift.
@@ -45,6 +45,7 @@ export interface FeeProductGroup {
 const BC_PAYMENT_FAMILIES: FeeProductOption[] = [
 	{ id: "dmt", label: "Money Transfer (DMT)" },
 	{ id: "aeps", label: "AePS" },
+	{ id: "upi-cash-withdrawal", label: "UPI Cash Withdrawal" },
 	{ id: "bbps", label: "Bill Payments (BBPS)" },
 ];
 
@@ -65,7 +66,7 @@ const isChargeable = (api: PricedApi): boolean => api.setupFee !== 0;
 /**
  * The picker's groups, in display order.
  *
- * BC/Payments leads: it is three rows against the verification catalogue's
+ * BC/Payments leads: it is four rows against the verification catalogue's
  * dozens, and it carries the largest fee per row, so burying it under a long
  * scroll is the wrong default for the partner most likely to be paying. The
  * verification groups follow in the registry's own order, so the rest of the
@@ -114,7 +115,7 @@ const bcFamilyIds = new Set(BC_PAYMENT_FAMILIES.map((family) => family.id));
  * The two halves are not only priced differently — the setup-fee waiver covers
  * verification only, so the page has to be able to tell them apart too.
  * @param id - An option id from {@link FEE_PRODUCT_GROUPS}.
- * @returns True for DMT, AePS and BBPS.
+ * @returns True for DMT, AePS, UPI Cash Withdrawal and BBPS.
  */
 export function isBcPaymentFamily(id: string): boolean {
 	return bcFamilyIds.has(id);

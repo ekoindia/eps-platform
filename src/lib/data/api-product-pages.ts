@@ -251,7 +251,12 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			{
 				q: "How are money transfers authenticated?",
 				a: TRANSACTION_AUTH.dmt,
-				links: [{ label: "Transaction security", href: `${SECURITY_PATH}#transactions` }],
+				links: [
+					{
+						label: "Transaction security",
+						href: `${SECURITY_PATH}#transactions`,
+					},
+				],
 			},
 		],
 	},
@@ -468,7 +473,12 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			{
 				q: "How are AePS transactions authenticated?",
 				a: TRANSACTION_AUTH.aeps,
-				links: [{ label: "Transaction security", href: `${SECURITY_PATH}#transactions` }],
+				links: [
+					{
+						label: "Transaction security",
+						href: `${SECURITY_PATH}#transactions`,
+					},
+				],
 			},
 			// {
 			//   q: "What is the transaction limit for AePS?",
@@ -482,6 +492,132 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			//   q: "How is commission calculated?",
 			//   a: "Commission is earned on every successful transaction. The exact rates depend on your agreement and transaction volumes. Contact our team for detailed pricing.",
 			// },
+		],
+	},
+
+	// -------------------------------------------------------------------------
+	// MARK: UPI Cash Withdrawal
+	// -------------------------------------------------------------------------
+	"upi-cash-withdrawal": {
+		seo: {
+			title: "UPI Cash Withdrawal API India | Cash-out Against a UPI QR",
+			description:
+				"Let your retailers dispense cash to customers who pay over UPI. Eko's UPI Cash Withdrawal API issues a single-use UPI QR; the customer pays with their own UPI PIN — no biometric device or Aadhaar needed.",
+			keywords:
+				"UPI cash withdrawal API, UPI ATM API, UPI cashout API, QR cash withdrawal, cardless cash withdrawal, assisted cash withdrawal API, Eko API",
+			ogTitle: "UPI Cash Withdrawal API",
+			ogDescription:
+				"Dispense cash against a UPI QR payment — the customer pays with their own UPI PIN, no biometric needed.",
+		},
+		title: "UPI Cash Withdrawal API",
+		desc: "Dispense cash to customers who pay over UPI — no biometric device needed",
+		heroTitle: "UPI Cash Withdrawal API for Assisted Cash-out",
+		heroSubtitle:
+			"Turn any retailer into a cash point. Generate a UPI QR for the withdrawal amount, the customer scans and pays from any UPI app with their own UPI PIN, and the retailer hands over cash once the payment is confirmed — the retailer's wallet is credited with the amount plus commission.",
+		category: "payment",
+		icon: QrCode,
+		features: [
+			{
+				title: "Pay With Any UPI App",
+				desc: "The customer scans a QR and authorises with their own UPI PIN — no card, Aadhaar or fingerprint.",
+				icon: QrCode,
+			},
+			{
+				title: "No Biometric Device",
+				desc: "No RD-service scanner and no daily eKYC for the customer — just a screen to show the QR.",
+				icon: Smartphone,
+			},
+			{
+				title: "Two-step Flow",
+				desc: "Generate the QR, then poll the status API on the schedule returned — a clear paid / failed / pending answer.",
+				icon: RefreshCw,
+			},
+			{
+				title: "Wallet Credit + Commission",
+				desc: "On success the retailer's wallet is credited with the amount plus commission, less TDS.",
+				icon: IndianRupee,
+			},
+			{
+				title: "Location-Verified",
+				desc: "Every withdrawal carries the retailer's live GPS fix; geo-fencing is enforced.",
+				icon: MapPin,
+			},
+		],
+		benefits: [
+			{
+				title: "Earn Commission",
+				desc: "Same commercials as AePS cash withdrawal — earn on every successful withdrawal.",
+				icon: Banknote,
+			},
+			{
+				title: "Serve Every UPI User",
+				desc: "Any customer with a UPI app and PIN can withdraw cash — no Aadhaar-bank linking needed.",
+				icon: Users,
+			},
+			{
+				title: "Lower Setup Cost",
+				desc: "No fingerprint devices to buy or certify — the QR is shown on a screen.",
+				icon: Zap,
+			},
+			{
+				title: "Build Retailer Network",
+				desc: "Let local retailers become cash points alongside AePS, DMT and bill payments.",
+				icon: Building,
+			},
+		],
+		integrationSteps: [
+			...VERIFICATION_STEPS_BASE,
+			{
+				title: "Onboard Retailers",
+				desc: "Onboard retailers and complete their UPI Cash Withdrawal eKYC.",
+			},
+			{
+				title: "Go Live",
+				desc: "Show the QR, poll the status, and dispense cash only on a confirmed payment.",
+			},
+		],
+		useCases: [
+			"Kirana Store Banking",
+			"Banking Correspondents",
+			"Assisted Banking Networks",
+			"CSP/BC networks",
+			"Retail Cash Points",
+		],
+		faqs: [
+			{
+				q: "How much can a customer withdraw?",
+				a: "₹100 to ₹5,000 per transaction, in multiples of ₹100, whole rupees only. The acquiring bank also sets a per-merchant daily cap of ₹10,000 / ₹30,000.",
+			},
+			{
+				q: "Are there times when withdrawals don't work?",
+				a: "Yes. Transactions are blocked between 23:30 and 00:05 IST — an NPCI / acquirer maintenance window, not an Eko rule.",
+			},
+			{
+				q: "Does the customer need Aadhaar or a fingerprint scan?",
+				a: "No. The customer scans the QR from any UPI app and authorises with their own UPI PIN. There is no biometric, Aadhaar or daily eKYC step for the customer.",
+			},
+			{
+				q: "When should the retailer hand over the cash?",
+				a: 'Only after the status API returns `tx_status` `"0"` (paid). A generated QR means no money has moved yet; failed, pending, unknown or timed-out results all mean not paid.',
+			},
+			{
+				q: "What does the retailer need before going live?",
+				a: "The retailer must be onboarded and eKYC-complete for UPI Cash Withdrawal. Until then the API returns `response_type_id` 99016 (not enabled) — a provisioning state; contact your relationship manager.",
+			},
+			{
+				q: "What does it cost and what do I earn?",
+				a: "The commercials are the same as AePS cash withdrawal. See the earnings calculator on the pricing page for the commission per transaction.",
+				links: [
+					{
+						label: "Earnings calculator",
+						href: "/pricing?tab=payments&pay=upi-cash-withdrawal:1000:2000#payments-calculator",
+					},
+				],
+			},
+			{
+				q: "Can I test it in the sandbox?",
+				a: "Not yet — UPI Cash Withdrawal is not available on the UAT / sandbox environment.",
+			},
 		],
 	},
 
@@ -626,7 +762,12 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			{
 				q: "How is the bill payment amount protected?",
 				a: TRANSACTION_AUTH.bbps,
-				links: [{ label: "Transaction security", href: `${SECURITY_PATH}#transactions` }],
+				links: [
+					{
+						label: "Transaction security",
+						href: `${SECURITY_PATH}#transactions`,
+					},
+				],
 			},
 			// {
 			//   q: "How long does integration take?",

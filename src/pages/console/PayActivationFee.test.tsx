@@ -420,9 +420,10 @@ describe("PayActivationFee — searching the product list", () => {
 
 	it("leads with the Banking & Payments families", () => {
 		renderPage();
-		expect(shownLabels().slice(0, 3)).toEqual([
+		expect(shownLabels().slice(0, 4)).toEqual([
 			"Money Transfer (DMT)",
 			"AePS",
+			"UPI Cash Withdrawal",
 			"Bill Payments (BBPS)",
 		]);
 	});

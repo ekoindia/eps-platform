@@ -140,6 +140,14 @@ Commission products keyed on **transaction amount** (not monthly volume):
 - `AEPS_CASHOUT_SLABS` (0.40% ≤ ₹3,000; ₹13 flat ₹3,001–₹10,000),
   `AEPS_MINI_STATEMENT_COMMISSION` (₹0.75), `AEPS_SETTLEMENT_CHARGES`
   (₹5/₹10 + GST — informational cost, never netted into earnings).
+- `UPI_CASH_WITHDRAWAL_SLABS` — UPI Cash Withdrawal has the same commercials as
+  AePS cashout, so these are **derived** from `AEPS_CASHOUT_SLABS` cut to the
+  UPI range (`UPI_CW_MIN`–`UPI_CW_MAX`, ₹100–₹5,000): 0.40% ≤ ₹3,000; ₹13 flat
+  ₹3,001–₹5,000. Never copy the numbers — an AePS rate change must flow through.
+  UPI Cash Withdrawal is its own family (`"UPI"`), so it carries its own
+  `BC_SETUP_FEE`. It is a hand-listed section (like AePS) in
+  `PaymentsRateTable`, `render-pricing.ts`, `render-products-index.ts` and both
+  payments Excel sheets.
 - `BBPS_CATEGORIES` — ~16 `BbpsCategory` entries, each carrying **two**
   `AmountSlab[]` rate cards: `online` (instant settlement, always present)
   and `offline` (minimum 6-working-hour settlement, higher commission;
@@ -153,7 +161,8 @@ Commission products keyed on **transaction amount** (not monthly volume):
   `rangeNote` carries the spread. The full operator table lives only in the
   Excel workbook.
 - `EARNINGS_PRODUCTS` / `EARNINGS_GROUPS` — the unified product list the
-  calculator iterates (`dmt`, `aeps-cashout`, `aeps-mini`, `bbps-*`).
+  calculator iterates (`dmt`, `aeps-cashout`, `upi-cash-withdrawal`,
+  `aeps-mini`, `bbps-*`), grouped by `family` (`AePS` / `UPI` / `BBPS`).
   `needsAmount: false` only for `aeps-mini`. `amountDependent` is a separate,
   derived flag — whether the commission VALUE moves with the amount (a
   percentage rate, or a second slab), computed over the ONLINE slabs. It
@@ -209,7 +218,8 @@ operator list, edit this file; the workbook regenerates on the next build.
   `setupFee: 0` to exempt one deliberately (`setupFeeFor` resolves this, and
   a test asserts no API gets exempted by accident).
 - BC/Payments: `BC_SETUP_FEE` (₹20,000, excl. GST) in `payments-pricing.ts`,
-  charged **once per API family** — DMT, AePS and BBPS are one API each, so
+  charged **once per API family** — DMT, AePS, UPI Cash Withdrawal and BBPS
+  are one API each, so
   enabling six BBPS bill categories still carries a single BBPS fee. See
   `calcPaymentsSetupFee`.
 - Connected Banking's `CB_SETUP_FEE` is separate and **never discounted**.
@@ -448,10 +458,10 @@ modules. **Eight sheets, in tab order:**
 | `Index`                   | First tab: what's inside + internal hyperlinks (`{ text, hyperlink: "#'Sheet Name'!A1" }`) to every sheet                            |
 | `Verification Calculator` | Monthly COST estimate — usage inputs, line/subtotal/GST formulas                                                                     |
 | `DMT Calculator`          | Per-txn ledger + monthly take-home — **all live formulas** (closed-form, no lookup table)                                            |
-| `Payments Earnings`       | Monthly EARNINGS estimate for AePS/BBPS — settlement-mode dropdown (BBPS), avg-amount + txn inputs; gross / TDS / net payout summary |
+| `Payments Earnings`       | Monthly EARNINGS estimate for AePS/UPI Cash Withdrawal/BBPS — settlement-mode dropdown (BBPS), avg-amount + txn inputs; gross / TDS / net payout summary |
 | `Connected Banking`       | Setup (₹75,000 × banks + GST) and monthly (per-txn slab IF + GST) blocks                                                             |
 | `Verification Rate Card`  | Static verification reference                                                                                                        |
-| `Payments Rate Card`      | Static AePS reference + BBPS categories with both settlement modes side by side                                                      |
+| `Payments Rate Card`      | Static AePS + UPI Cash Withdrawal reference + BBPS categories with both settlement modes side by side                                |
 | `BBPS Operator Rates`     | Full operator list, frozen header + auto-filter                                                                                      |
 
 - **Renderer**: `ssg/render-pricing-xlsx.ts` — pure `renderPricingXlsx(data)`

@@ -15,6 +15,7 @@ import {
 	BC_SETUP_FEE,
 	bcSetupFeeFaqAnswer,
 	calcPaymentsSetupFee,
+	UPI_CASH_WITHDRAWAL_SLABS,
 } from "@/lib/data/payments-pricing";
 import {
 	SETUP_FEE_DISCOUNT_PERCENT,
@@ -204,8 +205,8 @@ describe("calcEarningsQuote", () => {
 
 describe("EARNINGS_PRODUCTS", () => {
 	// DMT is deliberately absent — it lives in dmt-pricing.ts / its own tab.
-	it("covers both AePS products and every BBPS category, but not DMT", () => {
-		expect(EARNINGS_PRODUCTS).toHaveLength(2 + BBPS_CATEGORIES.length);
+	it("covers both AePS products, UPI Cash Withdrawal and every BBPS category, but not DMT", () => {
+		expect(EARNINGS_PRODUCTS).toHaveLength(3 + BBPS_CATEGORIES.length);
 		expect(EARNINGS_PRODUCTS.map((p) => p.id)).not.toContain("dmt");
 		expect(
 			EARNINGS_PRODUCTS.filter((p) => !p.needsAmount).map((p) => p.id),
@@ -215,6 +216,36 @@ describe("EARNINGS_PRODUCTS", () => {
 	it("has unique URL-stable ids", () => {
 		const ids = EARNINGS_PRODUCTS.map((p) => p.id);
 		expect(new Set(ids).size).toBe(ids.length);
+	});
+});
+
+describe("UPI Cash Withdrawal", () => {
+	it("trims the AePS slabs to ₹100–₹5,000", () => {
+		expect(UPI_CASH_WITHDRAWAL_SLABS).toEqual([
+			{ from: 100, upTo: 3000, pct: 0.004 },
+			{ from: 3001, upTo: 5000, flat: 13 },
+		]);
+	});
+
+	it.each([100, 2000, 3000, 3001, 5000])(
+		"pays the same commission as AePS cashout at ₹%i",
+		(amount) => {
+			expect(commissionPerTxn("upi-cash-withdrawal", amount)).toBe(
+				commissionPerTxn("aeps-cashout", amount),
+			);
+		},
+	);
+
+	it("clamps the average amount to ₹5,000", () => {
+		expect(
+			clampAvgAmount(EARNINGS_PRODUCTS_MAP["upi-cash-withdrawal"], 9000),
+		).toBe(5000);
+	});
+
+	it("is its own family, so it carries its own setup fee", () => {
+		expect(
+			calcPaymentsSetupFee(["aeps-cashout", "upi-cash-withdrawal"]).amount,
+		).toBe(BC_SETUP_FEE * 2);
 	});
 });
 

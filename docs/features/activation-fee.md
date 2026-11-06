@@ -35,7 +35,7 @@ is the moment the partner has a number to weigh it against. It covers **KYC &
 Verification APIs only**: a partner who would rather not pay their fee can
 commit to a wallet top-up instead — ₹50,000 for a single verification API,
 ₹1,00,000 for several — spendable against usage for 12 months from the date of
-top-up. DMT, AePS and BBPS are outside it and carry their per-family one-time
+top-up. DMT, AePS, UPI Cash Withdrawal and BBPS are outside it and carry their per-family one-time
 fee either way, which the block says unconditionally and then repeats by name
 ("Not covered: …") once one of those families is ticked, so nobody reads "the
 fee is waived" over a quote that includes DMT and transfers nothing.
@@ -172,9 +172,9 @@ partner using PAN Lite and PAN Advanced owes two fees, so the picker offers two
 rows. APIs the registry exempts (`setupFee: 0`) are omitted — there is nothing
 to pay for them.
 
-The BC/Payments families (DMT, AePS, BBPS) are named as three literals: they are
+The BC/Payments families (DMT, AePS, UPI Cash Withdrawal, BBPS) are named as four literals: they are
 charged per *family*, and no per-family fee data exists in `api-pricing.ts` to
-derive them from. They **lead** the picker — three rows against the verification
+derive them from. They **lead** the picker — four rows against the verification
 catalogue's dozens, carrying the largest fee per row, so burying them under a
 long scroll is the wrong default for the partner most likely to be paying.
 
