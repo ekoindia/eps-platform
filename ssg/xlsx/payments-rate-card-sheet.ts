@@ -34,7 +34,7 @@ export async function buildPaymentsRateCardSheet(
 		{ width: 44 },
 	];
 
-	const { aeps, bbps } = data;
+	const { aeps, bbps, upiCashWithdrawal } = data;
 	const tdsPct = Math.round(data.tdsRate * 100);
 
 	let row = 1;
@@ -51,7 +51,7 @@ export async function buildPaymentsRateCardSheet(
 		ws,
 		row,
 		"F",
-		`AePS and BBPS pay YOU a commission per transaction. All values in INR, exclusive of GST @ ${gstPct}%. TDS @ ${tdsPct}% applies on payouts. DMT is on its own sheet.`,
+		`AePS, UPI Cash Withdrawal and BBPS pay YOU a commission per transaction. All values in INR, exclusive of GST @ ${gstPct}%. TDS @ ${tdsPct}% applies on payouts. DMT is on its own sheet.`,
 	);
 	row++;
 
@@ -79,6 +79,22 @@ export async function buildPaymentsRateCardSheet(
 		ws.getCell(`A${row}`).value = `Fund settlement · ${slabRangeText(slab)}`;
 		ws.mergeCells(`A${row}:B${row}`);
 		ws.getCell(`C${row}`).value = `${slabValueText(slab)} + GST (charge)`;
+		row++;
+	}
+
+	row++; // spacer
+
+	// -- UPI Cash Withdrawal --------------------------------------------------
+	groupBandRow(ws, row, "F", "UPI Cash Withdrawal — same commission as AePS cashout");
+	row++;
+
+	for (const slab of upiCashWithdrawal.slabs) {
+		ws.getCell(`A${row}`).value = `UPI cash withdrawal · ${slabRangeText(slab)}`;
+		ws.mergeCells(`A${row}:B${row}`);
+		ws.getCell(`C${row}`).value =
+			slab.flat !== undefined
+				? `₹${slab.flat.toFixed(2)} flat`
+				: slabValueText(slab);
 		row++;
 	}
 

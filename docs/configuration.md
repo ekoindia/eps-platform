@@ -99,7 +99,7 @@ shared elements live once and are composed via resolvers — see
 | File | Configures | Edit when |
 |------|-----------|-----------|
 | [`src/lib/data/api-pricing.ts`](../src/lib/data/api-pricing.ts) | Verification per-call rates, tiers, pricing FAQs | Rate-card changes |
-| [`src/lib/data/payments-pricing.ts`](../src/lib/data/payments-pricing.ts) | DMT / AePS / BBPS commission slabs, GST/TDS rates | Commission changes |
+| [`src/lib/data/payments-pricing.ts`](../src/lib/data/payments-pricing.ts) | DMT / AePS / UPI Cash Withdrawal / BBPS commission slabs, GST/TDS rates | Commission changes |
 | [`src/lib/data/credit-card-pricing.ts`](../src/lib/data/credit-card-pricing.ts) | Credit Card Bill Payment fee per payment + its own setup fee (a cost, not a BBPS commission) | Credit card fee changes |
 | [`src/lib/data/connected-banking-pricing.ts`](../src/lib/data/connected-banking-pricing.ts) | Connected-banking (BC) pricing + `CONNECTED_BANKING_ENABLED` master switch (currently `false`) | BC pricing changes; showing/hiding the whole product |
 

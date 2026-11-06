@@ -44,6 +44,13 @@ const API_PRODUCTS_DATA = [
 		shortDesc: "Aadhaar-enabled biometric cash withdrawal & transfer",
 	},
 	{
+		id: "upi-cash-withdrawal",
+		name: "UPI Cash Withdrawal",
+		slug: "upi-cash-withdrawal-api",
+		category: "bc",
+		shortDesc: "Dispense cash against a UPI QR payment — no biometric",
+	},
+	{
 		id: "ppi",
 		name: "PPI Wallet",
 		shortName: "PPI",

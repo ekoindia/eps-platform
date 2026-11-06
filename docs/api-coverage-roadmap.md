@@ -151,6 +151,19 @@ The "offline variant" in the original report is not a distinct endpoint in the l
 
 ---
 
+## Phase 4b — UPI Cash Withdrawal ✅ (product `upi-cash-withdrawal`; all v3, added 2026-11-06)
+
+| Capability                   | Target slug                  | Method | Path                                            | Status |
+| :--------------------------- | :--------------------------- | :----- | :---------------------------------------------- | :----- |
+| Generate UPI QR for Cashout  | `upi-cash-withdrawal`        | POST   | `/customer/payment/upi-cash-withdrawal`         | ✅     |
+| UPI Cash Withdrawal Status   | `upi-cash-withdrawal-status` | POST   | `/customer/payment/upi-cash-withdrawal/status`  | ✅     |
+
+Both are `uatUnavailable` (not on UAT yet) and omit `client_ref_id` (not in the source doc).
+Still open: `trxnTypeId` / `epsProductCode`, and whether Transaction Inquiry resolves UPI CW `tid`s
+(decides whether the initiate spec becomes `financial`).
+
+---
+
 ## Phase 5 — Transaction lifecycle & refunds ✅ (product `transactions`)
 
 | Capability                                          | Target slug           | Method | Path                                                   | Status                                                                  |

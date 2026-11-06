@@ -55,6 +55,9 @@ describe("synonyms and misspellings", () => {
 		expect(top("money transfer")).toBe("api:dmt-api");
 		expect(top("bill payment")).toBe("api:bbps-api");
 		expect(top("micro atm")).toBe("api:aeps-api");
+		expect(top("upi atm")).toBe("api:upi-cash-withdrawal-api");
+		expect(top("upi cashout")).toBe("api:upi-cash-withdrawal-api");
+		expect(top("qr cash withdrawal")).toBe("api:upi-cash-withdrawal-api");
 	});
 
 	// Regression: aliasing a word that EXISTS in the corpus ("remittance" → "dmt")

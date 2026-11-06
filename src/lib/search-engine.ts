@@ -67,6 +67,11 @@ const TOKEN_ALIASES: Record<string, string> = {
  */
 const PHRASE_ALIASES: [RegExp, string][] = [
 	[/\bmicro[\s-]?atm\b/g, "aeps"],
+	// UPI Cash Withdrawal's colloquial names; every target word is in the corpus.
+	// "cardless cash" is deliberately absent — AePS is cardless too.
+	[/\bupi[\s-]?atm\b/g, "upi cash withdrawal"],
+	[/\bupi[\s-]?cash[\s-]?out\b/g, "upi cash withdrawal"],
+	[/\bqr[\s-]?cash[\s-]?withdrawal\b/g, "upi cash withdrawal"],
 	[/\bmoney[\s-]?transfer\b/g, "dmt"],
 	[/\bbill[\s-]?payment(s)?\b/g, "bbps"],
 	[/\bpan[\s-]?card\b/g, "pan"],

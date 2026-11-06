@@ -10,3 +10,4 @@ description: Use when running or executing a multi-step EPS flow end to end — 
 3. Execute each step's endpoint (`specSlug`) in order, signing each request.
 4. Honor the documented branches: each carries either `onResponseTypeId` (match the response's `response_type_id`) or `onStatus` (match the response's `status`, where `0` is success) — jump to that branch's `goto` slug when it matches (e.g. `response_type_id` `308` → onboard the sender via `dmt-onboard-sender`), or stop when `goto` is `done`.
 5. Carry forward IDs from each response into the next step's params.
+6. Status-poller steps (e.g. `upi-cash-withdrawal-status`) repeat on the schedule the previous response returned, until a branch matches or the attempts run out; the step's `purpose` says what to do when they do. Never treat a pending, unknown or timed-out result as success.

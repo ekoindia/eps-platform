@@ -884,6 +884,14 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				relevance: "H",
 			},
 			{
+				apiId: "upi-cash-withdrawal",
+				name: "UPI Cash Withdrawal",
+				description:
+					"Cash-out against a UPI QR — no biometric device, any UPI app",
+				href: "/products/upi-cash-withdrawal-api",
+				relevance: "H",
+			},
+			{
 				apiId: "dmt",
 				name: "DMT",
 				description: "Cash-to-bank remittance for walk-in customers",
@@ -1057,6 +1065,14 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				name: "AePS Cashout",
 				description: "Turn your counter into a micro-ATM",
 				href: "/products/aeps-api",
+				relevance: "H",
+			},
+			{
+				apiId: "upi-cash-withdrawal",
+				name: "UPI Cash Withdrawal",
+				description:
+					"Hand out cash to customers who pay by scanning your UPI QR",
+				href: "/products/upi-cash-withdrawal-api",
 				relevance: "H",
 			},
 			{

@@ -23,6 +23,7 @@ import {
 	FolderCheck,
 	ArrowRight,
 	Landmark,
+	QrCode,
 	Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,17 @@ const bcProducts = [
 		description:
 			"Aadhaar-enabled payment services for rural and underbanked segments.",
 		features: ["Cash withdrawal", "Balance enquiry", "Mini statement"],
+	},
+	{
+		title: "UPI Cash Withdrawal",
+		icon: QrCode,
+		description:
+			"Dispense cash to customers who pay by scanning a UPI QR — no biometric device.",
+		features: [
+			"Pay with any UPI app",
+			"Customer's own UPI PIN",
+			"₹100–₹5,000 per withdrawal",
+		],
 	},
 ];
 

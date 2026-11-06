@@ -106,6 +106,10 @@ export interface PricingXlsxData {
 		miniStatementCommission: number;
 		settlementCharges: AmountSlab[];
 	};
+	/** UPI Cash Withdrawal commission slabs (AePS rates, UPI range). */
+	upiCashWithdrawal: {
+		slabs: AmountSlab[];
+	};
 	/** BBPS category config + full operator list. */
 	bbps: {
 		categories: BbpsCategory[];

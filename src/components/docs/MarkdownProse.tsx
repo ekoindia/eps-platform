@@ -33,10 +33,24 @@ const heading =
 		);
 	};
 
+/** Wide GFM tables scroll inside the prose column instead of spilling under
+ * the docs right pane. `tabIndex` lets keyboard users scroll it. */
+const ScrollTable = ({ children }: { children?: ReactNode }) => (
+	<div
+		className="my-4 max-w-full overflow-x-auto"
+		role="region"
+		aria-label="Table"
+		tabIndex={0}
+	>
+		<table>{children}</table>
+	</div>
+);
+
 const components = {
 	// `callout` is a custom element produced by remarkCallout (data.hName).
 	callout: Callout,
 	pre: MarkdownCodeBlock,
+	table: ScrollTable,
 	h2: heading("h2", "mt-8 mb-3 text-lg"),
 	h3: heading("h3", "mt-6 mb-2 text-base"),
 	h4: heading("h4", "mt-4 mb-2 text-sm"),
@@ -56,7 +70,7 @@ export const MarkdownProse = ({
 			"[&_strong]:font-semibold [&_strong]:text-foreground",
 			"[&_p]:my-0 [&_p+p]:mt-3",
 			"[&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1",
-			"[&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm",
+			"[&_table]:w-full [&_table]:border-collapse [&_table]:text-sm",
 			"[&_th]:border [&_th]:border-border [&_th]:bg-muted/50 [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-semibold",
 			"[&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-1.5",
 			"[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:text-foreground/70",

@@ -3814,6 +3814,441 @@ const ALL_API_SPECS: ApiSpec[] = [
 			status: 0,
 		},
 	},
+	// MARK: UPI Cash Withdrawal
+	{
+		id: "upi-cash-withdrawal",
+		productId: "upi-cash-withdrawal",
+		name: "Generate UPI QR for Cash Withdrawal",
+		slug: "upi-cash-withdrawal",
+		summary:
+			"Generate a single-use UPI QR for a cash withdrawal — the customer scans it from any UPI app and pays with their own UPI PIN, then you poll the status API before handing over cash.",
+		description:
+			'Step 1 of 2. Send the withdrawal amount (₹100–₹5,000, multiples of ₹100, no paise) and the retailer\'s live GPS fix; get back a base64 PNG UPI QR (`qr_string`, valid ~60 seconds), a transaction id (`tid`) and a polling schedule. The customer scans the QR from a second device with any UPI app and authorises with their own UPI PIN — no biometric, Aadhaar or customer eKYC. The retailer must already be onboarded and eKYC-complete for UPI Cash Withdrawal (else `response_type_id` 99016).\n\n**A successful response only means a QR was issued — no money has moved (`tx_status` `PENDING`).** Poll [UPI Cash Withdrawal Status](/docs/upi-cash-withdrawal-status) with `tid`: first after `status_check_start_in` seconds, then every `status_check_gap` seconds, up to `status_check_attempts` times. **Hand over cash only when Status returns `data.tx_status` `"0"`**; anything else — failed, pending, unknown, timeout — means not paid. Never show a QR twice or re-initiate against the same `tid`.\n\nIf this call times out with no `tid`, the customer never saw a QR and cannot have paid against it: wait for the QR validity window to pass, then start a new transaction.\n\nPer-merchant daily caps (₹10,000 / ₹30,000, set by the acquiring bank) apply, and transactions are blocked between 23:30 and 00:05 IST (NPCI / acquirer rules).',
+		descriptionFile: "upi-cash-withdrawal.md",
+		relevance: "H",
+		bestFor:
+			"Retail and BC outlets dispensing cash to customers who pay over UPI — no card, Aadhaar or biometric device needed",
+		method: "POST",
+		semantics: {
+			readOnly: false,
+			idempotent: false,
+			billable: false,
+			sideEffects: ["moves-money"],
+		},
+		path: "/customer/payment/upi-cash-withdrawal",
+		uatUnavailable: true,
+		omitCommonParams: ["client_ref_id"],
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of the retailer the withdrawal is run for. The retailer must be onboarded and eKYC-complete for UPI Cash Withdrawal.",
+				example: "34127001",
+			},
+			{
+				name: "amount",
+				type: "string",
+				required: true,
+				description:
+					'Withdrawal amount in ₹, as a whole-rupee string: ₹100–₹5,000 in multiples of ₹100, no paise (e.g. `"100"`, `"2500"`). Validate before calling — an invalid amount returns `response_type_id` 99015.',
+				example: "100",
+			},
+			{
+				name: "latitude",
+				type: "string",
+				required: true,
+				description:
+					"Retailer device latitude in decimal degrees. Must be a real, current GPS fix — geo-fencing is enforced; zeros, stale values and coarse network locations are rejected.",
+				example: "28.6139",
+			},
+			{
+				name: "longitude",
+				type: "string",
+				required: true,
+				description: "Retailer device longitude in decimal degrees.",
+				example: "77.2090",
+			},
+			{
+				name: "customer_mobile",
+				type: "string",
+				format: "mobile",
+				required: false,
+				description: "Customer's 10-digit mobile number.",
+				example: "9000000000",
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				description:
+					"Eko transaction id. Send it to the Status API and quote it in any support request.",
+				imp: true,
+				example: "123456789",
+			},
+			{
+				name: "qr_string",
+				type: "string",
+				description:
+					"Base64-encoded PNG of the UPI QR — render it as `data:image/png;base64,<qr_string>`. Not a `upi://pay` deep link: the customer scans it from a second device. Real values are several KB (the sample is a 1×1 placeholder). Single-use and amount-specific.",
+				imp: true,
+				example:
+					"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+			},
+			{
+				name: "tx_status",
+				type: "string",
+				description:
+					"`PENDING` on this response: a QR has been issued, no money has moved. The payment outcome comes only from the Status API.",
+				imp: true,
+				example: "PENDING",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Withdrawal amount (₹).",
+				imp: true,
+				example: "100.0",
+			},
+			{
+				name: "commission",
+				type: "string",
+				description:
+					"Retailer commission (₹) credited with the amount once the payment succeeds.",
+				example: "0.42",
+			},
+			{
+				name: "tds",
+				type: "string",
+				description: "TDS (₹) deducted from the commission.",
+				example: "0.0",
+			},
+			{
+				name: "qr_expiry_in",
+				type: "string",
+				description: "QR validity in seconds.",
+				imp: true,
+				example: "60",
+			},
+			{
+				name: "qr_expiry_note",
+				type: "string",
+				description: "Display note to show the retailer alongside the QR.",
+				example: "Ask the customer to scan and pay within the time shown",
+			},
+			{
+				name: "qr_expiry_date",
+				type: "string",
+				description: "Absolute QR expiry timestamp.",
+				example: "2026-11-05T22:41:27",
+			},
+			{
+				name: "status_check_start_in",
+				type: "string",
+				description: "Seconds to wait before the first Status call.",
+				imp: true,
+				example: "60",
+			},
+			{
+				name: "status_check_gap",
+				type: "string",
+				description: "Seconds between subsequent Status calls.",
+				imp: true,
+				example: "30",
+			},
+			{
+				name: "status_check_attempts",
+				type: "string",
+				description:
+					"Maximum number of scheduled Status calls. Still pending after the last one → treat as not paid and re-query once after a few minutes.",
+				imp: true,
+				example: "2",
+			},
+			{
+				name: "fp_transaction_id",
+				type: "string",
+				description: "Acquiring-platform reference.",
+				example: "FP-XXXXXXXX",
+			},
+			{
+				name: "vpa",
+				type: "string",
+				description: "The collecting VPA.",
+				example: "example@bankvpa",
+			},
+			{
+				name: "user_code",
+				type: "string",
+				description: "Echo of the retailer's `user_code`.",
+				example: "34127001",
+			},
+			{
+				name: "timestamp",
+				type: "string",
+				description: "Response timestamp (DD-MM-YY HH:MM:SS).",
+				example: "05-11-26 22:40:27",
+			},
+			{
+				name: "description",
+				type: "string",
+				description:
+					"Only on a failed initiation (`response_type_id` 99014): the failure reason from the acquiring platform. Log it and show it to the retailer — `message` is generic.",
+				example: "Merchant's daily transaction limit exceeded",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			response_type_id: 99012,
+			status: 0,
+			message: "UPI QR generated. Ask the customer to scan and pay.",
+			data: {
+				tid: "123456789",
+				amount: "100.0",
+				commission: "0.42",
+				tds: "0.0",
+				tx_status: "PENDING",
+				qr_string:
+					"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+				fp_transaction_id: "FP-XXXXXXXX",
+				vpa: "example@bankvpa",
+				qr_expiry_in: "60",
+				qr_expiry_note:
+					"Ask the customer to scan and pay within the time shown",
+				qr_expiry_date: "2026-11-05T22:41:27",
+				status_check_start_in: "60",
+				status_check_gap: "30",
+				status_check_attempts: "2",
+				user_code: "34127001",
+				timestamp: "05-11-26 22:40:27",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario:
+					"Invalid amount — outside ₹100–₹5,000, not a multiple of ₹100, or has paise",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 99015,
+					status: 99015,
+					message:
+						"Amount should be between Rs 100 and Rs 5000 in multiples of Rs 100.",
+				},
+			},
+			{
+				scenario:
+					"Not enabled for this account — the retailer is not yet onboarded for UPI Cash Withdrawal. A provisioning state, not a request error: retrying will not clear it; raise it with your relationship manager",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 99016,
+					status: 99016,
+					message: "UPI cash withdrawal is not enabled for this account.",
+				},
+			},
+			{
+				scenario:
+					"Initiation failed — `data.description` carries the acquirer's reason (QR not scanned, daily limit exceeded, 23:30–00:05 window, eKYC incomplete, invalid location, account blocked, upstream outage…). Log and show `description`, not the generic `message`",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 99014,
+					status: 99014,
+					message: "UPI cash withdrawal failed. Please try again.",
+					data: {
+						tid: "123456789",
+						tx_status: "FAILED",
+						description: "<reason>",
+					},
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 99012,
+				meaning:
+					"QR generated — show `qr_string` to the customer. No money has moved yet; poll the status API with `tid`",
+				next: "upi-cash-withdrawal-status",
+			},
+			{
+				id: 99014,
+				meaning:
+					"Initiation failed — nothing to poll. Log `data.description`; start a new transaction only if the reason is retryable",
+			},
+			{
+				id: 99015,
+				meaning:
+					"Invalid amount — must be ₹100–₹5,000 in multiples of ₹100, no paise. Fix the amount; do not retry as-is",
+			},
+			{
+				id: 99016,
+				meaning:
+					"Not enabled for this account — a provisioning state; retrying will not help. Contact your relationship manager",
+			},
+		],
+	},
+	{
+		id: "upi-cash-withdrawal-status",
+		productId: "upi-cash-withdrawal",
+		name: "UPI Cash Withdrawal Status",
+		slug: "upi-cash-withdrawal-status",
+		summary:
+			'Poll the final outcome of a UPI cash withdrawal by `tid` — hand over cash only when `tx_status` is "0".',
+		description:
+			'Step 2 of 2. The customer\'s UPI payment settles asynchronously, so poll this with the `tid` from [Generate UPI QR for Cash Withdrawal](/docs/upi-cash-withdrawal) on the schedule that response returned (`status_check_start_in`, `status_check_gap`, `status_check_attempts`).\n\n`data.tx_status` is a numeric code returned as a string: `"0"` paid (wallet credited with amount + commission − TDS; **dispense the cash** and store `bank_ref_num`, the UPI RRN), `"1"` failed (nothing debited or credited; do not dispense), `"2"` pending (do not dispense). The envelope agrees: `response_type_id` 99013 / 99018 / 99019.\n\n**Only `tx_status == "0"` authorises handing over cash.** Compare on the string `"0"` and treat anything else — `"1"`, `"2"`, an unrecognised value, a timeout or a connection error — as not paid. Do not compare against the words `SUCCESS` / `FAILED` / `PENDING`; this API does not return them.\n\nStill pending after the last scheduled poll: stop polling, treat it as not paid, and re-query once after a few minutes. Still pending after ~30 minutes: raise it with Eko support quoting `tid` — some cases (e.g. a payment for a different amount) are held for manual review and will not auto-resolve; nothing is credited while held.',
+		descriptionFile: "upi-cash-withdrawal-status.md",
+		relevance: "H",
+		bestFor:
+			"Confirming a UPI cash withdrawal was paid before the retailer hands over cash",
+		method: "POST",
+		semantics: {
+			readOnly: true,
+			idempotent: true,
+			billable: false,
+		},
+		path: "/customer/payment/upi-cash-withdrawal/status",
+		uatUnavailable: true,
+		omitCommonParams: ["client_ref_id"],
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description: "Code of the retailer the withdrawal was run for.",
+				example: "34127001",
+			},
+			{
+				name: "tid",
+				type: "string",
+				required: true,
+				description:
+					"The `tid` returned by Generate UPI QR for Cash Withdrawal.",
+				example: "123456789",
+			},
+		],
+		responseData: [
+			{
+				name: "tx_status",
+				type: "string",
+				description:
+					'Payment outcome as a numeric string: `"0"` paid — dispense cash; `"1"` failed — do not dispense; `"2"` pending — do not dispense. Treat any other value as not paid.',
+				imp: true,
+				example: "0",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				description:
+					"The same outcome in words: `Success` / `Failed` / `Pending`. Safe to display; branch on `tx_status`.",
+				imp: true,
+				example: "Success",
+			},
+			{
+				name: "tid",
+				type: "string",
+				description: "Eko transaction id.",
+				imp: true,
+				example: "123456789",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Withdrawal amount (₹).",
+				imp: true,
+				example: "100.0",
+			},
+			{
+				name: "bank_ref_num",
+				type: "string",
+				description:
+					'UPI RRN. Populated only once `tx_status` is `"0"` — store it.',
+				imp: true,
+				example: "<UPI RRN>",
+			},
+			{
+				name: "commission",
+				type: "string",
+				description: "Retailer commission (₹).",
+				example: "0.42",
+			},
+			{
+				name: "tds",
+				type: "string",
+				description: "TDS (₹) deducted from the commission.",
+				example: "0.0",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			response_type_id: 99013,
+			status: 0,
+			message: "UPI cash withdrawal status fetched successfully.",
+			data: {
+				tid: "123456789",
+				amount: "100.0",
+				commission: "0.42",
+				tds: "0.0",
+				tx_status: "0",
+				txstatus_desc: "Success",
+				bank_ref_num: "<UPI RRN>",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario:
+					"Payment failed — nothing was debited or credited. Do not dispense; start a fresh transaction if the customer still wants the cash",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 99018,
+					status: 99018,
+					message: "UPI cash withdrawal failed. No amount has been credited.",
+					data: {
+						tid: "123456789",
+						amount: "100.0",
+						tx_status: "1",
+						txstatus_desc: "Failed",
+					},
+				},
+			},
+			{
+				scenario:
+					"Payment still pending — do not dispense. Keep polling on the schedule; after the last poll treat it as not paid and re-query once after a few minutes",
+				statusCode: 200,
+				example: {
+					response_status_id: 2,
+					response_type_id: 99019,
+					status: 99019,
+					message: "UPI cash withdrawal is pending. Do not hand over cash.",
+					data: {
+						tid: "123456789",
+						amount: "100.0",
+						tx_status: "2",
+						txstatus_desc: "Pending",
+					},
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 99013,
+				meaning:
+					'Paid (`tx_status` "0") — wallet credited; dispense the cash and store `bank_ref_num`',
+			},
+			{
+				id: 99018,
+				meaning:
+					'Failed (`tx_status` "1") — nothing debited or credited; do not dispense',
+			},
+			{
+				id: 99019,
+				meaning:
+					'Pending (`tx_status` "2") — do not dispense; poll again on the schedule, then re-query once after a few minutes; escalate to Eko support with `tid` after ~30 minutes',
+			},
+		],
+	},
 	// MARK: BBPS
 	{
 		id: "bbps-get-categories",

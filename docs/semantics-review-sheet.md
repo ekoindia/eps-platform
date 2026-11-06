@@ -72,11 +72,11 @@ Proposed retry rule for 3.3: an SDK may auto-retry a call only when `idempotent 
 
 | Count | Value |
 |---|---|
-| Specs labelled | 84 |
-| Read-only | 50 |
-| Idempotent | 50 |
+| Specs labelled | 86 |
+| Read-only | 51 |
+| Idempotent | 51 |
 | Billable | 35 |
-| Moves money | 9 |
+| Moves money | 10 |
 | Sends an OTP | 9 |
 | Labelled by analogy, awaiting review | 9 (DMT-Levin) |
 
@@ -129,6 +129,13 @@ Grouped by product in `API_SPECS` order. Legend: ✅ true · ❌ false · 💰 s
 | `aeps-add-settlement-account` | POST | ❌ | ❌ | ❌ | creates, moves-money | M | Free to you; Eko does a real ₹1 penny-drop and bears the cost. Max 3 per agent |
 | `aeps-get-settlement-accounts` | GET | ✅ | ✅ | ❌ |  | H |  |
 | `aeps-initiate-settlement` 💰 | POST | ❌ | ❌ | ✅ | moves-money | M | Response returns a fee |
+
+### upi-cash-withdrawal
+
+| Slug | Method | Read-only | Idempotent | Billable | Side effects | Conf | Notes |
+|---|---|---|---|---|---|---|---|
+| `upi-cash-withdrawal` | POST | ❌ | ❌ | ❌ | moves-money | M | Issues a single-use QR; money moves when the customer pays. Partner EARNS commission (same as AePS cashout). Not `financial`: `tx_status` is in `data`, and Transaction Inquiry coverage is unconfirmed |
+| `upi-cash-withdrawal-status` | POST | ✅ | ✅ | ❌ |  | H | Poll by `tid`; retry-safe |
 
 ### bbps
 

@@ -21,6 +21,7 @@ import {
 	BBPS_OFFLINE_SETTLEMENT_HOURS,
 	BC_SETUP_FEE,
 	TDS_RATE,
+	UPI_CASH_WITHDRAWAL_SLABS,
 } from "@/lib/data/payments-pricing";
 import {
 	DMT_CUSTOMER_FEE_MIN,
@@ -113,6 +114,9 @@ describe("renderPricingXlsx", () => {
 				cashoutSlabs: AEPS_CASHOUT_SLABS,
 				miniStatementCommission: AEPS_MINI_STATEMENT_COMMISSION,
 				settlementCharges: AEPS_SETTLEMENT_CHARGES,
+			},
+			upiCashWithdrawal: {
+				slabs: UPI_CASH_WITHDRAWAL_SLABS,
 			},
 			bbps: {
 				categories: BBPS_CATEGORIES,
@@ -330,10 +334,11 @@ describe("renderPricingXlsx", () => {
 				const f = row.getCell(7).formula ?? "";
 				if (f.includes(`${BC_SETUP_FEE},0)`)) formula = f;
 			});
-			// AePS and BBPS — two IF terms however many BBPS categories the
-			// sheet lists (DMT charges its family fee on its own sheet).
+			// AePS, UPI Cash Withdrawal and BBPS — three IF terms however many
+			// BBPS categories the sheet lists (DMT charges its family fee on its
+			// own sheet).
 			const terms = formula.match(/IF\(SUM\(/g) ?? [];
-			expect(terms).toHaveLength(2);
+			expect(terms).toHaveLength(3);
 			const netFactor = (100 - SETUP_FEE_DISCOUNT_PERCENT) / 100;
 			expect(formula).toContain(`*${netFactor}`);
 		});
@@ -373,12 +378,12 @@ describe("renderPricingXlsx", () => {
 					}
 				});
 			});
-			// One txn input per product (2 AePS + categories)
+			// One txn input per product (2 AePS + UPI CW + categories)
 			let txnInputs = 0;
 			earnings.eachRow((row) => {
 				if (row.getCell(5).protection?.locked === false) txnInputs++;
 			});
-			expect(txnInputs).toBe(2 + BBPS_CATEGORIES.length);
+			expect(txnInputs).toBe(3 + BBPS_CATEGORIES.length);
 		});
 
 		it("offers a settlement-mode dropdown only on BBPS categories that have one", () => {

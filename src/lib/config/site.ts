@@ -60,7 +60,7 @@ export const SITE_TITLE =
 export const SITE_DESCRIPTION =
 	"Compliant fintech APIs built for India. Power KYC, verification, bill payments, and financial workflows for NBFCs, fintech startups, and developers.";
 export const SITE_KEYWORDS =
-	"fintech, payment API, verification API, DMT, AePS, BBPS, PAN verification, Aadhaar, KYC, DigiLocker";
+	"fintech, payment API, verification API, DMT, AePS, UPI cash withdrawal, BBPS, PAN verification, Aadhaar, KYC, DigiLocker";
 export const SITE_OG_TITLE =
 	"Fintech APIs for KYC, Verification & Transactions in India | Eko Platform Services";
 export const SITE_OG_IMAGE = `${SITE_URL}/eps-website-social-preview.png`;

@@ -21,6 +21,9 @@ import {
 	BC_SETUP_FEE,
 	PAYMENTS_FAQS,
 	TDS_RATE,
+	UPI_CASH_WITHDRAWAL_SLABS,
+	UPI_CW_MAX,
+	UPI_CW_MIN,
 } from "@/lib/data/payments-pricing";
 import {
 	DMT_CUSTOMER_FEE_MIN,
@@ -103,8 +106,8 @@ export function renderPricingMarkdown(): string {
 				? "API Pricing & Commissions — Verification, Payments & Connected Banking | Eko Platform Services"
 				: "API Pricing & Commissions — Verification & Payments | Eko Platform Services",
 			description: CONNECTED_BANKING_ENABLED
-				? "Transparent pricing for 25+ verification APIs plus partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Full per-transaction rate card, exclusive of GST @ 18%."
-				: "Transparent pricing for 25+ verification APIs plus partner commissions for DMT, AePS and BBPS. Full per-transaction rate card, exclusive of GST @ 18%.",
+				? "Transparent pricing for 25+ verification APIs plus partner commissions for DMT, AePS, UPI Cash Withdrawal and BBPS, and Connected Banking charges. Full per-transaction rate card, exclusive of GST @ 18%."
+				: "Transparent pricing for 25+ verification APIs plus partner commissions for DMT, AePS, UPI Cash Withdrawal and BBPS. Full per-transaction rate card, exclusive of GST @ 18%.",
 			canonical,
 		}),
 		canonicalNotice(canonical),
@@ -115,8 +118,8 @@ export function renderPricingMarkdown(): string {
 				? `Transparent, pay-per-use API pricing. ${SETUP_FEE_DISCOUNT_PERCENT}% off the one-time setup fee for a limited time. No monthly minimums. Pay only for successful verifications.`
 				: "Transparent, pay-per-use API pricing. No monthly minimums. Pay only for successful verifications.",
 		CONNECTED_BANKING_ENABLED
-			? "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), (3) Credit Card Bill Payment fees (a cost you pay per payment), and (4) Connected Banking charges."
-			: "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), and (3) Credit Card Bill Payment fees (a cost you pay per payment).",
+			? "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS, UPI Cash Withdrawal and BBPS (which EARN you a commission per transaction), (3) Credit Card Bill Payment fees (a cost you pay per payment), and (4) Connected Banking charges."
+			: "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS, UPI Cash Withdrawal and BBPS (which EARN you a commission per transaction), and (3) Credit Card Bill Payment fees (a cost you pay per payment).",
 		`Interactive pricing calculators (pick APIs, set monthly volumes, see your estimated cost or earnings) are available on the HTML page: ${canonical}`,
 		gettingStartedNotice(),
 		h2("Verification API Rate Card"),
@@ -177,9 +180,9 @@ export function renderPricingMarkdown(): string {
 		]),
 	);
 
-	// ---- Payments & BC commissions (AePS, BBPS) ----
+	// ---- Payments & BC commissions (AePS, UPI Cash Withdrawal, BBPS) ----
 	blocks.push(
-		h2("Payments & BC API Commissions (AePS, BBPS)"),
+		h2("Payments & BC API Commissions (AePS, UPI Cash Withdrawal, BBPS)"),
 		`Unlike verification APIs, these products **pay you a commission** per transaction. All commission figures are in INR, exclusive of GST @ ${Math.round(GST_RATE * 100)}%. TDS @ ${Math.round(TDS_RATE * 100)}% is deducted from commission payouts.`,
 		h3("AePS — Aadhaar-Enabled Payment System"),
 		markdownTable(
@@ -193,6 +196,15 @@ export function renderPricingMarkdown(): string {
 			AEPS_SETTLEMENT_CHARGES.map((slab) => [
 				slabRange(slab),
 				`${slabValue(slab)} + GST`,
+			]),
+		),
+		h3("UPI Cash Withdrawal"),
+		`Same commercials as AePS cash withdrawal. Withdrawals are ${formatAmount(UPI_CW_MIN)}–${formatAmount(UPI_CW_MAX)} in multiples of ₹100; the customer pays by UPI QR with their own UPI PIN.`,
+		markdownTable(
+			["Transaction bracket (INR)", "Commission"],
+			UPI_CASH_WITHDRAWAL_SLABS.map((slab) => [
+				slabRange(slab),
+				slabValue(slab),
 			]),
 		),
 		h3("BBPS Bill Payments (category-level)"),

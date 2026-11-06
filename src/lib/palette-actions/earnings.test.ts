@@ -14,6 +14,7 @@ describe("earningsProductOf", () => {
 		["money transfer", "dmt"],
 		["aeps", "aeps-cashout"],
 		["cash withdrawal", "aeps-cashout"],
+		["upi cash withdrawal", "upi-cash-withdrawal"],
 		["mini statement", "aeps-mini"],
 		["electricity bills", "bbps-electricity"],
 		["mobile recharge", "bbps-prepaid"],

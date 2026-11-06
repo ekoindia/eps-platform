@@ -143,6 +143,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				why: "The core service that turns a retail counter into a micro-ATM. Serves the 200–300 million Indians who can't use UPI or mobile banking.",
 			},
 			{
+				apiId: "upi-cash-withdrawal",
+				what: "Cash withdrawal paid by UPI QR — the customer authorises with their own UPI PIN.",
+				why: "Serves the customers who do use UPI, with no biometric device at the counter — the same commission as AePS cashout.",
+			},
+			{
 				apiId: "dmt",
 				nameOverride: "Domestic Money Transfer (DMT)",
 				what: "Cash-to-bank-account remittance via IMPS/NEFT under RBI's BC model.",

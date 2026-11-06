@@ -42,6 +42,7 @@ describe("FEE_PRODUCT_GROUPS", () => {
 		expect(first.options.map((option) => option.id)).toEqual([
 			"dmt",
 			"aeps",
+			"upi-cash-withdrawal",
 			"bbps",
 		]);
 	});
@@ -187,7 +188,7 @@ describe("filterFeeProducts", () => {
 	it("keeps a whole group when its caption matches", () => {
 		const groups = filterFeeProducts("banking");
 		expect(groups).toHaveLength(1);
-		expect(groups[0].options).toHaveLength(3);
+		expect(groups[0].options).toHaveLength(4);
 	});
 
 	it("drops groups with nothing left rather than showing an empty caption", () => {

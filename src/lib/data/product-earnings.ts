@@ -7,7 +7,10 @@
  */
 
 import { dmtMaxCommission } from "./dmt-pricing";
-import { AEPS_CASHOUT_SLABS } from "./payments-pricing";
+import {
+	AEPS_CASHOUT_SLABS,
+	UPI_CASH_WITHDRAWAL_SLABS,
+} from "./payments-pricing";
 
 export interface EarningsHighlight {
 	/** Max commission display, e.g. "₹39.57" or "3.04%" */
@@ -26,7 +29,7 @@ const BBPS_MAX_COMMISSION_PCT = 3.04;
 /**
  * Headline "Earn up to …" figure for a BC/payment product card.
  * Returns undefined for products without commission data.
- * @param productId - ApiProductRef.id from api-products.ts ("dmt" | "aeps" | "bbps")
+ * @param productId - ApiProductRef.id from api-products.ts ("dmt" | "aeps" | "upi-cash-withdrawal" | "bbps")
  */
 export const getEarningsHighlight = (
 	productId: string,
@@ -37,10 +40,10 @@ export const getEarningsHighlight = (
 			unitLabel: "per transfer",
 		};
 	}
-	if (productId === "aeps") {
-		const maxFlat = Math.max(
-			...AEPS_CASHOUT_SLABS.map((slab) => slab.flat ?? 0),
-		);
+	if (productId === "aeps" || productId === "upi-cash-withdrawal") {
+		const slabs =
+			productId === "aeps" ? AEPS_CASHOUT_SLABS : UPI_CASH_WITHDRAWAL_SLABS;
+		const maxFlat = Math.max(...slabs.map((slab) => slab.flat ?? 0));
 		return { maxLabel: `₹${maxFlat}`, unitLabel: "per withdrawal" };
 	}
 	if (productId === "bbps") {
