@@ -75,6 +75,34 @@ code says only "unreadable", `diagnosticsLine` prints the HTTP status for it
 alone: `proxy · PARSE_ERROR · HTTP 502 · EkoCode 12345`. Every other code names
 its own cause, where a status would be noise.
 
+A `SignupStepError` raised locally (`responseTypeId === -1`) leaves as `proxy`;
+only one carrying upstream's own reply goes out through `fromUpstream` as `api`
+(`toAppError`, `http/signup.ts`). It used to tag every step error `api`, which
+sent the 2026-11-06 agreement-id refusal — ours, never sent upstream — to Eko.
+
+### Profile-data verdicts — answerable from the screenshot
+
+A profile upstream returned but that cannot serve the request is a **verdict**,
+not a blip: the same data comes back on every try. These codes name the cause
+in the response so nobody has to read backend logs, and all except
+`PROFILE_UNAVAILABLE` are in the frontend's `NEVER_RETRY` (`src/lib/retry.ts`),
+so the user is not made to sit through silent retries first.
+
+| Code | Status | Means | Built by |
+| --- | --- | --- | --- |
+| `PROFILE_INCOMPLETE` | 422 | 151 returned a profile, but without a field this request needs; `details.missing` names it (`agreement_id`, `user_code`, `evalue_account`) | `profileIncomplete()` |
+| `PROFILE_NOT_FOUND` | 404 | No account for this number (mid-signup request) | `unusableProfile("not_found")` |
+| `ACCOUNT_INACTIVE` | 403 | Upstream marks the account inactive | `unusableProfile("inactive")` |
+| `NOT_ALLOWED` | 403 | Not an EPS business account (org 1 / user_type 23) | `unusableProfile("not_allowed")` |
+| `PROFILE_UNAVAILABLE` | 502 | Unrecognized 151 reply — the one worth retrying | `unusableProfile("error")` |
+
+Both builders live in `packages/eps-backend/src/http/errors.ts`, and every
+151-consuming path uses them — login (`app.ts`), the signup service, and
+`identityOf` (`clients/eko.ts`, blank `user_code`) — so one cause always reads
+the same everywhere. Profile defaults that are deliberately **not** refused:
+`org_id` falls back to 1 in `mapProfile` (every EPS partner is org 1), and
+PAN / CRM ids are optional extras wherever they are read.
+
 ## Reading an error
 
 Every console error renders through `ErrorNotice`

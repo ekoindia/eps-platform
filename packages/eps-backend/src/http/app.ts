@@ -33,7 +33,7 @@ import {
 	mountContextMcp,
 } from "./contextMcp";
 import { mountDashboard } from "./dashboard";
-import { AppError, errorBody } from "./errors";
+import { AppError, errorBody, unusableProfile } from "./errors";
 import { mountActivationFee } from "./activationFee";
 import { mountCrm } from "./crm";
 import { mountNotifications } from "./notifications";
@@ -417,23 +417,11 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		// receive a session — deny before minting any token/cookie (parity with
 		// the reference login). The OTP already proved control of the number, so a
 		// clear 403 is safe (no enumeration) and surfaces a real message.
-		if (profile.kind === "inactive") {
-			throw new AppError(
-				403,
-				"ACCOUNT_INACTIVE",
-				"This account is inactive. Please contact support.",
-			);
-		}
+		if (profile.kind === "inactive") throw unusableProfile("inactive");
 		// An unrecognized upstream response must NOT be treated as a new user —
 		// refuse the login instead of minting a null-profile session. The OTP was
 		// already consumed; the client can retry.
-		if (profile.kind === "error") {
-			throw new AppError(
-				502,
-				"PROFILE_UNAVAILABLE",
-				"Couldn't load your profile right now. Please try again.",
-			);
-		}
+		if (profile.kind === "error") throw unusableProfile("error");
 		// New users (`not_found`) and users partway through onboarding
 		// (`onboarding`) both get a limited signup session, which authorizes the
 		// /signup/* endpoints and a lightweight /me — nothing else. The wizard
@@ -454,13 +442,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		}
 		// The OTP authenticated the number, but the profile is not an EPS business
 		// partner (org 1 / user_type 23) — deny before minting any token/cookie.
-		if (profile.kind === "not_allowed") {
-			throw new AppError(
-				403,
-				"NOT_ALLOWED",
-				"This account isn't an EPS business account. Please contact support.",
-			);
-		}
+		if (profile.kind === "not_allowed") throw unusableProfile("not_allowed");
 		// Only a `found` (existing, EPS-business, active-or-onboarded) profile
 		// reaches here — `not_found`/`onboarding` returned a signup session above,
 		// and every other kind threw before this point.

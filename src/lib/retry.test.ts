@@ -57,6 +57,20 @@ describe("withRetries", () => {
 		expect(run).toHaveBeenCalledTimes(1);
 	});
 
+	// Verdicts on the profile: the same data comes back until it is fixed
+	// upstream. PROFILE_UNAVAILABLE (an unrecognized reply) stays retryable.
+	it.each([
+		["PROFILE_INCOMPLETE", 422],
+		["PROFILE_NOT_FOUND", 404],
+		["ACCOUNT_INACTIVE", 403],
+		["NOT_ALLOWED", 403],
+	])("never retries %s", async (code, status) => {
+		const error = new ApiError(code, "verdict", status);
+		const run = failing(99, error);
+		await expect(withRetries(run, NOW)).rejects.toBe(error);
+		expect(run).toHaveBeenCalledTimes(1);
+	});
+
 	it("never retries a STEP_FAILED that names a bad field", async () => {
 		const error = new ApiError("STEP_FAILED", "Fix your PAN", 400, {
 			invalid_params: { pancardnumber: "is not valid" },

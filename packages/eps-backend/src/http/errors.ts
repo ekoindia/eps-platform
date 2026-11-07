@@ -58,6 +58,73 @@ export class AppError extends Error {
 	}
 }
 
+/**
+ * A profile upstream DID return, but without data this request needs.
+ *
+ * Permanent until someone fixes the profile upstream, so the client must not
+ * retry it (`PROFILE_INCOMPLETE` is in the frontend's `NEVER_RETRY`), and the
+ * user should be pointed at support rather than at a Try again button.
+ * `details.missing` names the field, so support can act on a screenshot alone
+ * instead of reading backend logs. `source` stays `proxy`: the refusal is ours,
+ * even though the gap is in upstream's data.
+ * @param missing - The absent field, in upstream's spelling where there is one.
+ * @param message - User-facing text; should say what is missing and that
+ *   retrying won't help.
+ * @param extra - Further diagnostics merged into `details`.
+ * @returns A 422 `PROFILE_INCOMPLETE` error.
+ */
+export function profileIncomplete(
+	missing: string,
+	message: string,
+	extra: Record<string, unknown> = {},
+): AppError {
+	return new AppError(422, "PROFILE_INCOMPLETE", message, {
+		missing: [missing],
+		...extra,
+	});
+}
+
+/**
+ * The error for an interaction-151 result that is not a usable profile.
+ *
+ * One mapping for every caller, with the same codes `POST /auth/otp/verify`
+ * answers with, so a mid-signup request no longer collapses four different
+ * causes into one "Couldn't load your profile right now". Only `error` (an
+ * unrecognized upstream reply) is worth retrying; the others are verdicts.
+ * @param kind - The non-profile `ProfileResult` kind.
+ * @returns The matching AppError.
+ */
+export function unusableProfile(
+	kind: "not_found" | "inactive" | "not_allowed" | "error",
+): AppError {
+	switch (kind) {
+		case "not_found":
+			return new AppError(
+				404,
+				"PROFILE_NOT_FOUND",
+				"No account exists for this number yet. Please start signup again.",
+			);
+		case "inactive":
+			return new AppError(
+				403,
+				"ACCOUNT_INACTIVE",
+				"This account is inactive. Please contact support.",
+			);
+		case "not_allowed":
+			return new AppError(
+				403,
+				"NOT_ALLOWED",
+				"This account isn't an EPS business account. Please contact support.",
+			);
+		case "error":
+			return new AppError(
+				502,
+				"PROFILE_UNAVAILABLE",
+				"Couldn't load your profile right now. Please try again.",
+			);
+	}
+}
+
 export function errorBody(
 	code: string,
 	message: string,

@@ -4,7 +4,7 @@ import type { Context } from "hono";
 import type { EkoClient, EkoIdentity, ReportFormat } from "../clients/eko";
 import { EkoReportError, identityOf } from "../clients/eko";
 import type { TransactionRow } from "../types";
-import { AppError } from "./errors";
+import { AppError, profileIncomplete } from "./errors";
 import type { AppEnv } from "./requestId";
 import { requireDeveloperSession } from "./session-guards";
 
@@ -79,7 +79,10 @@ export function parsePaging(body: unknown): {
 }
 
 /** Formats interaction 183 renders. */
-const REPORT_FORMATS: ReadonlySet<string> = new Set<ReportFormat>(["pdf", "xlsx"]);
+const REPORT_FORMATS: ReadonlySet<string> = new Set<ReportFormat>([
+	"pdf",
+	"xlsx",
+]);
 
 /**
  * Validates an export request: the format, and a date range unless a TID pins
@@ -123,7 +126,7 @@ export function parseReportRequest(
  * not tell which account is yours". The account comes from this caller's own
  * 151 profile — never from the request — so one developer cannot read
  * another's history.
- * @throws {AppError} 401/403 without a developer session, 403 NO_PROFILE, 502 NO_ACCOUNT.
+ * @throws {AppError} 401/403 without a developer session, 403 NO_PROFILE, 422 PROFILE_INCOMPLETE (no E-value account).
  */
 async function resolveCaller(
 	c: Context<AppEnv>,
@@ -149,10 +152,10 @@ async function resolveCaller(
 	}
 	const accountId = profile.profile.evalueAccountId;
 	if (accountId === null) {
-		throw new AppError(
-			502,
-			"NO_ACCOUNT",
-			"Couldn't identify your account right now. Please try again.",
+		// Profile data, not an outage: retrying returns the same profile.
+		throw profileIncomplete(
+			"evalue_account",
+			"Your profile has no E-value account, so there's no transaction history to show. Retrying won't help — please contact support.",
 		);
 	}
 	return { identity: identityOf(profile.profile), accountId, xRealIp };
