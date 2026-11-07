@@ -497,7 +497,13 @@ describe("sign agreement endpoints", () => {
 		const res = await app.request("/signup/agreement/url", withCookie);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual(url);
-		expect(getAgreementUrl).toHaveBeenCalledWith("9990000001", undefined);
+		// The sid rides along: a profile without an agreement id falls back to
+		// interaction 300, which needs this session's upstream token.
+		expect(getAgreementUrl).toHaveBeenCalledWith(
+			"9990000001",
+			"sid-1",
+			undefined,
+		);
 	});
 
 	it("GET /signup/agreement/url logs the client reference when preparing fails", async () => {
@@ -547,6 +553,7 @@ describe("sign agreement endpoints", () => {
 		expect(submitSignAgreement).toHaveBeenCalledWith(
 			"9990000001",
 			"DOC9",
+			"sid-1",
 			undefined,
 		);
 	});

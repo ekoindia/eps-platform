@@ -16,8 +16,8 @@ initiate response returned:
 | Outcome | `tx_status` | `response_status_id` | `response_type_id` | `status` | Terminal? | What the retailer must do |
 | --- | --- | --- | --- | --- | --- | --- |
 | Paid | `"0"` | 0 | 99013 | 0 | Yes | Money has moved and the wallet is credited. **Dispense the cash.** `bank_ref_num` holds the UPI RRN — store it. |
-| Failed | `"1"` | 1 | 99018 | 99018 | Yes | Nothing was debited or credited. **Do not dispense.** Start a fresh transaction if the customer still wants the cash. |
-| Pending | `"2"` | 2 | 99019 | 99019 | No | **Do not dispense.** Keep polling on the schedule — see below. |
+| Failed | `"1"` | 1 | 99018 | 1 | Yes | Nothing was debited or credited. **Do not dispense.** Start a fresh transaction if the customer still wants the cash. |
+| Pending | `"2"` | 2 | 99019 | 0 | No | **Do not dispense.** Keep polling on the schedule — see below. |
 
 > [!CAUTION]
 > **Only `tx_status == "0"` authorises handing over cash.** Anything else —

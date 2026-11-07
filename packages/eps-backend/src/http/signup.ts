@@ -451,7 +451,7 @@ export function mountSignup(
 	// it doesn't change signup status, so it returns the URL directly rather
 	// than routing through `respond()`.
 	app.get("/signup/agreement/url", async (c) => {
-		const { sub: mobile } = await requireSignupSession(c);
+		const { sub: mobile, sid } = await requireSignupSession(c);
 		// The browser mints one of these per attempt — 10 opaque characters — and
 		// shows it to the user when preparing the document fails. Logging it against this
 		// request's id is what makes a quoted reference resolvable — without it the
@@ -464,7 +464,7 @@ export function mountSignup(
 			.slice(0, 32);
 		try {
 			return c.json(
-				await signup.getAgreementUrl(mobile, c.req.header("x-real-ip")),
+				await signup.getAgreementUrl(mobile, sid, c.req.header("x-real-ip")),
 			);
 		} catch (e) {
 			if (clientRef) {
@@ -490,6 +490,7 @@ export function mountSignup(
 				await signup.submitSignAgreement(
 					mobile,
 					String(document_id ?? ""),
+					sid,
 					c.req.header("x-real-ip"),
 				),
 				sid,

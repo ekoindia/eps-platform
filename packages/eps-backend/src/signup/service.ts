@@ -6,8 +6,13 @@ import type {
 	EkoClient,
 	EkoErrorDetails,
 } from "../clients/eko";
-import { agreementIdOf, identityOf } from "../clients/eko";
+import {
+	agreementIdOf,
+	identityOf,
+	normalizeAgreementId,
+} from "../clients/eko";
 import type { Config } from "../config";
+import type { KV } from "../store/kv";
 import type { EkoProfile, ProfileResult } from "../types";
 import { encodePin } from "./pintwin";
 
@@ -122,10 +127,22 @@ export interface SignupService {
 		sid?: string,
 		xRealIp?: string,
 	): Promise<SignupState>;
-	getAgreementUrl(mobile: string, xRealIp?: string): Promise<AgreementUrl>;
+	/**
+	 * Fetches the provider signing URL (interaction 287).
+	 *
+	 * Takes the session id because a profile without an agreement id falls back
+	 * to the user's pending-agreement list (interaction 300, on connect-api).
+	 */
+	getAgreementUrl(
+		mobile: string,
+		sid?: string,
+		xRealIp?: string,
+	): Promise<AgreementUrl>;
+	/** Submits the signed document (interaction 293); `sid` as for `getAgreementUrl`. */
 	submitSignAgreement(
 		mobile: string,
 		documentId: string,
+		sid?: string,
 		xRealIp?: string,
 	): Promise<SignupState>;
 }
@@ -158,6 +175,12 @@ export class SignupStepError extends Error {
 
 const PIN_LENGTH = 4;
 
+/** `interaction_type_id` for "list my pending agreements" (connect-api). */
+const AGREEMENT_PENDING_INTERACTION = 300;
+
+/** How long a 287 document stays bound to its agreement id: covers a slow signing. */
+const AGREEMENT_ID_TTL_SEC = 24 * 60 * 60;
+
 /** Creates the signup orchestration service. */
 export function createSignupService(deps: {
 	eko: EkoClient;
@@ -171,8 +194,10 @@ export function createSignupService(deps: {
 	connect?: ConnectClient;
 	/** Supplies the sealed upstream token behind a session id. */
 	auth?: AuthProvider;
+	/** Binds a 287 document to its agreement id for 293. Optional: 293 re-resolves without it. */
+	kv?: KV;
 }): SignupService {
-	const { eko, connect, auth } = deps;
+	const { eko, connect, auth, kv } = deps;
 
 	/**
 	 * Projects an upstream profile result into client state.
@@ -293,23 +318,80 @@ export function createSignupService(deps: {
 	}
 
 	/**
-	 * Reads the user's agreement id off the profile, or refuses the step.
+	 * Resolves the user's agreement id for 287/293, or refuses the step.
 	 *
-	 * Deliberately has no fallback: the id used to be hardcoded to the API (EPS)
-	 * partner's '4', and substituting a guess for a missing one is exactly the bug
-	 * this replaced — it either fails upstream as 1083 or signs the wrong
-	 * agreement. `-1` marks a locally-raised failure, as elsewhere in this file.
+	 * Order: the 151 profile's `user_detail.agreement_id`, else the user's own
+	 * pending-agreement list (interaction 300, over connect-api). Some profiles
+	 * reach the Agreement step without the id (prod, 2026-11-06), and 300 is
+	 * where upstream lists what the user still has to sign.
+	 *
+	 * Never guesses: the id used to be hardcoded to the API (EPS) partner's '4',
+	 * which either fails upstream as 1083 or signs the wrong agreement. So 300
+	 * counts only when every entry carries a usable id and they name exactly ONE
+	 * agreement — several pending, or a malformed entry, refuses rather than pick.
+	 * `-1` marks a locally-raised failure, as elsewhere in this file.
 	 */
-	function requireAgreementId(profile: EkoProfile, step: string): string {
-		const agreementId = agreementIdOf(profile);
-		if (!agreementId) {
+	async function resolveAgreementId(
+		mobile: string,
+		profile: EkoProfile,
+		step: string,
+		sid: string | undefined,
+		xRealIp: string | undefined,
+	): Promise<string> {
+		const fromProfile = agreementIdOf(profile);
+		if (fromProfile) return fromProfile;
+
+		const refuse = (why: Record<string, unknown>): never => {
+			console.error("[signup] no agreement id", {
+				step,
+				mobile: mobile.slice(-4),
+				...why,
+			});
 			throw new SignupStepError(
 				`Couldn't ${step} right now. Please try again.`,
 				-1,
 			);
+		};
+		const token = await requireUpstreamToken(sid, step);
+		let envelope: Record<string, unknown>;
+		try {
+			envelope =
+				(await connect?.interact(
+					token,
+					{ interaction_type_id: AGREEMENT_PENDING_INTERACTION, locale: "en" },
+					{ xRealIp },
+				)) ?? {};
+		} catch (err) {
+			return refuse({ source: "300", err: String(err) });
 		}
-		return agreementId;
+		const list = (envelope.data as { agreementList?: unknown } | undefined)
+			?.agreementList;
+		const raw = Array.isArray(list)
+			? list.map((entry) =>
+					normalizeAgreementId(
+						(entry as { agreement_id?: unknown } | null)?.agreement_id,
+					),
+				)
+			: [];
+		const ids = [...new Set(raw)];
+		if (
+			Number(envelope.status ?? -1) !== 0 ||
+			ids.length !== 1 ||
+			ids[0] === null
+		) {
+			return refuse({
+				source: "300",
+				status: envelope.status ?? null,
+				message: envelope.message ?? null,
+				ids,
+			});
+		}
+		return ids[0];
 	}
+
+	/** KV key binding a 287 document to the agreement id it was created with. */
+	const agreementKey = (mobile: string, documentId: string) =>
+		`signup:agreement:${mobile}:${documentId}`;
 
 	/** Re-reads state from upstream after a step, so progress is never inferred. */
 	async function refresh(
@@ -444,12 +526,19 @@ export function createSignupService(deps: {
 			return refresh(mobile, xRealIp);
 		},
 
-		async getAgreementUrl(mobile, xRealIp) {
+		async getAgreementUrl(mobile, sid, xRealIp) {
 			const profile = await requireProfile(mobile, xRealIp);
+			const agreementId = await resolveAgreementId(
+				mobile,
+				profile,
+				"start the agreement signing",
+				sid,
+				xRealIp,
+			);
 			const result = await eko.getAgreementUrl({
 				mobile,
 				identity: identityOf(profile),
-				agreementId: requireAgreementId(profile, "start the agreement signing"),
+				agreementId,
 				xRealIp,
 			});
 			if (!result.ok) {
@@ -459,6 +548,21 @@ export function createSignupService(deps: {
 					result.details,
 				);
 			}
+			// 293 runs after signing, when 300 may no longer list the agreement —
+			// so remember exactly which id this document was created with.
+			// Best-effort: 293 still falls back to resolving it afresh.
+			try {
+				await kv?.set(
+					agreementKey(mobile, result.documentId),
+					agreementId,
+					AGREEMENT_ID_TTL_SEC,
+				);
+			} catch (err) {
+				console.error("[signup] agreement id bind failed", {
+					mobile: mobile.slice(-4),
+					err: String(err),
+				});
+			}
 			return {
 				shortUrl: result.shortUrl,
 				documentId: result.documentId,
@@ -467,21 +571,29 @@ export function createSignupService(deps: {
 			};
 		},
 
-		async submitSignAgreement(mobile, documentId, xRealIp) {
+		async submitSignAgreement(mobile, documentId, sid, xRealIp) {
 			const profile = await requireProfile(mobile, xRealIp);
+			// The id 287 bound to this document wins; resolving afresh is the
+			// fallback (KV lost, expired, or not configured).
+			let bound: string | null = null;
+			try {
+				bound = (await kv?.get(agreementKey(mobile, documentId))) ?? null;
+			} catch {
+				// best-effort: fall through to resolving it
+			}
+			const agreementId =
+				bound ??
+				(await resolveAgreementId(
+					mobile,
+					profile,
+					"complete the agreement signing",
+					sid,
+					xRealIp,
+				));
 			const result = await eko.submitSignAgreement({
 				documentId,
 				identity: identityOf(profile),
-				// Re-read, not carried over from 287: this is a separate request with
-				// its own profile fetch, and there is nowhere server-side holding the
-				// id the document was created with. Upstream treats the agreement id
-				// as a property of the user, so the two reads agree in practice — if
-				// that ever stops being true, bind the id to `documentId` in the KV
-				// store at 287 and read it back here.
-				agreementId: requireAgreementId(
-					profile,
-					"complete the agreement signing",
-				),
+				agreementId,
 				xRealIp,
 			});
 			if (!result.ok) {

@@ -4203,7 +4203,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				example: {
 					response_status_id: 1,
 					response_type_id: 99018,
-					status: 99018,
+					status: 1,
 					message: "UPI cash withdrawal failed. No amount has been credited.",
 					data: {
 						tid: "123456789",
@@ -4220,7 +4220,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				example: {
 					response_status_id: 2,
 					response_type_id: 99019,
-					status: 99019,
+					status: 0,
 					message: "UPI cash withdrawal is pending. Do not hand over cash.",
 					data: {
 						tid: "123456789",

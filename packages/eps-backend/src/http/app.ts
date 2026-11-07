@@ -169,7 +169,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	const auth = deps.auth ?? createEkoAuthProvider(eko);
 	const signup =
 		deps.signup ??
-		createSignupService({ eko, cfg, connect: deps.connect, auth });
+		createSignupService({ eko, cfg, connect: deps.connect, auth, kv });
 	const app = new Hono<AppEnv>();
 
 	/**

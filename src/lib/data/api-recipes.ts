@@ -292,7 +292,7 @@ export const ALL_RECIPES: Recipe[] = [
 			{
 				specSlug: "upi-cash-withdrawal-status",
 				purpose:
-					'Poll by `tid` every `status_check_gap` seconds, at most `status_check_attempts` times. Compare `data.tx_status` to the string "0"; anything else — "1", "2", an unknown value, a timeout — is NOT paid. Pending (99019) after the last scheduled poll: stop, treat as not paid, re-query once after a few minutes, and escalate to Eko support with `tid` if still pending after ~30 minutes.',
+					'Poll by `tid` every `status_check_gap` seconds, at most `status_check_attempts` times. Compare `data.tx_status` to the string "0"; anything else — "1", "2", an unknown value, a timeout — is NOT paid. Pending `response_type_id` (99019) after the last scheduled poll: stop, treat as not paid, re-query once after a few minutes, and escalate to Eko support with `tid` if still pending after ~30 minutes.',
 				branches: [
 					{
 						onResponseTypeId: 99013,

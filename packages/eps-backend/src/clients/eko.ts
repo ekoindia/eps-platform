@@ -1,4 +1,8 @@
-import { noopEkoLogger, type EkoLogEntry, type EkoLogger } from "../audit/ekoLog";
+import {
+	noopEkoLogger,
+	type EkoLogEntry,
+	type EkoLogger,
+} from "../audit/ekoLog";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult, TransactionRow } from "../types";
 import {
@@ -222,7 +226,16 @@ export interface EkoIdentity {
  * @returns The id as the string the interaction expects, or null.
  */
 export function agreementIdOf(profile: EkoProfile): string | null {
-	const raw = profile.userDetail?.agreement_id;
+	return normalizeAgreementId(profile.userDetail?.agreement_id);
+}
+
+/**
+ * Normalizes one raw upstream agreement id — off the 151 profile or an
+ * interaction-300 `agreementList` entry — into the string 287/293 expect.
+ * @param raw - The value as upstream sent it.
+ * @returns The id, or null when it is absent or unusable.
+ */
+export function normalizeAgreementId(raw: unknown): string | null {
 	if (typeof raw === "number") {
 		return Number.isFinite(raw) ? String(raw) : null;
 	}

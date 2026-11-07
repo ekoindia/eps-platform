@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { EkoClient } from "../clients/eko";
 import type { Config } from "../config";
+import { createInMemoryKV } from "../store/kv";
 import { createSignupService, SignupStepError } from "./service";
 
 const cfg = {
@@ -52,6 +53,44 @@ function pintwinDeps(fetchPintwinKey = vi.fn()) {
 	return {
 		fetchPintwinKey,
 		connect: { fetchPintwinKey } as never,
+		auth: {
+			name: "connect" as const,
+			getUpstream: vi.fn().mockResolvedValue({ accessToken: "tok-1" }),
+		} as never,
+	};
+}
+
+/** The onboarding profile as prod saw it: `agreement: 1`, no `agreement_id`. */
+const noIdProfile = {
+	...onboardingProfile,
+	profile: { ...onboardingProfile.profile, userDetail: { agreement: 1 } },
+};
+
+/** A successful 287 result for document DOC9. */
+const urlOk = {
+	ok: true,
+	shortUrl: "https://sign/x",
+	documentId: "DOC9",
+	pipe: 3,
+	alreadySigned: false,
+};
+
+/** An interaction-300 envelope listing the given pending agreements. */
+function pendingEnvelope(agreementList: unknown[]) {
+	return {
+		status: 0,
+		message: "Pending agreements.",
+		data: { agreementList },
+	};
+}
+
+/**
+ * The connect-api double the agreement-id fallback needs: `interact` answers
+ * interaction 300, and the auth provider yields the session's sealed token.
+ */
+function pendingDeps(interact: ReturnType<typeof vi.fn>) {
+	return {
+		connect: { interact } as never,
 		auth: {
 			name: "connect" as const,
 			getUpstream: vi.fn().mockResolvedValue({ accessToken: "tok-1" }),
@@ -622,6 +661,130 @@ describe("getAgreementUrl", () => {
 		);
 		expect(getAgreementUrl).not.toHaveBeenCalled();
 	});
+
+	it("does not ask interaction 300 when the profile carries the id", async () => {
+		const interact = vi.fn();
+		const svc = createSignupService({
+			eko: ekoStub({
+				getAgreementUrl: vi.fn().mockResolvedValue(urlOk),
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+			...pendingDeps(interact),
+		});
+		await svc.getAgreementUrl("9990000001", "sid-1");
+		expect(interact).not.toHaveBeenCalled();
+	});
+
+	// REGRESSION (prod 2026-11-06): a 151 profile with only `agreement: 1` and
+	// no `agreement_id` refused the step without ever reaching upstream.
+	it("falls back to the single pending agreement from interaction 300", async () => {
+		const getAgreementUrl = vi.fn().mockResolvedValue(urlOk);
+		const interact = vi
+			.fn()
+			.mockResolvedValue(pendingEnvelope([{ agreement_id: 21 }]));
+		const kv = createInMemoryKV();
+		const svc = createSignupService({
+			eko: ekoStub({
+				getAgreementUrl,
+				getProfile: vi.fn().mockResolvedValue(noIdProfile),
+			}),
+			cfg,
+			kv,
+			...pendingDeps(interact),
+		});
+		await svc.getAgreementUrl("9990000001", "sid-1", "1.2.3.4");
+		expect(interact).toHaveBeenCalledWith(
+			"tok-1",
+			{ interaction_type_id: 300, locale: "en" },
+			{ xRealIp: "1.2.3.4" },
+		);
+		expect(getAgreementUrl).toHaveBeenCalledWith(
+			expect.objectContaining({ agreementId: "21" }),
+		);
+		expect(await kv.get("signup:agreement:9990000001:DOC9")).toBe("21");
+	});
+
+	it("accepts a string status and duplicate entries naming one agreement", async () => {
+		const getAgreementUrl = vi.fn().mockResolvedValue(urlOk);
+		const interact = vi.fn().mockResolvedValue({
+			...pendingEnvelope([{ agreement_id: "21" }, { agreement_id: 21 }]),
+			status: "0",
+		});
+		const svc = createSignupService({
+			eko: ekoStub({
+				getAgreementUrl,
+				getProfile: vi.fn().mockResolvedValue(noIdProfile),
+			}),
+			cfg,
+			...pendingDeps(interact),
+		});
+		await svc.getAgreementUrl("9990000001", "sid-1");
+		expect(getAgreementUrl).toHaveBeenCalledWith(
+			expect.objectContaining({ agreementId: "21" }),
+		);
+	});
+
+	it.each([
+		["an empty list", pendingEnvelope([])],
+		["no list at all", { status: 0, data: {} }],
+		[
+			"a non-zero status",
+			{ ...pendingEnvelope([{ agreement_id: 21 }]), status: 1 },
+		],
+		[
+			"several pending agreements",
+			pendingEnvelope([{ agreement_id: 21 }, { agreement_id: 4 }]),
+		],
+		[
+			"a malformed entry beside a good one",
+			pendingEnvelope([{ agreement_id: 21 }, { agreement_id: "  " }]),
+		],
+	])("refuses on %s from interaction 300", async (_label, envelope) => {
+		const getAgreementUrl = vi.fn();
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			const svc = createSignupService({
+				eko: ekoStub({
+					getAgreementUrl,
+					getProfile: vi.fn().mockResolvedValue(noIdProfile),
+				}),
+				cfg,
+				...pendingDeps(vi.fn().mockResolvedValue(envelope)),
+			});
+			await expect(svc.getAgreementUrl("9990000001", "sid-1")).rejects.toThrow(
+				SignupStepError,
+			);
+			expect(getAgreementUrl).not.toHaveBeenCalled();
+			expect(error).toHaveBeenCalledWith(
+				"[signup] no agreement id",
+				expect.objectContaining({ mobile: "0001", source: "300" }),
+			);
+		} finally {
+			error.mockRestore();
+		}
+	});
+
+	it("refuses when interaction 300 itself fails", async () => {
+		const getAgreementUrl = vi.fn();
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			const svc = createSignupService({
+				eko: ekoStub({
+					getAgreementUrl,
+					getProfile: vi.fn().mockResolvedValue(noIdProfile),
+				}),
+				cfg,
+				...pendingDeps(vi.fn().mockRejectedValue(new Error("down"))),
+			});
+			await expect(svc.getAgreementUrl("9990000001", "sid-1")).rejects.toThrow(
+				SignupStepError,
+			);
+			expect(getAgreementUrl).not.toHaveBeenCalled();
+		} finally {
+			error.mockRestore();
+		}
+	});
 });
 
 describe("submitSignAgreement", () => {
@@ -685,5 +848,68 @@ describe("submitSignAgreement", () => {
 			SignupStepError,
 		);
 		expect(submitSignAgreement).not.toHaveBeenCalled();
+	});
+
+	// Signing can take the agreement off the pending list, so 293 must not
+	// depend on 300 still naming it.
+	it("submits the id 287 bound to the document even after 300 empties", async () => {
+		const submitSignAgreement = vi.fn().mockResolvedValue({ ok: true });
+		const interact = vi
+			.fn()
+			.mockResolvedValueOnce(pendingEnvelope([{ agreement_id: 21 }]))
+			.mockResolvedValue(pendingEnvelope([]));
+		const svc = createSignupService({
+			eko: ekoStub({
+				getAgreementUrl: vi.fn().mockResolvedValue(urlOk),
+				submitSignAgreement,
+				getProfile: vi.fn().mockResolvedValue(noIdProfile),
+			}),
+			cfg,
+			kv: createInMemoryKV(),
+			...pendingDeps(interact),
+		});
+		await svc.getAgreementUrl("9990000001", "sid-1");
+		await svc.submitSignAgreement("9990000001", "DOC9", "sid-1");
+		expect(submitSignAgreement).toHaveBeenCalledWith(
+			expect.objectContaining({ documentId: "DOC9", agreementId: "21" }),
+		);
+		expect(interact).toHaveBeenCalledTimes(1);
+	});
+
+	it("re-resolves via 300 when nothing is bound to the document", async () => {
+		const submitSignAgreement = vi.fn().mockResolvedValue({ ok: true });
+		const svc = createSignupService({
+			eko: ekoStub({
+				submitSignAgreement,
+				getProfile: vi.fn().mockResolvedValue(noIdProfile),
+			}),
+			cfg,
+			kv: createInMemoryKV(),
+			...pendingDeps(
+				vi.fn().mockResolvedValue(pendingEnvelope([{ agreement_id: 21 }])),
+			),
+		});
+		await svc.submitSignAgreement("9990000001", "DOC9", "sid-1");
+		expect(submitSignAgreement).toHaveBeenCalledWith(
+			expect.objectContaining({ agreementId: "21" }),
+		);
+	});
+
+	it("re-resolves when the KV read fails", async () => {
+		const submitSignAgreement = vi.fn().mockResolvedValue({ ok: true });
+		const kv = createInMemoryKV();
+		vi.spyOn(kv, "get").mockRejectedValue(new Error("kv down"));
+		const svc = createSignupService({
+			eko: ekoStub({
+				submitSignAgreement,
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+			kv,
+		});
+		await svc.submitSignAgreement("9990000001", "DOC9", "sid-1");
+		expect(submitSignAgreement).toHaveBeenCalledWith(
+			expect.objectContaining({ agreementId: "7" }),
+		);
 	});
 });
