@@ -577,15 +577,15 @@ A completed signup emits this backend sequence. Every line carries the
 the `eko_upstream` lines (prod: `./deploy/health.sh logs 2000 | grep <mobile>`;
 dev: `npm run dev:pretty`):
 
-| Log line | Emitted by | What it tells you |
-| --- | --- | --- |
-| `[connect-auth] login { mobile, profileKind, userType, anonymousUser }` | OTP verify | The identity connect-api minted at login. A brand-new signup correctly says `anonymousUser: true` here. |
-| `[signup] upgrade { mobile, sid, profileKind }` | every `done` `/signup/*` response | The upgrade ran; `profileKind !== "found"` means it bailed before minting. |
-| `[signup] entitlement refresh requested` / `failed` / `unavailable` | same | Whether the profile refresh was even asked for. |
-| `[connect-auth] entitlement refresh collapsed { refreshedAgoMs }` | provider | The 60s guard swallowed it — another completed `/signup/*` response already refreshed within the last minute. |
-| `[connect-auth] profile refreshed { sid, mobile, userType, anonymousUser }` | provider | `POST /authentication/refresh-profile` succeeded and what identity it minted. After onboarding this must NOT say anonymous. |
-| `[connect-auth] rotated { sid, userType, anonymousUser }` | provider | A plain expiry-driven token rotation (`/authentication/token`). Cannot change roles by construction. |
-| `[connect] wlc { mobile, sid, count, kycEntitled }` | `/connect/interactions` | What upstream actually served for this sealed token. `kycEntitled` (586+587) is a diagnostic only — Upload Documents is gated on the account state now, not on this. |
+| Log line                                                                    | Emitted by                        | What it tells you                                                                                                                                                    |
+| --------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[connect-auth] login { mobile, profileKind, userType, anonymousUser }`     | OTP verify                        | The identity connect-api minted at login. A brand-new signup correctly says `anonymousUser: true` here.                                                              |
+| `[signup] upgrade { mobile, sid, profileKind }`                             | every `done` `/signup/*` response | The upgrade ran; `profileKind !== "found"` means it bailed before minting.                                                                                           |
+| `[signup] entitlement refresh requested` / `failed` / `unavailable`         | same                              | Whether the profile refresh was even asked for.                                                                                                                      |
+| `[connect-auth] entitlement refresh collapsed { refreshedAgoMs }`           | provider                          | The 60s guard swallowed it — another completed `/signup/*` response already refreshed within the last minute.                                                        |
+| `[connect-auth] profile refreshed { sid, mobile, userType, anonymousUser }` | provider                          | `POST /authentication/refresh-profile` succeeded and what identity it minted. After onboarding this must NOT say anonymous.                                          |
+| `[connect-auth] rotated { sid, userType, anonymousUser }`                   | provider                          | A plain expiry-driven token rotation (`/authentication/token`). Cannot change roles by construction.                                                                 |
+| `[connect] wlc { mobile, sid, count, kycEntitled }`                         | `/connect/interactions`           | What upstream actually served for this sealed token. `kycEntitled` (586+587) is a diagnostic only — Upload Documents is gated on the account state now, not on this. |
 
 Browser side, the same request logs `[connect] interaction list fetched
 { count, kycEntitled }` (`console.debug` — enable Verbose in devtools) and a
@@ -617,7 +617,7 @@ Verdict table for a repro:
 Local repro: fresh mobile on UAT → complete the wizard → watch the sequence
 above in order. The whole point of the ordering is that `login`, `profile
 refreshed`, and `wlc` each carry the identity/entitlement snapshot at their
-step, so the first line where the new roles *should* appear and don't names
+step, so the first line where the new roles _should_ appear and don't names
 the failing layer.
 
 ## Interaction reference table
@@ -631,17 +631,17 @@ helpers share one send/log/error pipeline (`sendForm()` in `eko.ts`), so
 logging and error semantics are identical either way. Success is judged
 per-interaction — there is no single convention:
 
-| #     | Interaction             | Method (`eko.ts`)                              | Identity used                 | Success condition                                                                                                                                                                          |
-| ----- | ----------------------- | ---------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 521   | Create partial account  | `createPartialAccount`                         | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`)                                                                                                                                  |
-| 523   | Verify PAN              | `verifyPan` (multipart, via `postMultipart()`) | user's own (`actor()`)        | `response_type_id === 1569` (`PAN_VERIFICATION_OK`)                                                                                                                                        |
-| 522   | Business details        | `submitBusiness` (398-414)                     | user's own (`actor()`)        | `response_type_id === 1567` (`BUSINESS_DETAILS_OK`)                                                                                                                                        |
-| 170   | Get booklet number      | `getBooklet` (326-351)                         | user's own                    | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
-| 353   | PIN code → city/state   | `lookupPincode`                                | user's own (`actor()`)        | `status === 0` **and** a `dependent_params` array — see "PIN code → City and State"                                                                                                        |
+| #     | Interaction             | Method (`eko.ts`)                                                      | Identity used                 | Success condition                                                                                                                                                                          |
+| ----- | ----------------------- | ---------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 521   | Create partial account  | `createPartialAccount`                                                 | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`)                                                                                                                                  |
+| 523   | Verify PAN              | `verifyPan` (multipart, via `postMultipart()`)                         | user's own (`actor()`)        | `response_type_id === 1569` (`PAN_VERIFICATION_OK`)                                                                                                                                        |
+| 522   | Business details        | `submitBusiness` (398-414)                                             | user's own (`actor()`)        | `response_type_id === 1567` (`BUSINESS_DETAILS_OK`)                                                                                                                                        |
+| 170   | Get booklet number      | `getBooklet` (326-351)                                                 | user's own                    | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
+| 353   | PIN code → city/state   | `lookupPincode`                                                        | user's own (`actor()`)        | `status === 0` **and** a `dependent_params` array — see "PIN code → City and State"                                                                                                        |
 | 10005 | Fetch pintwin key       | **`connect.fetchPintwinKey`** — connect-api, bearer auth, NOT `eko.ts` | the session's sealed token    | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id` (`key_id` 0 is valid)                                                               |
-| 5     | Set secret PIN          | `setSecretPin` (366-382)                       | user's own                    | `response_type_id === 9` (`SECRET_PIN_OK`)                                                                                                                                                 |
-| 287   | Fetch e-sign URL        | `getAgreementUrl`                              | user's own                    | `status === 0` **and** a `data.short_url` with an `http(s)` scheme — **not** a fixed `response_type_id` (see below). `response_type_id` 1615/1069 with `status` 0 means already signed     |
-| 293   | Submit signed agreement | `submitSignAgreement`                          | user's own                    | `status === 0`. An absent `status` fails, unlike 287                                                                                                                                       |
+| 5     | Set secret PIN          | `setSecretPin` (366-382)                                               | user's own                    | `response_type_id === 9` (`SECRET_PIN_OK`)                                                                                                                                                 |
+| 287   | Fetch e-sign URL        | `getAgreementUrl`                                                      | user's own                    | `status === 0` **and** a `data.short_url` with an `http(s)` scheme — **not** a fixed `response_type_id` (see below). `response_type_id` 1615/1069 with `status` 0 means already signed     |
+| 293   | Submit signed agreement | `submitSignAgreement`                                                  | user's own                    | `status === 0`. An absent `status` fails, unlike 287                                                                                                                                       |
 
 The Sign Agreement step (287/293) has its own end-to-end walkthrough and an
 Eloka (`wlc-webapp`) comparison in
@@ -865,12 +865,12 @@ aside sits below the card in the content column (`lg:col-start-2`).
 `src/index.css`. Both of those details were arrived at the hard way, and the
 comment there records why:
 
-- **Not `min-[1100px]:`.** Tailwind emits arbitrary media variants *before* the
+- **Not `min-[1100px]:`.** Tailwind emits arbitrary media variants _before_ the
   named breakpoint scale, so an inline `min-[1100px]:grid-cols-…` loses the
   cascade to `lg:grid-cols-…` at every width where both match — the layout just
   silently stays two-column.
 - **Not `1100px`.** The scale is sorted by raw value, and px cannot be compared
-  against rem, so even a *named* px breakpoint sorts ahead of `lg` (64rem) and
+  against rem, so even a _named_ px breakpoint sorts ahead of `lg` (64rem) and
   fails the same way. Match the unit the scale uses.
 
 Both failures are invisible in tests (jsdom has no layout) and in the class
@@ -927,11 +927,11 @@ advice, not a gate.
 **The status line under the field has three states**, driven by `panCategory.ts`
 and swapped in place inside one `role="status"` element:
 
-| Condition | Reads |
-|---|---|
-| valid format | "Format looks right — {phrase}." with a green check |
-| exactly 10 characters, invalid | "That doesn't look like a valid PAN." |
-| anything else | "Encrypted, and used only for your KYC check." |
+| Condition                      | Reads                                               |
+| ------------------------------ | --------------------------------------------------- |
+| valid format                   | "Format looks right — {phrase}." with a green check |
+| exactly 10 characters, invalid | "That doesn't look like a valid PAN."               |
+| anything else                  | "Encrypted, and used only for your KYC check."      |
 
 The error keys on the full `PAN_LENGTH`, and `normalizePan` caps input there, so it
 cannot fire mid-typing — telling someone their half-typed PAN is wrong is nagging.
@@ -953,19 +953,19 @@ drag-and-drop and a browser autofill are all cleaned the same way.
 
 The input deliberately carries **no `maxLength`**. The browser applies that before
 the change handler sees the value, so pasting "ABCDE 1234 F" would be truncated to
-ten *dirty* characters and silently lose its final letter. Capping after the strip
+ten _dirty_ characters and silently lose its final letter. Capping after the strip
 is the fix; re-adding `maxLength` would reintroduce the bug.
 
 **2. A prefill and an ordering on the Business step.** `CATEGORY_CANDIDATES` maps
 a letter to the `COMPANY_TYPES` it admits, best candidate first, plus whether that
 first one dominates enough to preselect:
 
-| PAN letter | Candidates, best first | Preselected |
-|---|---|---|
-| `P` Individual | Sole Proprietorship, Individual | — a genuine coin flip |
-| `C` Company | Private Limited, Public Limited | Private Limited |
-| `F` Firm / LLP | LLP, Partnership | LLP |
-| `H` `A` `T` `B` `L` `J` `G` | (default order) | — no matching option exists |
+| PAN letter                  | Candidates, best first          | Preselected                 |
+| --------------------------- | ------------------------------- | --------------------------- |
+| `P` Individual              | Sole Proprietorship, Individual | — a genuine coin flip       |
+| `C` Company                 | Private Limited, Public Limited | Private Limited             |
+| `F` Firm / LLP              | LLP, Partnership                | LLP                         |
+| `H` `A` `T` `B` `L` `J` `G` | (default order)                 | — no matching option exists |
 
 `C` and `F` each hide a collision — that is why the second candidate is kept
 adjacent to the preselected one rather than dropped. Where nothing dominates, the
@@ -1020,13 +1020,14 @@ The step renders four things, in order:
    PAN determines one) the business type with its edit control. Shown only when
    `profile.name` is present **and** passes the name field's own pattern.
 2. **The business-type question**, when `!verifiedBoxVisible || !autoFilledType
-   || editingType`.
+|| editingType`.
 
    That first clause is load-bearing. An upstream name containing `&` fails the
    field pattern, so the box does not render; a predicate testing only the PAN
    category would then hide the sole control for a required field and leave the
    form permanently unsubmittable. When the box cannot render, the editable
    Company/Firm's Name input comes back too.
+
 3. **Who signs the agreement** — authorised signatory and work email.
 4. **Registered address** — PIN code and City on one row, then State, then a
    single Street address line.
@@ -1060,11 +1061,11 @@ envelope; `errorDetails` only ever saw it on failures. Success is classified on
 
 The result is deliberately three-way, not two:
 
-| Upstream | `PincodeResult` | Service `PincodeOutcome` | Route | UI |
-|---|---|---|---|---|
-| `status === 0` + params | `ok: true` | `ok: true` | 200 `{city, state}` | fills what it got |
-| `status !== 0` | `kind: "miss"` | `ok: true`, both null | 200 `{null, null}` | silent |
-| `status === 0`, no params | `kind: "malformed"` | `reason: "malformed"` | **502** | silent |
+| Upstream                  | `PincodeResult`     | Service `PincodeOutcome` | Route               | UI                |
+| ------------------------- | ------------------- | ------------------------ | ------------------- | ----------------- |
+| `status === 0` + params   | `ok: true`          | `ok: true`               | 200 `{city, state}` | fills what it got |
+| `status !== 0`            | `kind: "miss"`      | `ok: true`, both null    | 200 `{null, null}`  | silent            |
+| `status === 0`, no params | `kind: "malformed"` | `reason: "malformed"`    | **502**             | silent            |
 
 Collapsing the last row into the second is the failure mode this split exists to
 prevent: a dead lookup would look exactly like a long run of unrecognised PIN
@@ -1087,7 +1088,7 @@ Four rules in `BusinessStep` keep the autofill from doing damage:
   value comparison, because a user can legitimately type the same city the lookup
   would have.
 - **A late response never overwrites a manual edit.** Aborting on a PIN-code
-  change does not cover an edit made to City while the *same* code's lookup is in
+  change does not cover an edit made to City while the _same_ code's lookup is in
   flight, so the response checks `editedByUser` before assigning.
 
 The lookup is **not** wrapped in `withRetries`. It is a convenience, and retrying
@@ -1101,12 +1102,12 @@ was never actually rejected. `withRetries` (`src/lib/retry.ts`) wraps the calls
 where that hurts most: **two retries, 1s then 3s apart**, so three attempts and
 at most 4s of extra waiting.
 
-| Wrapped call | Where |
-| --- | --- |
-| `signupClient.state()` (initial load) | `SignupWizard.tsx` mount effect |
-| Every step submit — PAN, business, PIN, agreement | `runStep`, `SignupWizard.tsx` |
-| `getAgreementUrl()` (287) | `initialize`, `SignAgreementStep.tsx` |
-| `connectKyc.upload()` | `submit`, `KycUploadDialog.tsx` |
+| Wrapped call                                      | Where                                 |
+| ------------------------------------------------- | ------------------------------------- |
+| `signupClient.state()` (initial load)             | `SignupWizard.tsx` mount effect       |
+| Every step submit — PAN, business, PIN, agreement | `runStep`, `SignupWizard.tsx`         |
+| `getAgreementUrl()` (287)                         | `initialize`, `SignAgreementStep.tsx` |
+| `connectKyc.upload()`                             | `submit`, `KycUploadDialog.tsx`       |
 
 `createProfile()` is deliberately **not** wrapped: it is a non-idempotent POST
 that creates a partial account upstream, which is the same reason the `started`
