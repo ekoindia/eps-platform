@@ -662,16 +662,37 @@ Onboarding]`); omitting it answers `invalid_params: {agreement_status: …}`.
 The BFF sends `"success"` — it is only ever called once the signing provider
 reported success.
 
-**`agreement_id` is per-user, read from the profile.** Both interactions send
-`user_detail.agreement_id` off the caller's own interaction-151 profile, via
-`agreementIdOf()` (`eko.ts`). It was hardcoded to `"4"` — the API (EPS) partner
-agreement — until it was noticed upstream carries the right one per user. There
-is deliberately **no fallback**: when the profile has no usable id, the signup
-service throws `SignupStepError` before any upstream call, because a guessed id
-either fails as 1083 "Invalid agreement id." or signs the wrong agreement. The
-id is re-read from the profile on 293 rather than carried over from 287 —
-upstream treats it as a property of the user, so the two reads agree; if that
-stops holding, bind the id to the `document_id` in KV at 287 instead.
+**`agreement_id` is per-user, never guessed.** It was hardcoded to `"4"` — the
+API (EPS) partner agreement — until it was noticed upstream carries the right
+one per user. `resolveAgreementId()` (`signup/service.ts`) resolves it in order:
+
+1. **The 151 profile** — `user_detail.agreement_id`, via `agreementIdOf()`
+   (`eko.ts`). Usually present (prod: `4` or `21`).
+2. **Interaction 300** (pending agreements, over connect-api) —
+   `data.agreementList[].agreement_id`. Some profiles reach the Agreement step
+   with only `user_detail.agreement: 1` and no id (prod, 2026-11-06: three 400s,
+   287 never sent, so SimpliBank had no record of the attempt). 300 counts only
+   when `status` is 0 (number or string) and **every** entry normalizes
+   (`normalizeAgreementId()`) to the **same single** id; several pending
+   agreements or a malformed entry refuse rather than pick. 300 rides the
+   session's sealed upstream token, so both agreement routes pass the session
+   `sid` through; no connect-api, no `sid`, or no stored upstream session all
+   refuse via `requireUpstreamToken` (`[signup] connect-api unavailable`).
+
+When neither yields an id the step throws `SignupStepError` (`-1`, "Couldn't
+start the agreement signing right now. Please try again.") before any 287/293
+call, because a guessed id either fails as 1083 "Invalid agreement id." or signs
+the wrong agreement. Each refusal logs `[signup] no agreement id` with the
+step, the mobile's last 4 digits and what 300 returned (`status`, `message`,
+`ids`) — grep that, not the user-facing message.
+
+**287 binds the id to its document for 293.** After a successful 287 the id it
+used is stored in KV at `signup:agreement:<mobile>:<document_id>` (24h TTL), and
+293 reads that binding first. Signing can take the agreement off 300's pending
+list, so re-resolving at 293 could otherwise strand a user who has already
+signed. The binding is best-effort both ways: a failed write logs
+`[signup] agreement id bind failed`, and a missing, expired or unreadable
+binding falls back to the profile → 300 order above.
 
 287 returns the `document_id` under `data` when it issues a
 URL but at the **top level** on the already-signed replies; reading only `data`
