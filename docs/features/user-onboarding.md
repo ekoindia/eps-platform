@@ -679,12 +679,22 @@ one per user. `resolveAgreementId()` (`signup/service.ts`) resolves it in order:
    `sid` through; no connect-api, no `sid`, or no stored upstream session all
    refuse via `requireUpstreamToken` (`[signup] connect-api unavailable`).
 
-When neither yields an id the step throws `SignupStepError` (`-1`, "Couldn't
-start the agreement signing right now. Please try again.") before any 287/293
-call, because a guessed id either fails as 1083 "Invalid agreement id." or signs
-the wrong agreement. Each refusal logs `[signup] no agreement id` with the
-step, the mobile's last 4 digits and what 300 returned (`status`, `message`,
-`ids`) — grep that, not the user-facing message.
+When neither yields an id the step refuses before any 287/293 call, because a
+guessed id either fails as 1083 "Invalid agreement id." or signs the wrong
+agreement. How it refuses depends on whether upstream actually answered:
+
+| 300 outcome | Response | Retried by the client? |
+| --- | --- | --- |
+| Answered (status 0, or "No records found") with no single usable id | **422 `PROFILE_INCOMPLETE`**, `details: { missing: ["agreement_id"], reason, pendingIds, checked, step }` — `reason` is `none_pending`, `several_pending` or `malformed_entry` | No (`NEVER_RETRY`) |
+| Threw, or a non-zero status that is not "No records found" | 400 `STEP_FAILED` (`source: proxy`), "Couldn't start the agreement signing right now" | Yes — says nothing about the profile |
+
+On `PROFILE_INCOMPLETE` the Sign Agreement panel names the field ("Agreement ID
+missing in your profile"), drops the "almost always fixed by one retry" copy,
+shows the WhatsApp support link at once, and demotes Try again to a secondary
+button (it still works once support has fixed the profile, without a reload).
+The red line under the panel carries the backend `message`. Each refusal also
+logs `[signup] no agreement id` with the step, the mobile's last 4 digits and
+what 300 returned (`reason`/`ids`, or `status`/`message`/`err`).
 
 **287 binds the id to its document for 293.** After a successful 287 the id it
 used is stored in KV at `signup:agreement:<mobile>:<document_id>` (24h TTL), and

@@ -182,6 +182,12 @@ export function mountSignup(
 	/** Maps a step failure to a 400 carrying the upstream's own message. */
 	function toAppError(e: unknown): never {
 		if (e instanceof SignupStepError) {
+			// `-1` marks a refusal raised here, not by upstream: tagging it `api`
+			// sends ops to Eko for a failure that never reached them (the
+			// 2026-11-06 agreement-id case did exactly that).
+			if (e.responseTypeId === -1) {
+				throw new AppError(400, "STEP_FAILED", e.message, e.details);
+			}
 			throw AppError.fromUpstream(400, "STEP_FAILED", e.message, e.details);
 		}
 		throw e;

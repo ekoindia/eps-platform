@@ -12,6 +12,7 @@ import {
 	normalizeAgreementId,
 } from "../clients/eko";
 import type { Config } from "../config";
+import { profileIncomplete, unusableProfile } from "../http/errors";
 import type { KV } from "../store/kv";
 import type { EkoProfile, ProfileResult } from "../types";
 import { encodePin } from "./pintwin";
@@ -178,6 +179,12 @@ const PIN_LENGTH = 4;
 /** `interaction_type_id` for "list my pending agreements" (connect-api). */
 const AGREEMENT_PENDING_INTERACTION = 300;
 
+/**
+ * Upstream's "empty list" wording on a non-zero 300 status. Same pattern
+ * `/connect/esign/pending` reads it with (`KYC_NO_RECORDS`, `http/connect.ts`).
+ */
+const AGREEMENT_NO_RECORDS = /no\s+records?\s+found/i;
+
 /** How long a 287 document stays bound to its agreement id: covers a slow signing. */
 const AGREEMENT_ID_TTL_SEC = 24 * 60 * 60;
 
@@ -211,10 +218,7 @@ export function createSignupService(deps: {
 			return { mobile, status: "new", steps: [], currentRole: null };
 		}
 		if (r.kind !== "onboarding" && r.kind !== "found") {
-			throw new SignupStepError(
-				"Couldn't load your profile right now. Please try again.",
-				r.responseTypeId,
-			);
+			throw unusableProfile(r.kind);
 		}
 		const { profile } = r;
 		const steps = profile.onboardingSteps;
@@ -278,10 +282,7 @@ export function createSignupService(deps: {
 	): Promise<EkoProfile> {
 		const r = await eko.getProfile({ mobile, xRealIp });
 		if (r.kind !== "onboarding" && r.kind !== "found") {
-			throw new SignupStepError(
-				"Couldn't load your profile right now. Please try again.",
-				r.responseTypeId,
-			);
+			throw unusableProfile(r.kind);
 		}
 		return r.profile;
 	}
@@ -341,12 +342,17 @@ export function createSignupService(deps: {
 		const fromProfile = agreementIdOf(profile);
 		if (fromProfile) return fromProfile;
 
-		const refuse = (why: Record<string, unknown>): never => {
+		const log = (why: Record<string, unknown>) =>
 			console.error("[signup] no agreement id", {
 				step,
 				mobile: mobile.slice(-4),
+				source: "300",
 				...why,
 			});
+		// 300 itself failed: a transient fault, not a verdict on the profile —
+		// stays a retryable STEP_FAILED.
+		const transient = (why: Record<string, unknown>): never => {
+			log(why);
 			throw new SignupStepError(
 				`Couldn't ${step} right now. Please try again.`,
 				-1,
@@ -362,7 +368,16 @@ export function createSignupService(deps: {
 					{ xRealIp },
 				)) ?? {};
 		} catch (err) {
-			return refuse({ source: "300", err: String(err) });
+			return transient({ err: String(err) });
+		}
+		// "No records found" is upstream's empty list, not a failure (same
+		// reading as `/connect/esign/pending`).
+		const noRecords = AGREEMENT_NO_RECORDS.test(String(envelope.message ?? ""));
+		if (Number(envelope.status ?? -1) !== 0 && !noRecords) {
+			return transient({
+				status: envelope.status ?? null,
+				message: envelope.message ?? null,
+			});
 		}
 		const list = (envelope.data as { agreementList?: unknown } | undefined)
 			?.agreementList;
@@ -374,19 +389,29 @@ export function createSignupService(deps: {
 				)
 			: [];
 		const ids = [...new Set(raw)];
-		if (
-			Number(envelope.status ?? -1) !== 0 ||
-			ids.length !== 1 ||
-			ids[0] === null
-		) {
-			return refuse({
-				source: "300",
-				status: envelope.status ?? null,
-				message: envelope.message ?? null,
-				ids,
-			});
-		}
-		return ids[0];
+		if (ids.length === 1 && ids[0] !== null) return ids[0];
+
+		// Upstream answered, and the answer has no single usable id: permanent
+		// until someone fixes the profile, so say exactly that — not "try again".
+		const reason =
+			ids.length === 0
+				? "none_pending"
+				: ids.includes(null)
+					? "malformed_entry"
+					: "several_pending";
+		log({ reason, ids });
+		throw profileIncomplete(
+			"agreement_id",
+			reason === "several_pending"
+				? "Your profile has more than one pending agreement, so we can't tell which one to prepare. Retrying won't help — please contact support."
+				: "Agreement ID missing in your profile, so the agreement can't be prepared. Retrying won't help — please contact support.",
+			{
+				step,
+				reason,
+				checked: ["profile_151", "pending_agreements_300"],
+				pendingIds: ids,
+			},
+		);
 	}
 
 	/** KV key binding a 287 document to the agreement id it was created with. */

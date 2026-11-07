@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { EkoClient } from "../clients/eko";
 import type { Config } from "../config";
+import { AppError } from "../http/errors";
 import { createInMemoryKV } from "../store/kv";
 import { createSignupService, SignupStepError } from "./service";
 
@@ -725,22 +726,79 @@ describe("getAgreementUrl", () => {
 		);
 	});
 
+	// Upstream ANSWERED and the answer holds no single usable id: permanent
+	// until the profile is fixed, so a non-retryable PROFILE_INCOMPLETE that
+	// names the field — the 2026-11-06 case showed "try again" for this.
 	it.each([
-		["an empty list", pendingEnvelope([])],
-		["no list at all", { status: 0, data: {} }],
+		["an empty list", pendingEnvelope([]), "none_pending", []],
+		["no list at all", { status: 0, data: {} }, "none_pending", []],
 		[
-			"a non-zero status",
-			{ ...pendingEnvelope([{ agreement_id: 21 }]), status: 1 },
+			"upstream's 'No records found'",
+			{ status: 1, message: "No records found", data: {} },
+			"none_pending",
+			[],
 		],
 		[
 			"several pending agreements",
 			pendingEnvelope([{ agreement_id: 21 }, { agreement_id: 4 }]),
+			"several_pending",
+			["21", "4"],
 		],
 		[
 			"a malformed entry beside a good one",
 			pendingEnvelope([{ agreement_id: 21 }, { agreement_id: "  " }]),
+			"malformed_entry",
+			["21", null],
 		],
-	])("refuses on %s from interaction 300", async (_label, envelope) => {
+	])(
+		"refuses as PROFILE_INCOMPLETE on %s from interaction 300",
+		async (_label, envelope, reason, pendingIds) => {
+			const getAgreementUrl = vi.fn();
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			try {
+				const svc = createSignupService({
+					eko: ekoStub({
+						getAgreementUrl,
+						getProfile: vi.fn().mockResolvedValue(noIdProfile),
+					}),
+					cfg,
+					...pendingDeps(vi.fn().mockResolvedValue(envelope)),
+				});
+				const err = await svc
+					.getAgreementUrl("9990000001", "sid-1")
+					.catch((e: unknown) => e);
+				expect(err).toBeInstanceOf(AppError);
+				expect(err).toMatchObject({
+					status: 422,
+					code: "PROFILE_INCOMPLETE",
+					source: "proxy",
+					details: {
+						missing: ["agreement_id"],
+						reason,
+						pendingIds,
+						checked: ["profile_151", "pending_agreements_300"],
+					},
+				});
+				expect(getAgreementUrl).not.toHaveBeenCalled();
+				expect(error).toHaveBeenCalledWith(
+					"[signup] no agreement id",
+					expect.objectContaining({ mobile: "0001", source: "300", reason }),
+				);
+			} finally {
+				error.mockRestore();
+			}
+		},
+	);
+
+	// 300 itself failing says nothing about the profile: stays a retryable
+	// STEP_FAILED rather than telling the user their data is broken.
+	it.each([
+		["throws", vi.fn().mockRejectedValue(new Error("down"))],
+		[
+			"answers a non-zero status",
+			vi.fn().mockResolvedValue({ status: 1, message: "Server busy" }),
+		],
+	])("keeps STEP_FAILED when interaction 300 %s", async (_label, interact) => {
 		const getAgreementUrl = vi.fn();
 		const error = vi.spyOn(console, "error").mockImplementation(() => {});
 		try {
@@ -750,40 +808,60 @@ describe("getAgreementUrl", () => {
 					getProfile: vi.fn().mockResolvedValue(noIdProfile),
 				}),
 				cfg,
-				...pendingDeps(vi.fn().mockResolvedValue(envelope)),
+				...pendingDeps(interact),
 			});
 			await expect(svc.getAgreementUrl("9990000001", "sid-1")).rejects.toThrow(
 				SignupStepError,
 			);
 			expect(getAgreementUrl).not.toHaveBeenCalled();
-			expect(error).toHaveBeenCalledWith(
-				"[signup] no agreement id",
-				expect.objectContaining({ mobile: "0001", source: "300" }),
-			);
 		} finally {
 			error.mockRestore();
 		}
 	});
+});
 
-	it("refuses when interaction 300 itself fails", async () => {
-		const getAgreementUrl = vi.fn();
-		const error = vi.spyOn(console, "error").mockImplementation(() => {});
-		try {
-			const svc = createSignupService({
-				eko: ekoStub({
-					getAgreementUrl,
-					getProfile: vi.fn().mockResolvedValue(noIdProfile),
+describe("profile preconditions", () => {
+	it("refuses a blank user code before any upstream call", async () => {
+		const verifyPan = vi.fn();
+		const svc = createSignupService({
+			eko: ekoStub({
+				verifyPan,
+				getProfile: vi.fn().mockResolvedValue({
+					...onboardingProfile,
+					profile: { ...onboardingProfile.profile, code: "" },
 				}),
-				cfg,
-				...pendingDeps(vi.fn().mockRejectedValue(new Error("down"))),
-			});
-			await expect(svc.getAgreementUrl("9990000001", "sid-1")).rejects.toThrow(
-				SignupStepError,
-			);
-			expect(getAgreementUrl).not.toHaveBeenCalled();
-		} finally {
-			error.mockRestore();
-		}
+			}),
+			cfg,
+		});
+		const err = await svc
+			.submitPan("9990000001", "ABCDE1234F")
+			.catch((e: unknown) => e);
+		expect(err).toMatchObject({
+			status: 422,
+			code: "PROFILE_INCOMPLETE",
+			details: { missing: ["user_code"] },
+		});
+		expect(verifyPan).not.toHaveBeenCalled();
+	});
+
+	// One cause, one code — these used to share "Couldn't load your profile
+	// right now", which invited a retry three of the four can never pass.
+	it.each([
+		["not_found", 404, "PROFILE_NOT_FOUND"],
+		["inactive", 403, "ACCOUNT_INACTIVE"],
+		["not_allowed", 403, "NOT_ALLOWED"],
+		["error", 502, "PROFILE_UNAVAILABLE"],
+	])("maps a %s profile to %i %s", async (kind, status, code) => {
+		const svc = createSignupService({
+			eko: ekoStub({
+				getProfile: vi.fn().mockResolvedValue({ kind, responseTypeId: 1 }),
+			}),
+			cfg,
+		});
+		await expect(svc.getAgreementUrl("9990000001")).rejects.toMatchObject({
+			status,
+			code,
+		});
 	});
 });
 

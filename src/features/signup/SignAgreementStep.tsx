@@ -110,6 +110,26 @@ function newClientRef(): string {
 	);
 }
 
+/** Plain names for the profile fields a `PROFILE_INCOMPLETE` refusal can name. */
+const PROFILE_FIELD_LABELS: Record<string, string> = {
+	agreement_id: "Agreement ID",
+	user_code: "Eko user code",
+};
+
+/**
+ * The profile field a failure says is missing, when it is a
+ * `PROFILE_INCOMPLETE` refusal — a gap in upstream's data that no retry fixes.
+ * @param e - The thrown value from preparing the document.
+ * @returns The field's display name, or null for any other failure.
+ */
+function missingProfileField(e: unknown): string | null {
+	if (!(e instanceof ApiError) || e.code !== "PROFILE_INCOMPLETE") return null;
+	const field = (e.details?.missing as unknown[] | undefined)?.[0];
+	return typeof field === "string"
+		? (PROFILE_FIELD_LABELS[field] ?? "A required detail")
+		: "A required detail";
+}
+
 /** The uppercase eyebrow the signup asides use, reused for the panel's status line. */
 const EYEBROW = "text-xs font-bold tracking-[0.12em] uppercase";
 
@@ -142,6 +162,9 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 	// run long enough to say so. Both reset at the start of every attempt.
 	const [stamped, setStamped] = useState(0);
 	const [slow, setSlow] = useState(false);
+	// Set when the failure is missing profile data (`PROFILE_INCOMPLETE`): the
+	// panel then points at support instead of promising a retry will work.
+	const [missingField, setMissingField] = useState<string | null>(null);
 	const started = useRef(false);
 	// Auto-submit fires at most once per mount; the manual Continue is what
 	// retries a failed submit, so this must NOT reset on failure.
@@ -163,6 +186,7 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 		setSlow(false);
 		setPhase("loading");
 		setLocalError(null);
+		setMissingField(null);
 		try {
 			const data = await withRetries(() => signupClient.getAgreementUrl(ref));
 			setSignData(data);
@@ -172,6 +196,7 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 			// The only place the reference and the underlying failure appear
 			// together — the panel shows the user the reference alone.
 			console.error(`[agreement] ${ref}`, e);
+			setMissingField(missingProfileField(e));
 			setLocalError(
 				e instanceof ApiError
 					? e.message
@@ -315,21 +340,38 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 							<p className={`${EYEBROW} text-destructive`}>
 								Couldn't prepare the document
 							</p>
-							<p className="text-base font-semibold text-foreground">
-								Something broke on our side
-							</p>
-							<p className="text-sm text-muted-foreground">
-								Nothing you entered is lost — your business details are saved
-								and will be filled in again. This is almost always fixed by one
-								retry.
-							</p>
+							{missingField ? (
+								<>
+									<p className="text-base font-semibold text-foreground">
+										{missingField} missing in your profile
+									</p>
+									<p className="text-sm text-muted-foreground">
+										Nothing you entered is lost. Our team has to fix your
+										profile before the document can be prepared, so retrying
+										won't help until then.
+									</p>
+								</>
+							) : (
+								<>
+									<p className="text-base font-semibold text-foreground">
+										Something broke on our side
+									</p>
+									<p className="text-sm text-muted-foreground">
+										Nothing you entered is lost — your business details are
+										saved and will be filled in again. This is almost always
+										fixed by one retry.
+									</p>
+								</>
+							)}
 							{/* Held back until a retry has ALSO failed. The copy below
 							    promises one retry usually fixes this, and it usually does —
 							    pointing at a human on the first failure would send people to
 							    support ahead of the button that would have worked. Also
 							    requires a configured number: the support vars are
-							    per-deployment, and a dead link is worse than none. */}
-							{whatsapp && attempts > 1 && (
+							    per-deployment, and a dead link is worse than none. A
+							    missing-profile-data failure shows it at once: no retry
+							    will work, so support IS the next step. */}
+							{whatsapp && (attempts > 1 || missingField) && (
 								<a
 									href={`https://wa.me/${whatsapp.length === 10 ? `91${whatsapp}` : whatsapp}`}
 									target="_blank"
@@ -422,10 +464,13 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 					</Button>
 				)}
 
+				{/* Secondary, not hidden, for a profile-data failure: it still works
+				    once support has fixed the profile, without a page reload. */}
 				{failed && (
 					<Button
 						type="button"
 						size="lg"
+						variant={missingField ? "outline" : undefined}
 						className="w-full"
 						onClick={() => void initialize()}
 					>
@@ -480,9 +525,11 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 				<p className="text-center text-[0.7em] text-muted-foreground">
 					{!failed
 						? "Opens the document first. You sign at the end with your Aadhaar number and an OTP."
-						: attempts > 1
-							? `Quote reference ${clientRef} to support and we'll prepare it manually within a working day.`
-							: `If the second attempt fails too, quote reference ${clientRef} to support and we'll prepare it manually within a working day.`}
+						: missingField
+							? `Quote reference ${clientRef} to support so our team can fix your profile.`
+							: attempts > 1
+								? `Quote reference ${clientRef} to support and we'll prepare it manually within a working day.`
+								: `If the second attempt fails too, quote reference ${clientRef} to support and we'll prepare it manually within a working day.`}
 				</p>
 			</div>
 

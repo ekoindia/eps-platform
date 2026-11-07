@@ -4,6 +4,7 @@ import {
 	type EkoLogger,
 } from "../audit/ekoLog";
 import type { Config } from "../config";
+import { profileIncomplete } from "../http/errors";
 import type { EkoProfile, ProfileResult, TransactionRow } from "../types";
 import {
 	mapAccounts,
@@ -244,11 +245,26 @@ export function normalizeAgreementId(raw: unknown): string | null {
 	return id === "" ? null : id;
 }
 
-/** The user's own identity, valid once the partial account exists. */
+/**
+ * The user's own identity, valid once the partial account exists.
+ *
+ * Refuses a profile with no `user_detail.code` rather than sending
+ * `user_code=` upstream: every interaction acting as the user carries it, and
+ * a blank one fails there with an error naming something else entirely.
+ * (A blank mobile never gets this far — 151 classification rejects it.)
+ * @throws {AppError} 422 `PROFILE_INCOMPLETE` when the code is blank.
+ */
 export function identityOf(profile: EkoProfile): EkoIdentity {
+	const userCode = String(profile.code ?? "").trim();
+	if (!userCode) {
+		throw profileIncomplete(
+			"user_code",
+			"Your profile is missing its Eko user code, so this can't continue. Retrying won't help — please contact support.",
+		);
+	}
 	return {
 		initiatorId: profile.mobile,
-		userCode: String(profile.code),
+		userCode,
 		orgId: profile.orgId,
 	};
 }

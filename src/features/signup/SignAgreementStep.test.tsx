@@ -13,10 +13,17 @@ vi.mock("@/lib/auth/client", () => {
 	class ApiError extends Error {
 		code: string;
 		httpStatus: number;
-		constructor(code: string, message: string, httpStatus: number) {
+		details?: Record<string, unknown>;
+		constructor(
+			code: string,
+			message: string,
+			httpStatus: number,
+			details?: Record<string, unknown>,
+		) {
 			super(message);
 			this.code = code;
 			this.httpStatus = httpStatus;
+			this.details = details;
 		}
 	}
 	return {
@@ -46,8 +53,7 @@ vi.mock("./esign", () => ({
 let supportWhatsapp = "9876543210";
 
 vi.mock("@/lib/config/features", async (importOriginal) => {
-	const actual =
-		await importOriginal<typeof import("@/lib/config/features")>();
+	const actual = await importOriginal<typeof import("@/lib/config/features")>();
 	// A getter, not a value: the step reads the constant on every render, and a
 	// plain property would freeze whatever this file happened to hold at import.
 	return {
@@ -186,6 +192,39 @@ describe("SignAgreementStep", () => {
 		});
 	});
 
+	// REGRESSION (2026-11-06): a profile with no agreement id showed "almost
+	// always fixed by one retry" after three silent retries. Missing profile data
+	// is a verdict: one call, the field named, support offered at once.
+	it("names the missing profile field and points at support without retrying", async () => {
+		getAgreementUrl.mockRejectedValue(
+			new ApiError(
+				"PROFILE_INCOMPLETE",
+				"Agreement ID missing in your profile, so the agreement can't be prepared.",
+				422,
+				{ missing: ["agreement_id"], reason: "none_pending" },
+			),
+		);
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		renderStep();
+
+		expect(
+			await screen.findByText("Agreement ID missing in your profile"),
+		).toBeInTheDocument();
+		expect(getAgreementUrl).toHaveBeenCalledTimes(1);
+		expect(screen.queryByText(/something broke on our side/i)).toBeNull();
+		expect(screen.queryByText(/fixed by one retry/i)).toBeNull();
+		expect(
+			screen.getByRole("link", { name: /talk to support on whatsapp/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/so our team can fix your profile/i),
+		).toBeInTheDocument();
+		// Still offered — it works once support has fixed the profile.
+		expect(
+			screen.getByRole("button", { name: /try again/i }),
+		).toBeInTheDocument();
+	});
+
 	// All three retry attempts must quote the SAME reference: one attempt by the
 	// user is one reference, whatever `withRetries` does underneath.
 	it("sends one generated reference with every attempt and shows it on failure", async () => {
@@ -258,7 +297,9 @@ describe("SignAgreementStep", () => {
 			await settle();
 
 			expect(screen.queryByRole("link", { name: /whatsapp/i })).toBeNull();
-			expect(screen.getByText(/if the second attempt fails too/i)).toBeInTheDocument();
+			expect(
+				screen.getByText(/if the second attempt fails too/i),
+			).toBeInTheDocument();
 
 			fireEvent.click(screen.getByRole("button", { name: /try again/i }));
 			await settle();

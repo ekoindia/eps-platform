@@ -59,7 +59,10 @@ function harness(
 	// Mirrors app.ts's onError so status/code assertions match production.
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
-			return c.json(errorBody(err.code, err.message, undefined, err.source), err.status as never);
+			return c.json(
+				errorBody(err.code, err.message, err.details, err.source),
+				err.status as never,
+			);
 		}
 		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 500);
 	});
@@ -99,8 +102,12 @@ async function search(app: Hono<AppEnv>, body: unknown): Promise<Response> {
 }
 
 /** The parsed error envelope of a failed response. */
-async function errorOf(res: Response): Promise<{ code: string }> {
-	const body = (await res.json()) as { error: { code: string } };
+async function errorOf(
+	res: Response,
+): Promise<{ code: string; details?: Record<string, unknown> }> {
+	const body = (await res.json()) as {
+		error: { code: string; details?: Record<string, unknown> };
+	};
 	return body.error;
 }
 
@@ -254,7 +261,7 @@ describe("transactions search", () => {
 		);
 	});
 
-	it("502s rather than calling upstream when the account cannot be resolved", async () => {
+	it("refuses as PROFILE_INCOMPLETE rather than calling upstream when the account cannot be resolved", async () => {
 		// Omitting account_id would make upstream answer with its DEFAULT account
 		// (interaction 9 behaves that way), i.e. report somebody else's history as
 		// this user's. Refusing is the honest answer.
@@ -268,8 +275,11 @@ describe("transactions search", () => {
 			},
 		});
 		const res = await search(app, {});
-		expect(res.status).toBe(502);
-		expect((await errorOf(res)).code).toBe("NO_ACCOUNT");
+		// Profile data, not an outage: a 422 the client won't retry, naming the gap.
+		expect(res.status).toBe(422);
+		const err = await errorOf(res);
+		expect(err.code).toBe("PROFILE_INCOMPLETE");
+		expect(err.details).toEqual({ missing: ["evalue_account"] });
 		expect(eko.getTransactionHistory).not.toHaveBeenCalled();
 	});
 });
@@ -372,7 +382,8 @@ describe("transactions report", () => {
 	it("never forwards an unknown filter key upstream", async () => {
 		const { app, eko } = harness("developer");
 		await report(app, { filters: { ...RANGE, interaction_type_id: "515" } });
-		const { filters } = vi.mocked(eko.downloadTransactionReport).mock.calls[0][0];
+		const { filters } = vi.mocked(eko.downloadTransactionReport).mock
+			.calls[0][0];
 		expect(filters).toEqual(RANGE);
 	});
 });

@@ -21,6 +21,12 @@ const NEVER_RETRY = new Set([
 	"RATE_LIMITED",
 	"NO_SESSION",
 	"NOT_SIGNUP_SESSION",
+	// Verdicts on the profile itself: the same data comes back on every try
+	// until someone fixes it upstream.
+	"PROFILE_INCOMPLETE",
+	"PROFILE_NOT_FOUND",
+	"ACCOUNT_INACTIVE",
+	"NOT_ALLOWED",
 ]);
 
 /**

@@ -7,7 +7,7 @@ import type { ZohoClient } from "../clients/zoho";
 import type { Config } from "../config";
 import type { SignupService, SignupState } from "../signup/service";
 import { SignupStepError } from "../signup/service";
-import { AppError, errorBody } from "./errors";
+import { AppError, errorBody, profileIncomplete } from "./errors";
 import type { AppEnv } from "./requestId";
 import { mountSignup } from "./signup";
 
@@ -305,6 +305,44 @@ describe("signup endpoints", () => {
 		});
 		// Diagnostics (rid/ts/version) are attached by createApp's onError, not by
 		// this harness — see trace.test.ts for the wired-up envelope.
+	});
+
+	// REGRESSION (2026-11-06): our own refusal went out as `source: "api"`, so
+	// the agreement-id case was escalated to SimpliBank, who had no record of it.
+	it("tags a locally raised step error (-1) as proxy, not api", async () => {
+		const app = harness("signup", {
+			submitPan: vi
+				.fn()
+				.mockRejectedValue(new SignupStepError("Couldn't right now", -1)),
+		});
+		const res = await app.request("/signup/pan", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pan: "ABCDE1234F" }),
+		});
+		expect(((await res.json()) as { error: unknown }).error).toEqual({
+			code: "STEP_FAILED",
+			message: "Couldn't right now",
+			source: "proxy",
+		});
+	});
+
+	it("passes a profile-data AppError through with its own status and code", async () => {
+		const app = harness("signup", {
+			getAgreementUrl: vi.fn().mockRejectedValue(
+				profileIncomplete("agreement_id", "Agreement ID missing", {
+					reason: "none_pending",
+				}),
+			),
+		});
+		const res = await app.request("/signup/agreement/url", withCookie);
+		expect(res.status).toBe(422);
+		expect(((await res.json()) as { error: unknown }).error).toEqual({
+			code: "PROFILE_INCOMPLETE",
+			message: "Agreement ID missing",
+			details: { missing: ["agreement_id"], reason: "none_pending" },
+			source: "proxy",
+		});
 	});
 
 	it("omits details entirely when the step error carries none", async () => {
