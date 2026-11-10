@@ -81,6 +81,10 @@ Notes on individual fields:
   `/console/pay-activation-fee`: a claim finance reconciles, not a verified
   fact. **Note `Activation_Fee_Discount` is partner-writable too**, so treat it
   as a claim as well.
+- **`Count_of_Directors`** is limited to 1–15 (`range` on its spec), the
+  console's picker range. The Documents page writes it from the director picker,
+  and writes `1` into an empty field for a One Person Company — see
+  [KYC document upload](kyc-documents.md#director-count-and-per-director-documents).
 - **Attribution** fields are write-once: the frontend may capture them, but a
   partner cannot later rewrite their own marketing attribution. They are
   normally written by `POST /crm/lead/attribution`, not `PATCH` — see

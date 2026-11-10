@@ -1,4 +1,6 @@
 import { PageMeta } from "@/components/PageMeta";
+import { useConsoleMe } from "@/components/console/ConsoleLayout";
+import { DirectorCountPicker } from "@/components/console/DirectorCountPicker";
 import { KycUploadDialog } from "@/components/console/KycUploadDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +14,11 @@ import {
 import { ErrorNotice } from "@/components/console/ErrorNotice";
 import { Callout } from "@/components/docs/Callout";
 import { authClient } from "@/lib/auth/client";
+import {
+	chosenDirectorCount,
+	directorRule,
+	effectiveDirectorCount,
+} from "@/lib/connect/directors";
 import { ESIGN_PATH } from "@/lib/connect/esign";
 import { useEsignPending } from "@/lib/connect/esign-pending";
 import {
@@ -24,8 +31,9 @@ import {
 import { configOf } from "@/lib/connect/kyc-docs";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
+import { useCrmLead } from "@/lib/crm/use-crm-lead";
 import { CheckCircle2, FileText } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -268,6 +276,34 @@ export default function Documents() {
 	// approved" is worth saying either way.
 	const esignPending = useEsignPending(useRoleTransactionList());
 
+	// How many directors the per-director documents must cover. The business
+	// type decides whether to ask at all — see `directors.ts`.
+	const me = useConsoleMe();
+	const { state: crm, fields: lead, update: updateLead } = useCrmLead();
+	const rule = directorRule(me.profile);
+	const storedDirectors = lead?.Count_of_Directors;
+	const directorCount = effectiveDirectorCount(rule, storedDirectors);
+
+	// An OPC has exactly one director, so nobody is asked — but the CRM should
+	// still say so. Once per mount, and only into an empty field: a value
+	// someone already recorded is theirs to correct, not ours to overwrite.
+	const opcRecorded = useRef(false);
+	const fixedDirectors = rule.kind === "fixed" ? rule.count : null;
+	useEffect(() => {
+		if (fixedDirectors === null || crm.status !== "ok" || opcRecorded.current)
+			return;
+		opcRecorded.current = true;
+		if (
+			storedDirectors !== null &&
+			storedDirectors !== undefined &&
+			storedDirectors !== ""
+		)
+			return;
+		updateLead({ Count_of_Directors: fixedDirectors }).catch((err: unknown) =>
+			console.warn("[crm] couldn't record the OPC director count", err),
+		);
+	}, [fixedDirectors, crm.status, storedDirectors, updateLead]);
+
 	// The rail hides this page, but the route is reachable by URL — a nav item is
 	// not an access control.
 	if (enabled === false) {
@@ -346,6 +382,21 @@ export default function Documents() {
 					</Callout>
 				) : null}
 
+				{/* Only while there is still something to upload: once the pack is
+				    in, the count no longer changes what the partner does here. */}
+				{!resolving &&
+				!error &&
+				documents.length > 0 &&
+				!waiting &&
+				rule.kind === "ask" ? (
+					<DirectorCountPicker
+						rule={rule}
+						value={chosenDirectorCount(rule, storedDirectors)}
+						onSave={(count) => updateLead({ Count_of_Directors: count })}
+						disabled={crm.status !== "ok"}
+					/>
+				) : null}
+
 				{!resolving && !error && documents.length > 0 ? (
 					<>
 						<p className="text-sm text-muted-foreground">{summary}</p>
@@ -364,6 +415,8 @@ export default function Documents() {
 
 				<KycUploadDialog
 					doc={uploading}
+					directorCount={directorCount}
+					directorNoun={rule.kind === "ask" ? rule.noun : undefined}
 					onClose={(result) => {
 						setUploading(null);
 						if (!result) return;

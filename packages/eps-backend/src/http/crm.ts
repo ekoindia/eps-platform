@@ -68,6 +68,12 @@ function checkValue(key: string, spec: LeadFieldSpec, value: unknown): void {
 					`must be a whole number of up to ${spec.maxLength} digits.`,
 				);
 			}
+			if (spec.range && (value < spec.range.min || value > spec.range.max)) {
+				throw invalid(
+					key,
+					`must be between ${spec.range.min} and ${spec.range.max}.`,
+				);
+			}
 			return;
 		case "currency":
 			if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {

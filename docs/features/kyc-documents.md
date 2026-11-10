@@ -206,6 +206,71 @@ because a document asking for zero files could never be submitted at all. A
 range like `"1-2"` takes its low end, on the same logic: too few files fails at
 review, too many blocks the upload outright.
 
+## Director count and per-director documents
+
+An Aadhaar, a PAN and a live photograph are **one copy per director** (or
+partner), all in one upload slot — and upstream locks the document once it is
+in, so a director left out cannot be added later. Those doc types carry
+`perDirector: true` in `KYC_DOC_CONFIG` (`1`, `2`, `15`, `24`).
+
+The count is the CRM Lead's `Count_of_Directors`. The business type
+(`company_type`, read with `profileCompanyTypeCode`) decides whether to ask and
+what range is allowed — `directorRule` in `src/lib/connect/directors.ts`:
+
+| Business type (522 code) | Documents page | Range | Assumed until answered | Called |
+| --- | --- | --- | --- | --- |
+| Private Limited (1), company name with `(OPC)` | not asked; `1` written to the CRM if empty | 1 | 1 | directors |
+| Private Limited (1), company name | asked | 2–15 | 2 | directors |
+| Private Limited (1), no company suffix in the name | asked | 1–15 | nothing | directors |
+| Public Limited (5) | asked | 3–15 | 3 | directors |
+| LLP (4) | asked | 2–15 | 2 | designated partners |
+| Partnership (2) | asked | 2–15 | 2 | partners |
+| Sole Proprietorship (3), Individual (7) | not asked | — | — (no checks) | — |
+| missing / unknown | asked | 1–15 | nothing (checks start once answered) | directors |
+
+- **OPC** has no code of its own: it registers as Private Limited, so it is told
+  apart by the registered name (`profile.name`): it must carry a private
+  company's suffix — "Private Limited", "Pvt Ltd" or "Pvt. Ltd" — **and**
+  "(OPC)". Only for type 1 or a missing type — an "(OPC)" in a partnership's
+  name is ignored.
+- A Private Limited profile whose name has **no company suffix** probably
+  verified a personal PAN by mistake, so the name says nothing about the
+  company: it is asked 1–15 with nothing assumed — it may or may not be an OPC.
+- A stored count **outside the type's range** reads as unanswered: no chip is
+  selected and the assumed minimum applies.
+- The backend refuses anything outside **1–15** (`range` on the
+  `Count_of_Directors` spec), whatever the type.
+
+**The picker** (`DirectorCountPicker`) sits above the list while anything is
+still to upload. Seven one-tap chips from the type's minimum, then a native
+*More* select for the rest up to 15. Until answered it is marked required (`*`)
+and tinted gold, with "Please select the number of directors in your company."
+in place of the upload hint — a small known range is quicker tapped than
+opened, and the select hands the long tail to the phone's own picker. The chips
+are real radio inputs (arrow keys and screen readers for free). Every choice
+saves at once through `useCrmLead().update`; the control holds still until the
+save settles, and a failed save toasts and shows the previous answer.
+
+**The upload dialog**, for a `perDirector` document when the count is above 1:
+
+- says "Upload copies for all N directors in one go";
+- lifts `FileUpload`'s `maxFiles` to `max(10, 2 × N)` — front and back each;
+- on Upload, counts pages (an image is 1, a PDF its own page count via
+  `pdfPageCount`, an unreadable PDF 1). Fewer pages than directors swaps the
+  footer for a warning with **Go back** / **Upload anyway**. Changing any file
+  drops the warning, so a confirmation never outlives the files it counted.
+
+It warns rather than refuses: one PDF page can hold several cards, and the count
+is only as good as the partner's answer. Changing the count after a document is
+in does not reopen it.
+
+The profile page's *Legal & Compliance* card follows the same rule: no row for
+types 3/7, a read-only `1 (One Person Company)` for an OPC, and the row's label
+names partners or designated partners where that is what they are. Editing it
+is a select over the rule's range (1–15, 2–15 or 3–15) rather than free text; a
+stored value outside the range stays listed first, so an untouched form never
+rewrites it.
+
 ## What is deliberately not sent
 
 - **`doc_id`** appears in connect-api's sample upload params and is omitted.
@@ -929,6 +994,8 @@ only useful before a file is picked.
 | --- | --- |
 | `src/lib/connect/kyc.ts` | Constants, `KycDocument`, parsing, status, `summariseDocuments`, `isAwaitingReview`, `isPackApproved`, `KYC_POLL_MS` |
 | `src/lib/connect/kyc-docs.ts` | Per-`doc_type` overrides, `KYC_ACCEPT`, the mirrored backend limits |
+| `src/lib/connect/directors.ts` | `directorRule`, `effectiveDirectorCount` — the director count per business type |
+| `src/components/console/DirectorCountPicker.tsx` | The director-count chips on the Documents page |
 | `src/lib/connect/kyc.fixture.ts` | The 586 sample, shared by tests and the bench |
 | `public/kyc-samples/` | The downloadable blanks a `sampleUrl` points at |
 | `src/lib/console/lifecycle.ts` | `needsKycUpload()` — the 48/47 gate the rail, page and card share |

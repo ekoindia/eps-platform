@@ -33,6 +33,24 @@ vi.mock("@/lib/connect/use-interactions", () => ({
 	useRoleTransactionList: () => esignEntitlement(),
 }));
 
+// The profile and CRM Lead the director count is read from. Both are context
+// the console layout and AuthProvider normally supply; driven directly here.
+const profile = vi.fn();
+vi.mock("@/components/console/ConsoleLayout", () => ({
+	useConsoleMe: () => ({ profile: profile() }),
+}));
+const crmLead = vi.fn();
+const updateLead = vi.fn();
+vi.mock("@/lib/crm/use-crm-lead", () => ({
+	useCrmLead: () => ({ ...crmLead(), update: updateLead }),
+}));
+
+/** A CRM Lead that has loaded with these fields. */
+const leadWith = (fields: Record<string, unknown>) => ({
+	state: { status: "ok", fields, picklists: {} },
+	fields,
+});
+
 // The dialog pulls in the camera and image editor; this page's tests are about
 // the list, and the dialog has the bench for its own exercise. The extra
 // button lets tests drive `onClose` the way a real upload success would.
@@ -40,12 +58,14 @@ vi.mock("@/components/console/KycUploadDialog", () => ({
 	KycUploadDialog: ({
 		doc,
 		onClose,
+		directorCount,
 	}: {
 		doc: { docType: string; name: string } | null;
 		onClose: (result: { docType: string; message: string } | null) => void;
+		directorCount?: number | null;
 	}) =>
 		doc ? (
-			<div data-testid="upload-dialog">
+			<div data-testid="upload-dialog" data-directors={String(directorCount)}>
 				{doc.name}
 				<button
 					onClick={() => onClose({ docType: doc.docType, message: "Uploaded" })}
@@ -61,6 +81,13 @@ const { authClient } = await import("@/lib/auth/client");
 const fetchDocuments = vi.mocked(authClient.connectKyc.documents);
 
 beforeEach(() => {
+	profile.mockReset().mockReturnValue({
+		name: "Acme Private Limited",
+		userDetail: { company_type: "1" },
+		detailBlocks: {},
+	});
+	crmLead.mockReset().mockReturnValue(leadWith({ Count_of_Directors: null }));
+	updateLead.mockReset().mockResolvedValue(undefined);
 	kycEnabled.mockReset().mockReturnValue(true);
 	esignEntitlement.mockReset().mockReturnValue(null);
 	fetchDocuments.mockReset().mockResolvedValue({
@@ -472,5 +499,133 @@ describe("Documents", () => {
 
 		expect(await screen.findByText("Blurred scan")).toBeVisible();
 		expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
+	});
+});
+
+describe("Documents — director count", () => {
+	const withType = (company_type: string, name = "Acme Private Limited") =>
+		profile.mockReturnValue({
+			name,
+			userDetail: { company_type },
+			detailBlocks: {},
+		});
+
+	it("asks a private company, from its legal minimum of two", async () => {
+		render(<Documents />);
+
+		const group = await screen.findByRole("group", {
+			name: "Number of directors",
+		});
+		expect(group).toBeVisible();
+		expect(screen.queryByRole("radio", { name: "1" })).toBeNull();
+		expect(screen.getByRole("radio", { name: "2" })).not.toBeChecked();
+		expect(screen.getByRole("radio", { name: "8" })).toBeVisible();
+		expect(screen.queryByRole("radio", { name: "9" })).toBeNull();
+	});
+
+	it("asks to be answered until it is, then says what the count is for", async () => {
+		const { unmount } = render(<Documents />);
+		expect(
+			await screen.findByText(
+				"Please select the number of directors in your company.",
+			),
+		).toBeVisible();
+		expect(screen.queryByText(/for each director/)).toBeNull();
+		unmount();
+
+		crmLead.mockReturnValue(leadWith({ Count_of_Directors: 3 }));
+		render(<Documents />);
+		expect(
+			await screen.findByText(/Upload one Aadhaar, PAN and live photograph/),
+		).toBeVisible();
+		expect(screen.queryByText(/Please select/)).toBeNull();
+	});
+
+	it("asks a Private Limited profile with a personal name from 1", async () => {
+		withType("1", "Asha Rao");
+		render(<Documents />);
+
+		expect(await screen.findByRole("radio", { name: "1" })).toBeVisible();
+		expect(updateLead).not.toHaveBeenCalled();
+	});
+
+	it("calls an LLP's people designated partners and a firm's partners", async () => {
+		withType("4");
+		const { unmount } = render(<Documents />);
+		expect(
+			await screen.findByRole("group", {
+				name: "Number of designated partners",
+			}),
+		).toBeVisible();
+		unmount();
+
+		withType("2");
+		render(<Documents />);
+		expect(
+			await screen.findByRole("group", { name: "Number of partners" }),
+		).toBeVisible();
+	});
+
+	it.each(["3", "7"])("never asks company type %s", async (code) => {
+		withType(code);
+		render(<Documents />);
+		await screen.findByText("Aadhaar Card");
+
+		expect(screen.queryByRole("group", { name: /Number of/ })).toBeNull();
+		expect(updateLead).not.toHaveBeenCalled();
+	});
+
+	it("shows the saved answer and saves a new one", async () => {
+		crmLead.mockReturnValue(leadWith({ Count_of_Directors: 3 }));
+		render(<Documents />);
+
+		expect(await screen.findByRole("radio", { name: "3" })).toBeChecked();
+		fireEvent.click(screen.getByRole("radio", { name: "5" }));
+
+		expect(updateLead).toHaveBeenCalledWith({ Count_of_Directors: 5 });
+	});
+
+	it("saves a count from the More list", async () => {
+		render(<Documents />);
+
+		fireEvent.change(
+			await screen.findByRole("combobox", { name: /more than 8/ }),
+			{ target: { value: "12" } },
+		);
+
+		expect(updateLead).toHaveBeenCalledWith({ Count_of_Directors: 12 });
+	});
+
+	it("hands the dialog the legal minimum until the partner answers", async () => {
+		withType("5");
+		render(<Documents />);
+
+		fireEvent.click(
+			(await screen.findAllByRole("button", { name: "Upload" }))[0],
+		);
+
+		expect(screen.getByTestId("upload-dialog")).toHaveAttribute(
+			"data-directors",
+			"3",
+		);
+	});
+
+	it("records one director for an OPC without asking, only into an empty field", async () => {
+		withType("1", "Acme (OPC) Private Limited");
+		const { unmount } = render(<Documents />);
+		await screen.findByText("Aadhaar Card");
+
+		expect(screen.queryByRole("group", { name: /Number of/ })).toBeNull();
+		await waitFor(() =>
+			expect(updateLead).toHaveBeenCalledWith({ Count_of_Directors: 1 }),
+		);
+		expect(updateLead).toHaveBeenCalledTimes(1);
+		unmount();
+
+		updateLead.mockClear();
+		crmLead.mockReturnValue(leadWith({ Count_of_Directors: 2 }));
+		render(<Documents />);
+		await screen.findByText("Aadhaar Card");
+		expect(updateLead).not.toHaveBeenCalled();
 	});
 });
