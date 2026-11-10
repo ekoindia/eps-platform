@@ -221,6 +221,16 @@ export interface KycDocConfig {
 	 * larger file; it just spends the upload before the same rejection.
 	 */
 	maxBytes?: number;
+	/**
+	 * One copy per director (or partner) goes into this document's upload — an
+	 * Aadhaar, a PAN, a live photograph.
+	 *
+	 * The upload dialog then says how many it expects, makes room for them, and
+	 * asks before sending fewer pages than there are directors: upstream locks
+	 * the document once it is in, so a missing copy cannot be added later. The
+	 * count comes from `effectiveDirectorCount` (`@/lib/connect/directors`).
+	 */
+	perDirector?: boolean;
 }
 
 /**
@@ -235,6 +245,7 @@ export interface KycDocConfig {
 export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// Aadhaar Card
 	"1": {
+		perDirector: true,
 		pages: 1,
 		pageLabels: ["Aadhaar card(s) (both front and back)"], // "Aadhaar back"
 		multiple: true,
@@ -248,12 +259,14 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// "Director PAN Card" — so whichever one a given account is asked for
 	// behaves the same.
 	"2": {
+		perDirector: true,
 		multiple: true,
 		instructions:
 			"- If you represent a company, upload the PAN copies of **all directors**.\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
 		options: { maxLength: 1000 },
 	},
 	"15": {
+		perDirector: true,
 		multiple: true,
 		instructions:
 			"- If you represent a company, upload the PAN copies of **all directors**.\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
@@ -350,6 +363,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// taken and still stamped into the file name, so the evidence for a
 	// photograph-specific threshold accumulates either way.
 	"24": {
+		perDirector: true,
 		name: "Directors' Live Photograph",
 		accept: "image/jpeg,image/png",
 		pageLabels: ["Capture Selfie"],

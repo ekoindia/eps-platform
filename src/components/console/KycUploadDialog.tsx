@@ -13,6 +13,7 @@ import { ApiError, authClient } from "@/lib/auth/client";
 import { diagnosticsLine, errorDiagnostics } from "@/lib/console/diagnostics";
 import { withRetries } from "@/lib/retry";
 import { getBlurScore, withBlurScoreInName } from "@/lib/connect/blur";
+import type { DirectorNoun } from "@/lib/connect/directors";
 import type { KycDocument } from "@/lib/connect/kyc";
 import {
 	configOf,
@@ -23,7 +24,8 @@ import {
 	KYC_DOC_OPTIONS,
 	KYC_MAX_FILE_BYTES,
 } from "@/lib/connect/kyc-docs";
-import { Download, Info, RefreshCw } from "lucide-react";
+import { pdfPageCount } from "@/lib/pdf/pdf-client";
+import { AlertTriangle, Download, Info, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -43,6 +45,28 @@ function slugify(label: string): string {
 	);
 }
 
+/**
+ * How many pages a set of attachments comes to: one per image, and a PDF's own
+ * page count — the combined PDF a multi-photo slot produces included.
+ *
+ * A PDF that cannot be read counts as one page. This only feeds a warning the
+ * partner can override, so a guess beats refusing the upload.
+ * @param files - The attached files.
+ * @returns The total page count.
+ */
+async function countPages(files: File[]): Promise<number> {
+	const counts = await Promise.all(
+		files.map((file) =>
+			file.type === "application/pdf"
+				? pdfPageCount(file).catch(() => 1)
+				: Promise.resolve(1),
+		),
+	);
+	return counts.reduce((sum, count) => sum + count, 0);
+}
+
+const DIRECTORS: DirectorNoun = { one: "director", many: "directors" };
+
 export interface KycUploadDialogProps {
 	/** The document being uploaded. Null closes the dialog. */
 	doc: KycDocument | null;
@@ -51,6 +75,13 @@ export interface KycUploadDialogProps {
 	 * upload, and null when the user simply backed out.
 	 */
 	onClose: (uploaded: { docType: string; message: string } | null) => void;
+	/**
+	 * How many directors a per-director document must cover — see
+	 * `KycDocConfig.perDirector`. Null or absent: nothing to check against.
+	 */
+	directorCount?: number | null;
+	/** What those people are called. Defaults to directors. */
+	directorNoun?: DirectorNoun;
 }
 
 /**
@@ -70,15 +101,26 @@ export interface KycUploadDialogProps {
  * that only ever had that many pages.
  * @param props - See {@link KycUploadDialogProps}.
  */
-export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
+export function KycUploadDialog({
+	doc,
+	onClose,
+	directorCount = null,
+	directorNoun = DIRECTORS,
+}: KycUploadDialogProps) {
 	const [files, setFiles] = useState<Array<File | null>>([]);
 	const [busy, setBusy] = useState(false);
+	/**
+	 * The page count of an upload that came up short of the director count,
+	 * while the partner decides whether to send it anyway. Null otherwise.
+	 */
+	const [shortPages, setShortPages] = useState<number | null>(null);
 
 	// A fresh set of empty slots per document, so reopening the dialog on another
 	// row never inherits the previous one's attachments.
 	useEffect(() => {
 		setFiles(doc ? Array.from({ length: doc.pages }, () => null) : []);
 		setBusy(false);
+		setShortPages(null);
 	}, [doc]);
 
 	// The first slot only: see the note on the component. Later slots are
@@ -87,15 +129,42 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 	// What this console knows about this document type over and above upstream.
 	const config = configOf(doc?.docType ?? "");
 	const maxBytes = config.maxBytes ?? KYC_MAX_FILE_BYTES;
+	// The count this document has to cover, when it is one copy per director
+	// and there is more than one of them.
+	const perDirector =
+		config.perDirector && directorCount !== null && directorCount > 1
+			? directorCount
+			: null;
 
 	/** Replaces one page's file, leaving the others alone. */
 	function setPage(index: number, file: File | null) {
 		setFiles((prev) => prev.map((item, i) => (i === index ? file : item)));
+		// A confirmation was about the files it counted, not these.
+		setShortPages(null);
 	}
 
-	async function submit() {
+	/**
+	 * Uploads the attached pages.
+	 * @param confirmed - The partner already chose to send a short pack.
+	 */
+	async function submit(confirmed = false) {
 		if (!doc || !ready || busy) return;
 		setBusy(true);
+		if (perDirector !== null && !confirmed) {
+			// Upstream locks the document once it is in, so a director left out
+			// here cannot be added later. Asked, not refused: one PDF page can
+			// hold several cards, and the count is only as good as the partner's
+			// answer.
+			const pages = await countPages(
+				files.filter((file) => file instanceof File),
+			);
+			if (pages < perDirector) {
+				setShortPages(pages);
+				setBusy(false);
+				return;
+			}
+		}
+		setShortPages(null);
 		try {
 			// Empty slots are dropped and the rest renumbered, so the parts are
 			// always a contiguous `file1..fileN`: the backend requires exactly
@@ -230,6 +299,13 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 					</a>
 				) : null}
 
+				{perDirector !== null ? (
+					<p className="text-sm font-medium text-foreground">
+						Upload copies for all {perDirector} {directorNoun.many} in one go —
+						anything missing from this upload can't be added later.
+					</p>
+				) : null}
+
 				<div className="flex flex-col gap-4">
 					{files.map((file, index) => {
 						const label =
@@ -253,6 +329,12 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 								// Several photos of one side, combined into a single PDF. Off
 								// unless this document type asks for it.
 								multiple={config.multiple}
+								// Room for every director's card, front and back.
+								maxFiles={
+									perDirector !== null
+										? Math.max(10, perDirector * 2)
+										: undefined
+								}
 								// Names the combined PDF after the slot, so a reviewer opening
 								// the upload can tell which side of the card they are looking
 								// at instead of two files both called "combined-documents".
@@ -288,7 +370,40 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 					})}
 				</div>
 
-				<DialogFooter>
+				{shortPages !== null && perDirector !== null ? (
+					<div
+						role="alert"
+						className="flex flex-col gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
+					>
+						<p className="flex gap-2">
+							<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+							<span>
+								You've attached {shortPages} page{shortPages === 1 ? "" : "s"}{" "}
+								for {perDirector} {directorNoun.many}. This document can't be
+								added to later, so make sure it covers every {directorNoun.one}.
+							</span>
+						</p>
+						<div className="flex justify-end gap-2">
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => setShortPages(null)}
+							>
+								Go back
+							</Button>
+							<Button
+								variant="destructive"
+								size="sm"
+								disabled={busy}
+								onClick={() => void submit(true)}
+							>
+								Upload anyway
+							</Button>
+						</div>
+					</div>
+				) : null}
+
+				<DialogFooter className={shortPages !== null ? "hidden" : undefined}>
 					<Button variant="ghost" disabled={busy} onClick={() => onClose(null)}>
 						Cancel
 					</Button>

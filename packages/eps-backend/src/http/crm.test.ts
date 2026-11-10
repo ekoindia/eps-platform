@@ -506,6 +506,8 @@ describe("parseLeadPatch", () => {
 	it("enforces each field's Zoho type and length", () => {
 		for (const patch of [
 			{ Count_of_Directors: 100 }, // Zoho length 2
+			{ Count_of_Directors: 0 }, // the console's 1–15 range
+			{ Count_of_Directors: 16 },
 			{ Count_of_Directors: 2.5 },
 			{ Count_of_Directors: "3" },
 			{ Activation_Fee_Paid_INR: -1 },

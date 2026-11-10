@@ -44,6 +44,11 @@ export interface LeadFieldSpec {
 	 * subset of what Zoho holds — see `Activation_Fee_Status`.
 	 */
 	options?: readonly string[];
+	/**
+	 * For an integer: the range a partner may write, tighter than `maxLength`
+	 * alone says. Absent means any non-negative whole number that fits.
+	 */
+	range?: { min: number; max: number };
 }
 
 /** Indian states and UTs, as the org's `States` picklist spells them. */
@@ -169,7 +174,13 @@ export const LEAD_FIELDS = {
 	GST_No: { type: "text", maxLength: 255, write: "always" },
 	Website: { type: "website", maxLength: 255, write: "always" },
 	Mobile_App_Name: { type: "text", maxLength: 255, write: "always" },
-	Count_of_Directors: { type: "integer", maxLength: 2, write: "always" },
+	// 1–15: the console's director picker range (`directors.ts` in the app).
+	Count_of_Directors: {
+		type: "integer",
+		maxLength: 2,
+		write: "always",
+		range: { min: 1, max: 15 },
+	},
 	Authorized_Signatory_Full_name: {
 		type: "text",
 		maxLength: 255,

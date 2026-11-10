@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/auth/client";
 import { profileCompanyType } from "@/lib/auth/identity";
+import { DIRECTOR_MAX, directorRule } from "@/lib/connect/directors";
 import type { CrmLeadState } from "@/lib/crm/lead-store";
 import { useCrmLead } from "@/lib/crm/use-crm-lead";
 import { SquarePen } from "lucide-react";
@@ -80,8 +81,12 @@ type FieldKind = "picklist" | "text" | "gstin" | "url" | "integer";
  */
 function validate(kind: FieldKind, value: string): string | null {
 	if (!value) return null;
-	if (kind === "integer" && !/^\d{1,2}$/.test(value)) {
-		return "Enter a whole number up to 99.";
+	// The only integer row is the director count, so its range is the rule.
+	if (
+		kind === "integer" &&
+		(!/^\d{1,2}$/.test(value) || +value < 1 || +value > DIRECTOR_MAX)
+	) {
+		return `Enter a whole number from 1 to ${DIRECTOR_MAX}.`;
 	}
 	if (kind === "url" && !HTTP_URL.test(value)) {
 		return "Enter a full address starting with https://";
@@ -121,6 +126,12 @@ interface DetailRow {
 	/** Zoho `api_name` this row shows and edits. */
 	crmField?: string;
 	kind?: FieldKind;
+	/**
+	 * Fixed choices for a field that is not a CRM picklist, offered as a select
+	 * the same way — the director count's range, say. Values keep the row's
+	 * `kind`, so an integer row still saves a number.
+	 */
+	options?: readonly string[];
 }
 
 /** Shared look for the native select, matching the signup form's. */
@@ -130,7 +141,8 @@ const SELECT_CLASS =
 /**
  * The control for one CRM field in edit mode.
  *
- * A picklist offers the backend's options. If the record already holds a value
+ * A picklist offers the backend's options, and a row with its own `options`
+ * offers those. If the record already holds a value
  * outside them (a legacy option sales set before the list was trimmed), that
  * value is kept as the first choice so the select can show it — and because
  * only changed fields are saved, leaving it alone never rewrites it.
@@ -155,11 +167,10 @@ function FieldControl({
 	onChange: (value: string) => void;
 }) {
 	const describedBy = error ? `${id}-error` : undefined;
-	if (row.kind === "picklist") {
+	const list = row.options ?? (row.kind === "picklist" ? options : null);
+	if (list) {
 		const choices =
-			original && !options?.includes(original)
-				? [original, ...(options ?? [])]
-				: (options ?? []);
+			original && !list.includes(original) ? [original, ...list] : list;
 		return (
 			<select
 				id={id}
@@ -410,6 +421,26 @@ function DetailSection({
 export function BusinessDetails() {
 	const me = useConsoleMe();
 	const { state: crm, update } = useCrmLead();
+	// Not a question for a sole proprietor or an individual, and settled for an
+	// OPC — see `directors.ts`. Same rule the Documents page asks by.
+	const directors = directorRule(me.profile);
+	const directorRows: DetailRow[] =
+		directors.kind === "hidden"
+			? []
+			: directors.kind === "fixed"
+				? [{ label: "Number of Directors", value: "1 (One Person Company)" }]
+				: [
+						{
+							label: `Number of ${directors.noun.many.replace(/\b\w/g, (c) => c.toUpperCase())}`,
+							crmField: "Count_of_Directors",
+							kind: "integer",
+							// The same range the Documents page asks within.
+							options: Array.from(
+								{ length: directors.max - directors.min + 1 },
+								(_, i) => String(directors.min + i),
+							),
+						},
+					];
 
 	const sections: { title: string; rows: DetailRow[] }[] = [
 		{
@@ -434,11 +465,7 @@ export function BusinessDetails() {
 			title: "Legal & Compliance",
 			rows: [
 				{ label: "GST Number", crmField: "GST_No", kind: "gstin" },
-				{
-					label: "Number of Directors",
-					crmField: "Count_of_Directors",
-					kind: "integer",
-				},
+				...directorRows,
 				{
 					label: "Authorized Signatory",
 					crmField: "Authorized_Signatory_Full_name",

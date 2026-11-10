@@ -190,18 +190,14 @@ export function profileGstNumber(profile: Profile | null | undefined): string {
 }
 
 /**
- * The profile's company type, as a human label.
+ * The profile's raw company type — the interaction-522 code (`"4"` = LLP).
  *
- * Upstream stores the interaction-522 code (`"4"` = LLP), so it is mapped
- * through `COMPANY_TYPES` — the same table the signup form submits from, so the
- * two cannot drift. Where on the profile the field lands is not pinned by
- * upstream, so the flat user detail is tried first and then every detail block.
- * A value that is not a known code is shown as-is: it is either already a label
- * or a code added upstream later, and either beats a blank.
+ * Where on the profile the field lands is not pinned by upstream, so the flat
+ * user detail is tried first and then every detail block.
  * @param profile - The signed-in developer's profile, or null.
- * @returns The label, or null when the profile carries no company type.
+ * @returns The trimmed value as upstream sent it, or null when there is none.
  */
-export function profileCompanyType(
+export function profileCompanyTypeCode(
 	profile: Profile | null | undefined,
 ): string | null {
 	if (!profile) return null;
@@ -215,10 +211,27 @@ export function profileCompanyType(
 		const raw = (source as Record<string, unknown>).company_type;
 		if (typeof raw !== "string" && typeof raw !== "number") continue;
 		const code = String(raw).trim();
-		if (!code) continue;
-		return COMPANY_TYPES.find((type) => type.value === code)?.label ?? code;
+		if (code) return code;
 	}
 	return null;
+}
+
+/**
+ * The profile's company type, as a human label.
+ *
+ * The code from {@link profileCompanyTypeCode} is mapped through
+ * `COMPANY_TYPES` — the same table the signup form submits from, so the two
+ * cannot drift. A value that is not a known code is shown as-is: it is either
+ * already a label or a code added upstream later, and either beats a blank.
+ * @param profile - The signed-in developer's profile, or null.
+ * @returns The label, or null when the profile carries no company type.
+ */
+export function profileCompanyType(
+	profile: Profile | null | undefined,
+): string | null {
+	const code = profileCompanyTypeCode(profile);
+	if (code === null) return null;
+	return COMPANY_TYPES.find((type) => type.value === code)?.label ?? code;
 }
 
 /**

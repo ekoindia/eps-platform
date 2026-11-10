@@ -204,6 +204,30 @@ describe("Profile business details", () => {
 		expect(valueOf("Email")).toHaveTextContent("abhi@example.com");
 	});
 
+	it("names, settles or drops the director count by business type", () => {
+		const withType = (company_type: string, name = PROFILE.name) => ({
+			...ACTIVE,
+			profile: { ...PROFILE, name, userDetail: { company_type } },
+		});
+
+		const { unmount } = renderProfile(withType("2"));
+		expect(valueOf("Number of Partners")).toBeTruthy();
+		unmount();
+
+		renderProfile(withType("1", "Acme (OPC) Private Limited"));
+		expect(valueOf("Number of Directors")).toHaveTextContent(
+			"1 (One Person Company)",
+		);
+	});
+
+	it.each(["3", "7"])("has no director count for company type %s", (code) => {
+		renderProfile({
+			...ACTIVE,
+			profile: { ...PROFILE, userDetail: { company_type: code } },
+		});
+		expect(screen.queryByText(/Number of/, { selector: "dt" })).toBeNull();
+	});
+
 	it("renders every CRM field once the Lead loads", async () => {
 		crmLead.mockResolvedValue({ id: "1", fields: CRM_FIELDS });
 		renderProfile();
@@ -475,8 +499,8 @@ describe("Profile business details — editing", () => {
 		);
 	});
 
-	it("blocks a non-http website and a non-numeric director count", async () => {
-		let form = await openEditor("Contact & Online Presence");
+	it("blocks a non-http website", async () => {
+		const form = await openEditor("Contact & Online Presence");
 		fireEvent.change(form.getByLabelText("Website"), {
 			target: { value: "javascript:alert(1)" },
 		});
@@ -484,19 +508,51 @@ describe("Profile business details — editing", () => {
 		expect(
 			await form.findByText("Enter a full address starting with https://"),
 		).toBeInTheDocument();
-
-		form = within(card("Legal & Compliance"));
-		fireEvent.click(
-			screen.getByRole("button", { name: "Edit Legal & Compliance" }),
-		);
-		fireEvent.change(form.getByLabelText("Number of Directors"), {
-			target: { value: "3a" },
-		});
-		fireEvent.click(form.getByRole("button", { name: "Save" }));
-		expect(
-			await form.findByText("Enter a whole number up to 99."),
-		).toBeInTheDocument();
 		expect(updateCrmLead).not.toHaveBeenCalled();
+	});
+
+	const optionsOf = (select: HTMLElement) =>
+		Array.from((select as HTMLSelectElement).options, (o) => o.value);
+
+	it("offers 1–15 directors when the business type is unknown", async () => {
+		const form = await openEditor("Legal & Compliance", {
+			...FIELDS,
+			Count_of_Directors: null,
+		});
+		expect(optionsOf(form.getByLabelText("Number of Directors"))).toEqual([
+			"",
+			...Array.from({ length: 15 }, (_, i) => String(i + 1)),
+		]);
+	});
+
+	it("offers a public company 3–15 directors, saved as a number", async () => {
+		crmLead.mockResolvedValue({
+			id: "1",
+			fields: FIELDS,
+			picklists: PICKLISTS,
+		});
+		renderProfile({
+			...ACTIVE,
+			profile: {
+				...PROFILE,
+				userDetail: { ...PROFILE.userDetail, company_type: "5" },
+			},
+		});
+		fireEvent.click(
+			await screen.findByRole("button", { name: "Edit Legal & Compliance" }),
+		);
+		const form = within(card("Legal & Compliance"));
+		const select = form.getByLabelText("Number of Directors");
+		// The stored 2 is outside the range: kept as-is, so it is never rewritten.
+		expect(optionsOf(select)).toEqual([
+			"2",
+			...Array.from({ length: 13 }, (_, i) => String(i + 3)),
+		]);
+		fireEvent.change(select, { target: { value: "7" } });
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(updateCrmLead).toHaveBeenCalledWith({ Count_of_Directors: 7 }),
+		);
 	});
 
 	it("shows the server's message on a 400, and a generic one otherwise", async () => {

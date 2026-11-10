@@ -8,7 +8,7 @@ import {
 	KYC_DOC_OPTIONS,
 	KYC_MAX_FILE_BYTES,
 } from "@/lib/connect/kyc-docs";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The real FileUpload needs a ConnectDialogProvider, the camera and a
@@ -23,6 +23,7 @@ vi.mock("@/components/FileUpload", () => ({
 		maxBytes,
 		cameraOnly,
 		multiple,
+		maxFiles,
 		combinedFileName,
 		watermark,
 		options,
@@ -34,6 +35,7 @@ vi.mock("@/components/FileUpload", () => ({
 		maxBytes?: number;
 		cameraOnly?: boolean;
 		multiple?: boolean;
+		maxFiles?: number;
 		combinedFileName?: string;
 		watermark?: boolean | string | Record<string, string>;
 		options?: {
@@ -52,6 +54,7 @@ vi.mock("@/components/FileUpload", () => ({
 			data-max-bytes={String(maxBytes)}
 			data-camera-only={String(Boolean(cameraOnly))}
 			data-multiple={String(Boolean(multiple))}
+			data-max-files={String(maxFiles)}
 			data-combined-name={combinedFileName}
 			data-watermark={String(watermark)}
 			data-blur-check={options?.blurCheck}
@@ -92,6 +95,12 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 	authClient: { connectKyc: { documents: vi.fn(), upload: vi.fn() } },
 }));
 
+// The real count runs pdf-lib in a worker; the dialog only needs the number.
+const pdfPageCount = vi.fn();
+vi.mock("@/lib/pdf/pdf-client", () => ({
+	pdfPageCount: (...args: unknown[]) => pdfPageCount(...args),
+}));
+
 const { authClient } = await import("@/lib/auth/client");
 const upload = vi.mocked(authClient.connectKyc.upload);
 
@@ -123,6 +132,7 @@ beforeEach(() => {
 	vi.mocked(configOf).mockImplementation(realConfigOf);
 	pick = () => fileOf("scan.pdf", 1024);
 	upload.mockResolvedValue({ message: "Received" });
+	pdfPageCount.mockResolvedValue(1);
 });
 
 describe("KycUploadDialog", () => {
@@ -561,5 +571,103 @@ describe("KycUploadDialog", () => {
 					.map((slot) => slot.dataset.combinedName),
 			).toEqual(["aadhaar-card-s-both-front-and-back.pdf", "page-2.pdf"]);
 		});
+	});
+});
+
+describe("KycUploadDialog — per-director documents", () => {
+	// doc_type 1, Aadhaar, is one copy per director.
+	const aadhaar = () => doc({ docType: "1", status: 0 });
+
+	it("says how many it expects and makes room for all of them", () => {
+		render(
+			<KycUploadDialog doc={aadhaar()} directorCount={8} onClose={vi.fn()} />,
+		);
+
+		expect(screen.getByText(/all 8 directors in one go/)).toBeVisible();
+		expect(screen.getByTestId("file-upload")).toHaveAttribute(
+			"data-max-files",
+			"16",
+		);
+	});
+
+	it("asks before uploading fewer pages than directors", async () => {
+		pdfPageCount.mockResolvedValue(2);
+		render(
+			<KycUploadDialog doc={aadhaar()} directorCount={3} onClose={vi.fn()} />,
+		);
+
+		fireEvent.click(screen.getByTestId("file-upload"));
+		fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+
+		expect(
+			await screen.findByText(/attached 2 pages for 3 directors/),
+		).toBeVisible();
+		expect(upload).not.toHaveBeenCalled();
+
+		fireEvent.click(screen.getByRole("button", { name: "Upload anyway" }));
+		await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+	});
+
+	it("goes back without uploading, and forgets the answer once files change", async () => {
+		pick = () => fileOf("front.jpg", 1024, "image/jpeg");
+		render(
+			<KycUploadDialog
+				doc={aadhaar()}
+				directorCount={2}
+				directorNoun={{ one: "partner", many: "partners" }}
+				onClose={vi.fn()}
+			/>,
+		);
+
+		fireEvent.click(screen.getByTestId("file-upload"));
+		fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+		expect(
+			await screen.findByText(/attached 1 page for 2 partners/),
+		).toBeVisible();
+		// An image is one page; no PDF to open.
+		expect(pdfPageCount).not.toHaveBeenCalled();
+
+		fireEvent.click(screen.getByRole("button", { name: "Go back" }));
+		expect(screen.queryByRole("alert")).toBeNull();
+		expect(upload).not.toHaveBeenCalled();
+
+		fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+		await screen.findByRole("alert");
+		fireEvent.click(screen.getByTestId("file-upload"));
+		expect(screen.queryByRole("alert")).toBeNull();
+	});
+
+	it("uploads straight away when the pages cover every director", async () => {
+		pdfPageCount.mockResolvedValue(6);
+		render(
+			<KycUploadDialog doc={aadhaar()} directorCount={3} onClose={vi.fn()} />,
+		);
+
+		fireEvent.click(screen.getByTestId("file-upload"));
+		fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+
+		await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+		expect(screen.queryByRole("alert")).toBeNull();
+	});
+
+	it("checks nothing for one director, or a document that isn't per director", async () => {
+		const { unmount } = render(
+			<KycUploadDialog doc={aadhaar()} directorCount={1} onClose={vi.fn()} />,
+		);
+		expect(screen.queryByText(/Upload copies for all/)).toBeNull();
+		unmount();
+
+		render(
+			<KycUploadDialog
+				doc={doc({ docType: "6", status: 0 })}
+				directorCount={5}
+				onClose={vi.fn()}
+			/>,
+		);
+		expect(screen.queryByText(/Upload copies for all/)).toBeNull();
+		fireEvent.click(screen.getByTestId("file-upload"));
+		fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+		await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+		expect(pdfPageCount).not.toHaveBeenCalled();
 	});
 });

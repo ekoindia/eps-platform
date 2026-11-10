@@ -3,12 +3,14 @@ import type { CameraOptions } from "@/components/connect/CameraDialog";
 import { useConnectDialogs } from "@/components/connect/DialogHost";
 import type { ImageEditorOptions } from "@/components/connect/ImageEditorDialog";
 import { PrintReceipt } from "@/components/connect/PrintReceipt";
+import { DirectorCountPicker } from "@/components/console/DirectorCountPicker";
 import { KycUploadDialog } from "@/components/console/KycUploadDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
 import { parseDocumentList, type KycDocument } from "@/lib/connect/kyc";
+import { directorRule } from "@/lib/connect/directors";
 import type { FeedbackOrigin } from "@/lib/connect/support";
 import {
 	compressPdf,
@@ -639,14 +641,28 @@ function RaiseIssueTest() {
  *
  * It posts for real — expect the upload to fail on an account without the 587
  * entitlement, which is itself the interesting half of the test.
+ *
+ * The director picker is a Private Limited company's, held locally rather than
+ * saved to the CRM, so the per-director warning can be tried at any count.
  */
 function KycUploadTest() {
 	const documents = parseDocumentList(KYC_DOCUMENTS_SAMPLE.data.document_list);
 	const [doc, setDoc] = useState<KycDocument | null>(null);
 	const [result, setResult] = useState<unknown>(null);
+	const [directors, setDirectors] = useState<number | null>(null);
+	const rule = directorRule({
+		userDetail: { company_type: "1" },
+	} as unknown as Parameters<typeof directorRule>[0]);
 
 	return (
 		<div className="flex flex-col gap-3">
+			{rule.kind === "ask" ? (
+				<DirectorCountPicker
+					rule={rule}
+					value={directors}
+					onSave={async (count) => setDirectors(count)}
+				/>
+			) : null}
 			<div className="flex flex-wrap gap-2">
 				{documents.map((candidate) => (
 					<Button
@@ -661,6 +677,7 @@ function KycUploadTest() {
 			</div>
 			<KycUploadDialog
 				doc={doc}
+				directorCount={directors ?? 2}
 				onClose={(uploaded) => {
 					setDoc(null);
 					setResult(uploaded ?? { cancelled: true });
