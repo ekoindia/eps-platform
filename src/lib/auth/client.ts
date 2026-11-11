@@ -74,7 +74,8 @@ export interface Profile {
 	zohoId: string;
 	/**
 	 * Ordered onboarding steps from upstream; empty for a fully-onboarded user.
-	 * `roleList` carries the steps still PENDING — see `profileCompleteness`.
+	 * `roleList` carries the steps still PENDING: a step is done once its role
+	 * no longer appears there.
 	 */
 	onboardingSteps: Array<{ role: number; label: string }>;
 	/** The user's accounts; empty when upstream sent no `account_detail`. */

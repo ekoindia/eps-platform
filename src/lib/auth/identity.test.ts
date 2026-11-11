@@ -3,7 +3,6 @@ import {
 	accountIdentity,
 	chatIdentity,
 	profileCompanyType,
-	profileCompleteness,
 	profileGstNumber,
 } from "./identity";
 import type { AuthState } from "@/lib/auth/AuthProvider";
@@ -168,62 +167,6 @@ describe("chatIdentity", () => {
 	it("falls back to the session mobile when the profile mobile is blank", () => {
 		const state = devWithProfile("9990000079", { name: "Rahul", mobile: "" });
 		expect(chatIdentity(state)?.contactNumber).toBe("9990000079");
-	});
-});
-
-describe("profileCompleteness", () => {
-	/** A profile whose onboarding fields are the only ones that matter here. */
-	function onboarding(
-		onboarding: number,
-		roleList: string[],
-		steps: Array<{ role: number; label: string }>,
-	): Profile {
-		return {
-			onboarding,
-			roleList,
-			onboardingSteps: steps,
-		} as Profile;
-	}
-
-	const FOUR_STEPS = [
-		{ role: 13000, label: "PAN Details" },
-		{ role: 13100, label: "Business Details" },
-		{ role: 12600, label: "Set Secret PIN" },
-		{ role: 12800, label: "Sign Agreement" },
-	];
-
-	it("is 100 for a finished profile", () => {
-		expect(profileCompleteness(onboarding(0, [], []))).toBe(100);
-	});
-
-	it("is 100 for a finished profile even if steps are still listed", () => {
-		// `onboarding === 0` is the authoritative signal; upstream does not always
-		// clear the step list with it.
-		expect(profileCompleteness(onboarding(0, ["12800"], FOUR_STEPS))).toBe(100);
-	});
-
-	it("counts a step as done once its role stops being pending", () => {
-		expect(
-			profileCompleteness(onboarding(1, ["12600", "12800"], FOUR_STEPS)),
-		).toBe(50);
-	});
-
-	it("is 0 when every step is still pending", () => {
-		expect(
-			profileCompleteness(
-				onboarding(1, ["13000", "13100", "12600", "12800"], FOUR_STEPS),
-			),
-		).toBe(0);
-	});
-
-	it("is 0 for an unfinished profile with no step list", () => {
-		// Nothing to measure against — claiming 100% here would be a lie, and
-		// dividing by zero would show NaN%.
-		expect(profileCompleteness(onboarding(1, [], []))).toBe(0);
-	});
-
-	it("compares roles numerically, since roleList arrives as strings", () => {
-		expect(profileCompleteness(onboarding(1, ["13000"], FOUR_STEPS))).toBe(75);
 	});
 });
 

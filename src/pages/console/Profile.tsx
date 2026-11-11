@@ -1,11 +1,13 @@
 import { PageMeta } from "@/components/PageMeta";
 import { BusinessDetails } from "@/components/console/BusinessDetails";
+import { SegmentMeter } from "@/components/console/SegmentMeter";
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { accountIdentity, profileCompleteness } from "@/lib/auth/identity";
+import { accountIdentity } from "@/lib/auth/identity";
+import { useProfileFields } from "@/lib/console/profile-fields";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { groupChildren } from "@/lib/connect/interactions";
-import { cn, formatMobile } from "@/lib/utils";
+import { formatMobile } from "@/lib/utils";
 import { ChevronRight, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -28,14 +30,7 @@ const USER_TYPE_LABELS: Record<string, string> = {
 	"23": "Enterprise Partner",
 };
 
-/** Colour for the completeness meter, mirroring Eloka's thresholds. */
-function meterColor(percent: number): string {
-	if (percent >= 60) return "text-eko-success";
-	if (percent > 40) return "text-eko-gold";
-	return "text-destructive";
-}
-
-/** The blue identity card: who you are, and how far through onboarding. */
+/** The blue identity card: who you are, and how filled-in your profile is. */
 function IdentityCard() {
 	const { state } = useAuth();
 	// Reuse the header menu's derivation rather than repeating it — it already
@@ -43,7 +38,9 @@ function IdentityCard() {
 	const identity = accountIdentity(state);
 	const me = useConsoleMe();
 	const profile = me.profile;
-	const percent = profile ? profileCompleteness(profile) : 0;
+	// Field-based, the same count Console Home's card shows; hidden until the
+	// CRM record loads, since without it every CRM field would read as empty.
+	const { strength } = useProfileFields(profile);
 
 	return (
 		<div className="flex flex-col gap-8 rounded-xl bg-gradient-to-b from-eko-navy-light to-eko-navy p-6 text-white">
@@ -76,35 +73,7 @@ function IdentityCard() {
 					</p>
 				</div>
 			</div>
-			<div className="flex flex-col gap-2">
-				<p className="text-sm text-white/85">Profile Completeness</p>
-				<div className="flex items-center gap-3">
-					{/* Width is runtime data, so it must be an inline style: Tailwind
-					    generates classes at build time and cannot produce `w-[57%]`
-					    from a value that only exists once the profile loads. */}
-					<div
-						className="h-1 flex-1 overflow-hidden rounded-full bg-white/30"
-						role="progressbar"
-						aria-valuenow={percent}
-						aria-valuemin={0}
-						aria-valuemax={100}
-						aria-label="Profile completeness"
-					>
-						<div
-							className="h-full rounded-full bg-white transition-[width]"
-							style={{ width: `${percent}%` }}
-						/>
-					</div>
-					<span
-						className={cn(
-							"text-sm font-semibold tabular-nums",
-							meterColor(percent),
-						)}
-					>
-						{percent}%
-					</span>
-				</div>
-			</div>
+			{strength ? <SegmentMeter strength={strength} /> : null}
 		</div>
 	);
 }

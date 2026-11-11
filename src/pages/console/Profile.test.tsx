@@ -118,35 +118,52 @@ describe("Profile identity card", () => {
 		expect(screen.getByText("+91 671 000 0002")).toBeInTheDocument();
 	});
 
-	it("reports 100% for a fully onboarded profile", () => {
-		renderProfile();
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
-			"aria-valuenow",
-			"100",
-		);
+	/** A Private Limited profile, so company type and email both count. */
+	const COMPANY = {
+		...ACTIVE,
+		profile: {
+			...PROFILE,
+			userDetail: { ...PROFILE.userDetail, company_type: "1" },
+		},
+	};
+
+	it("meters the profile by filled fields, not onboarding steps", async () => {
+		crmLead.mockResolvedValue({
+			id: "1",
+			fields: {
+				Industry: "Logistics",
+				Annual_Turnover: "Pre-revenue",
+				Number_of_Employees: "1",
+				Number_of_Clients: "Not sure",
+				GST_No: "07AAACA1234A1Z5",
+				Count_of_Directors: 3,
+				Authorized_Signatory_Full_name: "Asha Rao",
+				Website: "https://acme.test",
+				Mobile_App_Name: "Acme Pay",
+			},
+		});
+		renderProfile(COMPANY);
+		const meter = await screen.findByRole("progressbar");
+		expect(meter).toHaveAttribute("aria-valuenow", "100");
 		expect(screen.getByText("100%")).toBeInTheDocument();
 	});
 
-	it("reports partial progress from the steps still pending", () => {
-		// Four steps, two roles still pending → half done.
-		renderProfile({
-			...ACTIVE,
-			profile: {
-				...PROFILE,
-				onboarding: 1,
-				roleList: ["12600", "12800"],
-				onboardingSteps: [
-					{ role: 13000, label: "PAN Details" },
-					{ role: 13100, label: "Business Details" },
-					{ role: 12600, label: "Set Secret PIN" },
-					{ role: 12800, label: "Sign Agreement" },
-				],
-			},
-		});
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
+	// A fully onboarded partner used to read 100% here with every business
+	// field still blank.
+	it("reports empty fields as missing, however far onboarding got", async () => {
+		crmLead.mockResolvedValue({ id: "1", fields: { Industry: "Logistics" } });
+		renderProfile(COMPANY);
+		// Company type, email and industry: 3 of 11.
+		expect(await screen.findByRole("progressbar")).toHaveAttribute(
 			"aria-valuenow",
-			"50",
+			"27",
 		);
+	});
+
+	it("shows no meter without CRM data to count", async () => {
+		renderProfile();
+		await waitFor(() => expect(crmLead).toHaveBeenCalled());
+		expect(screen.queryByRole("progressbar")).toBeNull();
 	});
 
 	it("falls back to the mobile when the session carries no profile", () => {
@@ -154,10 +171,6 @@ describe("Profile identity card", () => {
 		renderProfile({ ...ACTIVE, state: "lead", profile: null });
 		// Twice: with no profile name, the mobile is also the heading.
 		expect(screen.getAllByText("+91 671 000 0002")).toHaveLength(2);
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
-			"aria-valuenow",
-			"0",
-		);
 	});
 });
 

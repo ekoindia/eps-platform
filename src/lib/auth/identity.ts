@@ -106,32 +106,6 @@ export function isInsideRoute(pathname: string, href: string): boolean {
 }
 
 /**
- * How far through onboarding this profile is, as a percentage.
- *
- * `onboardingSteps` is the ordered FULL list of steps; `roleList` carries the
- * ones still PENDING. A step is therefore done exactly when its role no longer
- * appears in `roleList` — the same projection the backend's signup service
- * makes to pick the current step (`packages/eps-backend/src/signup/service.ts`),
- * kept deliberately in step with it.
- *
- * Note this is onboarding progress, NOT Eloka's shop+personal field checklist:
- * those fields reach us only as opaque `detailBlocks`, and Eloka's own count is
- * unreliable anyway (it tests `!== ""`, so an absent key scores as complete).
- * @param profile - The signed-in user's profile.
- * @returns 0–100, rounded.
- */
-export function profileCompleteness(profile: Profile): number {
-	// The authoritative "finished" signal — upstream flips it to 0 on completion,
-	// and it stays right even when the step list came back empty.
-	if (profile.onboarding === 0) return 100;
-	const steps = profile.onboardingSteps;
-	if (steps.length === 0) return 0;
-	const pending = new Set(profile.roleList.map(Number));
-	const done = steps.filter((step) => !pending.has(step.role)).length;
-	return Math.round((done / steps.length) * 100);
-}
-
-/**
  * Derives the support-chat visitor identity for an authenticated developer, or
  * `null` for anonymous, loading, and admin sessions (admins are internal staff —
  * identifying them to a sales operator has no value).
