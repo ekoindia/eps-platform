@@ -5,6 +5,12 @@ import ConsoleHome from "@/pages/console/ConsoleHome";
 import type { MeView } from "@/lib/auth/client";
 import { resetDashboardCache } from "@/lib/console/dashboard";
 
+// The profile card's meter reads the CRM Lead; with none, it asks nothing,
+// which keeps these tests about ConsoleHome itself.
+vi.mock("@/lib/crm/use-crm-lead", () => ({
+	useCrmLead: () => ({ state: { status: "none" }, fields: null, update: vi.fn() }),
+}));
+
 vi.mock("@/lib/auth/client", async (orig) => ({
 	...(await orig<typeof import("@/lib/auth/client")>()),
 	dashboardClient: { load: vi.fn() },
