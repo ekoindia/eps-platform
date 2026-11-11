@@ -516,7 +516,7 @@ describe("Profile business details — editing", () => {
 		);
 	});
 
-	// The GSTIN lives in two places: the CRM Lead and the Eko profile (546).
+	// The GSTIN lives in two places: the CRM Lead and the Eko profile (369).
 	it("writes a GSTIN to the CRM, then to the Eko profile", async () => {
 		const form = await openEditor("Legal & Compliance");
 		fireEvent.change(form.getByLabelText("GST Number"), {

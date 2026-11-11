@@ -38,7 +38,7 @@ Every other type gets a question with the type's legal range as its options.
 | Store | Key | Writer |
 | --- | --- | --- |
 | `crm` | Zoho Lead `api_name` | `PATCH /crm/lead` via `useCrmLead().update` (see [crm-lead.md](./crm-lead.md)) |
-| `simplibank` | Eko profile field | `PATCH /profile` (eps-backend `http/profile.ts`). The backend acts as the caller and whitelists fields; today only `gstin`, through interaction **546**. A new field needs its interaction added there. |
+| `simplibank` | Eko profile field | `PATCH /profile` (eps-backend `http/profile.ts`). The backend acts as the caller and whitelists fields; today only `gstin`, through interaction **369**. A new field needs its interaction added there. |
 
 A field can name both stores. `writeProfileStores` writes them in a fixed
 order, used by both the profile page and the home deck:

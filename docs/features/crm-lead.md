@@ -222,7 +222,7 @@ await update({ City: "Pune" });     // send only what changed
   count, and Console Home's profile question deck. The first and last are
   driven by `lib/console/profile-fields.ts`
   ([profile-fields.md](./profile-fields.md)), which also copies `GST_No` to
-  the Eko profile (`PATCH /profile`, interaction 546) after the CRM write.
+  the Eko profile (`PATCH /profile`, interaction 369) after the CRM write.
 
 The store is `src/lib/crm/lead-store.ts`, mirroring the notifications store:
 module-level state read through `useSyncExternalStore`. `AuthProvider` starts

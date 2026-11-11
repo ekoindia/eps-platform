@@ -85,7 +85,7 @@ export interface EkoClient {
 		xRealIp?: string;
 	}): Promise<number | null>;
 	/**
-	 * Records the partner's GSTIN on their Eko profile (interaction 546).
+	 * Records the partner's GSTIN on their Eko profile (interaction 369).
 	 * Already shape-checked and upper-cased by the route.
 	 */
 	updateGstin(input: {
@@ -358,7 +358,7 @@ export type EkoStepResult =
 	  };
 
 /** Interaction id for "update my GSTIN" on the Eko profile. */
-export const GSTIN_UPDATE_INTERACTION = "546";
+export const GSTIN_UPDATE_INTERACTION = "369";
 
 /**
  * Interaction id for the PIN-code lookup.
@@ -1122,7 +1122,7 @@ export function createEkoClient(
 				input.xRealIp,
 			);
 			// `status === 0` is the success signal, not a `response_type_id`: no
-			// success id is documented for 546, and documented ids have gone stale
+			// success id is documented for 369, and documented ids have gone stale
 			// before (see `pincodeResult`).
 			const r = (raw ?? {}) as { status?: unknown; message?: unknown };
 			if (Number(r.status ?? -1) === 0) return { ok: true };

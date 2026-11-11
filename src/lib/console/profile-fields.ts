@@ -37,7 +37,7 @@ export type ProfileSection = (typeof PROFILE_SECTIONS)[number];
  *
  * - `crm` — the Zoho Lead field's `api_name`, written via `PATCH /crm/lead`.
  * - `simplibank` — the Eko profile field, written via `PATCH /profile`
- *   (interaction 546 for `gstin`). The backend whitelists what it accepts.
+ *   (interaction 369 for `gstin`). The backend whitelists what it accepts.
  *
  * With both, the CRM is written first and SimpliBank second — see
  * `writeProfileStores`.

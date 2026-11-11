@@ -782,7 +782,7 @@ export const authClient = {
 		}) as Promise<CrmLeadUpdateView>,
 	/**
 	 * Writes the partner's own Eko (SimpliBank) profile fields — `gstin` only,
-	 * today (interaction 546). Prefer `writeProfileStores` from
+	 * today (interaction 369). Prefer `writeProfileStores` from
 	 * `@/lib/console/profile-fields`, which pairs it with the CRM write.
 	 *
 	 * 400 `INVALID_FIELD_VALUE` / `FIELD_NOT_WRITABLE` for a bad body; 400

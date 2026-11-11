@@ -1209,14 +1209,14 @@ describe("updateGstin", () => {
 			(f as unknown as Mock).mock.calls[0][1].body as string,
 		);
 
-	it("posts 546 with the gstin, as the acting user", async () => {
+	it("posts 369 with the gstin, as the acting user", async () => {
 		const f = mockFetch(200, { status: 0, message: "Updated" });
 		const eko = createEkoClient(ekoCfg, f);
 		expect(
 			await eko.updateGstin({ gstin: "07AAACA1234A1Z5", identity }),
 		).toEqual({ ok: true });
 		const body = bodyOf(f);
-		expect(body.get("interaction_type_id")).toBe("546");
+		expect(body.get("interaction_type_id")).toBe("369");
 		expect(body.get("gstin")).toBe("07AAACA1234A1Z5");
 		expect(body.get("initiator_id")).toBe("9990000001");
 		expect(body.get("user_code")).toBe("20810001");
