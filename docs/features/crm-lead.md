@@ -218,6 +218,11 @@ await update({ City: "Pune" });     // send only what changed
   for display; 502 is generic). On success every reader re-renders.
 - Any page can use the hook; mounting it also starts the store if sign-in has
   not already.
+- Writers today: the `/console/profile` cards, the Documents page's director
+  count, and Console Home's profile question deck. The first and last are
+  driven by `lib/console/profile-fields.ts`
+  ([profile-fields.md](./profile-fields.md)), which also copies `GST_No` to
+  the Eko profile (`PATCH /profile`, interaction 369) after the CRM write.
 
 The store is `src/lib/crm/lead-store.ts`, mirroring the notifications store:
 module-level state read through `useSyncExternalStore`. `AuthProvider` starts

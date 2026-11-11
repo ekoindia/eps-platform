@@ -51,7 +51,9 @@ item, and fail-closed the same way (no list, no link). It is internal too: the
 page behind it frames ekostore's gateway and mints the access token itself.
 
 The console's index page (`/console`) is **Home**. It leads with the profile card
-(`src/components/console/ProfileCard.tsx`) beside the Next Steps card — KYC, UAT
+(`src/components/console/ProfileCard.tsx`): identity, the profile strength meter,
+and a deck that asks the partner's empty profile fields one at a time, highest
+priority first (see [`docs/features/profile-fields.md`](./features/profile-fields.md)). It sits beside the Next Steps card — KYC, UAT
 credentials, production credentials and the one-time integration fee — for every
 lifecycle state. For an account whose KYC is outstanding (48/47), the KYC step reads off the
 document pack itself — `Approved`, `Approval
@@ -203,11 +205,11 @@ Profile fields come from the `MeView` the layout already fetched, via
   gradient. Initials come from `accountIdentity()`, the same derivation the
   header menu uses, so a session with no profile still renders; the mobile goes
   through the shared `formatMobile()`.
-- **Profile completeness** — onboarding progress, NOT Eloka's shop+personal field
-  checklist (those fields are opaque to us, and Eloka's own count treats an
-  absent key as complete). `profileCompleteness()` in `lib/auth/identity.ts`
-  reads `onboardingSteps` (the full ordered list) against `roleList` (the steps
-  still pending) — the same projection `eps-backend/src/signup/service.ts` makes.
+- **Profile strength** — a segmented meter, one segment per profile field
+  (filled / applicable), shared with Console Home's card. Field-based since
+  2026-11; it used to count onboarding steps and showed 100% with blank business
+  fields. Hidden until the CRM Lead loads. See
+  [`features/profile-fields.md`](./features/profile-fields.md).
 - **Manage My Account** — the children of interaction 536, read from the cached
   interaction list with `groupChildren()`. The rows are upstream's and follow the
   user's role; each deep-links to `/console/transaction/536/<childId>`.
@@ -226,6 +228,9 @@ Profile fields come from the `MeView` the layout already fetched, via
   (`CRM_DISABLED` / `NO_CRM_LEAD`) renders dashes — normal states, not errors.
   Any other failure keeps the profile rows and shows one inline notice.
 
+  Rows come from the shared field config (`lib/console/profile-fields.ts`, see
+  [`features/profile-fields.md`](./features/profile-fields.md)) — label, section,
+  home question, priority and store per field.
   Lives in `components/console/BusinessDetails.tsx`, reading the Lead through the
   shared `useCrmLead()` store (cached for a day — see `features/crm-lead.md`).
   Each card has an **Edit**

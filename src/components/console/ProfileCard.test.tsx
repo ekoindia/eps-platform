@@ -1,8 +1,35 @@
 import ProfileCard from "@/components/console/ProfileCard";
 import type { MeView } from "@/lib/auth/client";
-import { render, screen } from "@testing-library/react";
+import { ApiError } from "@/lib/auth/client";
+import { resetUnsyncedProfile } from "@/lib/console/profile-fields";
+import type { CrmLeadState } from "@/lib/crm/lead-store";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// The card reads the CRM Lead for its meter and questions; the store itself has
+// its own tests, so it's mocked at the hook, as the Documents page tests do.
+const { crm, update, updateProfile } = vi.hoisted(() => ({
+	crm: { state: { status: "loading" } as CrmLeadState },
+	update: vi.fn(),
+	updateProfile: vi.fn(),
+}));
+vi.mock("@/lib/auth/client", async (orig) => {
+	const actual = await orig<typeof import("@/lib/auth/client")>();
+	return { ...actual, authClient: { ...actual.authClient, updateProfile } };
+});
+vi.mock("@/lib/crm/use-crm-lead", () => ({
+	useCrmLead: () => ({ state: crm.state, fields: null, update }),
+}));
+
+beforeEach(() => {
+	crm.state = { status: "loading" };
+	update.mockReset().mockResolvedValue(undefined);
+	updateProfile.mockReset().mockResolvedValue({ updated: {} });
+	resetUnsyncedProfile();
+});
+
+afterEach(() => vi.restoreAllMocks());
 
 const ME: MeView = {
 	state: "active",
@@ -107,5 +134,168 @@ describe("ProfileCard", () => {
 		expect(badge).toBeInTheDocument();
 		expect(badge).toHaveClass("bg-destructive");
 		expect(screen.queryByText("Active")).toBeNull();
+	});
+});
+
+describe("ProfileCard questions", () => {
+	/** A sole proprietor: no director question, company type filled. */
+	const SOLE: MeView = {
+		...ME,
+		profile: { ...ME.profile, userDetail: { company_type: "3" } } as never,
+	};
+
+	const PICKLISTS = {
+		Industry: Array.from({ length: 14 }, (_, i) => `Industry ${i + 1}`),
+		Annual_Turnover: ["Pre-revenue", "Under ₹25 lakh"],
+		Number_of_Employees: ["1", "2 – 10"],
+		Number_of_Clients: ["1 – 50", "Not sure"],
+	};
+
+	const ALL_FILLED = {
+		Industry: "Industry 1",
+		Annual_Turnover: "Pre-revenue",
+		Number_of_Employees: "1",
+		Number_of_Clients: "Not sure",
+		GST_No: "07AAACA1234A1Z5",
+		Authorized_Signatory_Full_name: "Asha Kumari",
+		Website: "https://acme.test",
+		Mobile_App_Name: "Acme Pay",
+	};
+
+	/** Shows the card over a loaded Lead with these fields left empty. */
+	function withEmpty(...empty: string[]) {
+		const fields: Record<string, unknown> = { ...ALL_FILLED };
+		for (const name of empty) fields[name] = null;
+		crm.state = { status: "ok", fields, picklists: PICKLISTS };
+		// First of each tier, deterministically.
+		vi.spyOn(Math, "random").mockReturnValue(0);
+		show(SOLE);
+	}
+
+	it("shows no meter or question until the Lead loads", () => {
+		show(SOLE);
+		expect(screen.queryByRole("progressbar")).toBeNull();
+		expect(screen.queryByText("Skip this one")).toBeNull();
+	});
+
+	it("asks nothing when there is no Lead to write to", () => {
+		crm.state = { status: "none" };
+		show(SOLE);
+		expect(screen.queryByRole("progressbar")).toBeNull();
+		expect(screen.queryByText("Skip this one")).toBeNull();
+	});
+
+	it("meters the profile by filled fields", () => {
+		withEmpty("Number_of_Clients", "Mobile_App_Name");
+		// 10 fields for a sole proprietor, 8 filled.
+		expect(screen.getByRole("progressbar")).toHaveAttribute(
+			"aria-valuenow",
+			"80",
+		);
+	});
+
+	it("asks higher-priority questions first", () => {
+		withEmpty("Number_of_Clients", "Annual_Turnover");
+		expect(screen.getByText("What is your annual turnover?")).toBeInTheDocument();
+		expect(screen.getByText("1 of 2")).toBeInTheDocument();
+	});
+
+	it("saves a chip answer to the CRM and moves on", async () => {
+		withEmpty("Annual_Turnover");
+		fireEvent.click(screen.getByRole("button", { name: "Under ₹25 lakh" }));
+		await waitFor(() =>
+			expect(update).toHaveBeenCalledWith({ Annual_Turnover: "Under ₹25 lakh" }),
+		);
+		expect(await screen.findByText("Annual Turnover saved")).toBeInTheDocument();
+	});
+
+	it("offers a long picklist as a select", () => {
+		withEmpty("Industry");
+		expect(
+			screen.getByRole("combobox", { name: "Which industry is your business in?" }),
+		).toBeInTheDocument();
+	});
+
+	it("offers Save only once a typed answer is valid", async () => {
+		withEmpty("GST_No");
+		const input = screen.getByLabelText("What is your GST number?");
+		expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+
+		fireEvent.change(input, { target: { value: "07AAACA" } });
+		expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+		// Enter still submits, and says what's wrong.
+		fireEvent.submit(input.closest("form")!);
+		expect(
+			await screen.findByText("Enter a valid 15-character GSTIN."),
+		).toBeInTheDocument();
+		expect(update).not.toHaveBeenCalled();
+
+		fireEvent.change(input, { target: { value: "07aaaca1234a1z5" } });
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(update).toHaveBeenCalledWith({ GST_No: "07AAACA1234A1Z5" }),
+		);
+		// …and to the Eko profile, after the CRM.
+		await waitFor(() =>
+			expect(updateProfile).toHaveBeenCalledWith({ gstin: "07AAACA1234A1Z5" }),
+		);
+	});
+
+	it("warns when the CRM took a GSTIN but the Eko profile didn't", async () => {
+		updateProfile.mockRejectedValue(new ApiError("UPSTREAM_ERROR", "down", 502));
+		withEmpty("GST_No");
+		fireEvent.change(screen.getByLabelText("What is your GST number?"), {
+			target: { value: "07AAACA1234A1Z5" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		expect(
+			await screen.findByText(
+				"Saved to our records, but your Eko profile wasn't updated. Save again to retry.",
+			),
+		).toBeInTheDocument();
+	});
+
+	it("says why a save failed, and keeps the question", async () => {
+		update.mockRejectedValue(new ApiError("CRM_DOWN", "down", 502));
+		withEmpty("Annual_Turnover");
+		fireEvent.click(screen.getByRole("button", { name: "Pre-revenue" }));
+		expect(
+			await screen.findByText(
+				"Couldn't save to our records. Please try again shortly.",
+			),
+		).toBeInTheDocument();
+		expect(screen.getByText("What is your annual turnover?")).toBeInTheDocument();
+	});
+
+	it("sends a skipped question to the back of the queue", () => {
+		withEmpty("Annual_Turnover", "Number_of_Clients");
+		fireEvent.click(screen.getByRole("button", { name: "Skip this one" }));
+		expect(
+			screen.getByText("Roughly how many clients do you serve?"),
+		).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Skip this one" }));
+		expect(screen.getByText("What is your annual turnover?")).toBeInTheDocument();
+	});
+
+	it("can't skip the last question", () => {
+		withEmpty("Annual_Turnover");
+		expect(screen.getByRole("button", { name: "Skip this one" })).toBeDisabled();
+	});
+
+	it("hides mobile and email while a question is showing", () => {
+		withEmpty("Annual_Turnover");
+		expect(screen.queryByText("+91 999 888 7777")).toBeNull();
+		expect(screen.queryByText("asha@example.com")).toBeNull();
+	});
+
+	it("says so once everything is filled in", () => {
+		// Nothing to ask, so the contact details are back.
+		withEmpty();
+		expect(screen.getByText("+91 999 888 7777")).toBeInTheDocument();
+		expect(screen.getByText(/Profile complete/)).toBeInTheDocument();
+		expect(screen.getByRole("progressbar")).toHaveAttribute(
+			"aria-valuenow",
+			"100",
+		);
 	});
 });

@@ -84,6 +84,15 @@ export interface EkoClient {
 		identity: EkoIdentity;
 		xRealIp?: string;
 	}): Promise<number | null>;
+	/**
+	 * Records the partner's GSTIN on their Eko profile (interaction 369).
+	 * Already shape-checked and upper-cased by the route.
+	 */
+	updateGstin(input: {
+		gstin: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
 	getTransactionHistory(
 		input: TransactionHistoryInput,
 	): Promise<{ rows: TransactionRow[] }>;
@@ -347,6 +356,9 @@ export type EkoStepResult =
 			responseTypeId: number;
 			details?: EkoErrorDetails;
 	  };
+
+/** Interaction id for "update my GSTIN" on the Eko profile. */
+export const GSTIN_UPDATE_INTERACTION = "369";
 
 /**
  * Interaction id for the PIN-code lookup.
@@ -1097,6 +1109,33 @@ export function createEkoClient(
 				ok: false,
 				message: r?.message ?? "The request could not be completed.",
 				responseTypeId: Number(r?.response_type_id ?? -1),
+				details: errorDetails(raw),
+			};
+		},
+		async updateGstin(input) {
+			const raw = await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: GSTIN_UPDATE_INTERACTION,
+					gstin: input.gstin,
+				},
+				input.xRealIp,
+			);
+			// `status === 0` is the success signal, not a `response_type_id`: no
+			// success id is documented for 369, and documented ids have gone stale
+			// before (see `pincodeResult`).
+			const r = (raw ?? {}) as { status?: unknown; message?: unknown };
+			if (Number(r.status ?? -1) === 0) return { ok: true };
+			return {
+				ok: false,
+				message:
+					typeof r.message === "string" && r.message
+						? r.message
+						: "Your GST number could not be updated.",
+				responseTypeId: Number(
+					(raw as { response_type_id?: unknown } | null)?.response_type_id ??
+						-1,
+				),
 				details: errorDetails(raw),
 			};
 		},

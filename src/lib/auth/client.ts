@@ -74,7 +74,8 @@ export interface Profile {
 	zohoId: string;
 	/**
 	 * Ordered onboarding steps from upstream; empty for a fully-onboarded user.
-	 * `roleList` carries the steps still PENDING — see `profileCompleteness`.
+	 * `roleList` carries the steps still PENDING: a step is done once its role
+	 * no longer appears there.
 	 */
 	onboardingSteps: Array<{ role: number; label: string }>;
 	/** The user's accounts; empty when upstream sent no `account_detail`. */
@@ -779,6 +780,22 @@ export const authClient = {
 			method: "PATCH",
 			body: JSON.stringify(fields),
 		}) as Promise<CrmLeadUpdateView>,
+	/**
+	 * Writes the partner's own Eko (SimpliBank) profile fields — `gstin` only,
+	 * today (interaction 369). Prefer `writeProfileStores` from
+	 * `@/lib/console/profile-fields`, which pairs it with the CRM write.
+	 *
+	 * 400 `INVALID_FIELD_VALUE` / `FIELD_NOT_WRITABLE` for a bad body; 400
+	 * `PROFILE_UPDATE_REJECTED` carries upstream's own reason; 403 `NO_PROFILE`
+	 * for an account that isn't active.
+	 */
+	updateProfile: (
+		fields: Record<string, unknown>,
+	): Promise<{ updated: Record<string, unknown> }> =>
+		request("/profile", {
+			method: "PATCH",
+			body: JSON.stringify(fields),
+		}) as Promise<{ updated: Record<string, unknown> }>,
 	/**
 	 * Records marketing attribution on the Lead: the backend derives the UTM /
 	 * ad fields from `url` (the first landing URL) and writes only fields the

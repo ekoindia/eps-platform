@@ -9,6 +9,7 @@ import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Profile from "@/pages/console/Profile";
 import { ApiError } from "@/lib/auth/client";
+import { resetUnsyncedProfile } from "@/lib/console/profile-fields";
 import { resetCrmLeadCache } from "@/lib/crm/lead-store";
 import type { MeView, Profile as ProfileData } from "@/lib/auth/client";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
@@ -31,15 +32,16 @@ vi.mock("@/lib/connect/use-interactions", () => ({
 
 // The CRM card fetches through the client; everything else on the page is
 // session-derived. ApiError stays real so the 404-vs-failure split is tested.
-const { crmLead, updateCrmLead } = vi.hoisted(() => ({
+const { crmLead, updateCrmLead, updateProfile } = vi.hoisted(() => ({
 	crmLead: vi.fn(),
 	updateCrmLead: vi.fn(),
+	updateProfile: vi.fn(),
 }));
 vi.mock("@/lib/auth/client", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@/lib/auth/client")>();
 	return {
 		...actual,
-		authClient: { ...actual.authClient, crmLead, updateCrmLead },
+		authClient: { ...actual.authClient, crmLead, updateCrmLead, updateProfile },
 	};
 });
 
@@ -93,6 +95,8 @@ beforeEach(() => {
 	mockInteractions = null;
 	crmLead.mockReset();
 	updateCrmLead.mockReset();
+	updateProfile.mockReset().mockResolvedValue({ updated: {} });
+	resetUnsyncedProfile();
 	// The store is module-level and caches to localStorage: start every test
 	// from nothing, as a fresh sign-in would.
 	localStorage.clear();
@@ -118,35 +122,52 @@ describe("Profile identity card", () => {
 		expect(screen.getByText("+91 671 000 0002")).toBeInTheDocument();
 	});
 
-	it("reports 100% for a fully onboarded profile", () => {
-		renderProfile();
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
-			"aria-valuenow",
-			"100",
-		);
+	/** A Private Limited profile, so company type and email both count. */
+	const COMPANY = {
+		...ACTIVE,
+		profile: {
+			...PROFILE,
+			userDetail: { ...PROFILE.userDetail, company_type: "1" },
+		},
+	};
+
+	it("meters the profile by filled fields, not onboarding steps", async () => {
+		crmLead.mockResolvedValue({
+			id: "1",
+			fields: {
+				Industry: "Logistics",
+				Annual_Turnover: "Pre-revenue",
+				Number_of_Employees: "1",
+				Number_of_Clients: "Not sure",
+				GST_No: "07AAACA1234A1Z5",
+				Count_of_Directors: 3,
+				Authorized_Signatory_Full_name: "Asha Rao",
+				Website: "https://acme.test",
+				Mobile_App_Name: "Acme Pay",
+			},
+		});
+		renderProfile(COMPANY);
+		const meter = await screen.findByRole("progressbar");
+		expect(meter).toHaveAttribute("aria-valuenow", "100");
 		expect(screen.getByText("100%")).toBeInTheDocument();
 	});
 
-	it("reports partial progress from the steps still pending", () => {
-		// Four steps, two roles still pending → half done.
-		renderProfile({
-			...ACTIVE,
-			profile: {
-				...PROFILE,
-				onboarding: 1,
-				roleList: ["12600", "12800"],
-				onboardingSteps: [
-					{ role: 13000, label: "PAN Details" },
-					{ role: 13100, label: "Business Details" },
-					{ role: 12600, label: "Set Secret PIN" },
-					{ role: 12800, label: "Sign Agreement" },
-				],
-			},
-		});
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
+	// A fully onboarded partner used to read 100% here with every business
+	// field still blank.
+	it("reports empty fields as missing, however far onboarding got", async () => {
+		crmLead.mockResolvedValue({ id: "1", fields: { Industry: "Logistics" } });
+		renderProfile(COMPANY);
+		// Company type, email and industry: 3 of 11.
+		expect(await screen.findByRole("progressbar")).toHaveAttribute(
 			"aria-valuenow",
-			"50",
+			"27",
 		);
+	});
+
+	it("shows no meter without CRM data to count", async () => {
+		renderProfile();
+		await waitFor(() => expect(crmLead).toHaveBeenCalled());
+		expect(screen.queryByRole("progressbar")).toBeNull();
 	});
 
 	it("falls back to the mobile when the session carries no profile", () => {
@@ -154,10 +175,6 @@ describe("Profile identity card", () => {
 		renderProfile({ ...ACTIVE, state: "lead", profile: null });
 		// Twice: with no profile name, the mobile is also the heading.
 		expect(screen.getAllByText("+91 671 000 0002")).toHaveLength(2);
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
-			"aria-valuenow",
-			"0",
-		);
 	});
 });
 
@@ -496,6 +513,56 @@ describe("Profile business details — editing", () => {
 		fireEvent.click(form.getByRole("button", { name: "Save" }));
 		await waitFor(() =>
 			expect(updateCrmLead).toHaveBeenCalledWith({ GST_No: "29AABCU9603R1ZM" }),
+		);
+	});
+
+	// The GSTIN lives in two places: the CRM Lead and the Eko profile (369).
+	it("writes a GSTIN to the CRM, then to the Eko profile", async () => {
+		const form = await openEditor("Legal & Compliance");
+		fireEvent.change(form.getByLabelText("GST Number"), {
+			target: { value: "29aabcu9603r1zm" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(updateProfile).toHaveBeenCalledWith({ gstin: "29AABCU9603R1ZM" }),
+		);
+		expect(updateCrmLead.mock.invocationCallOrder[0]).toBeLessThan(
+			updateProfile.mock.invocationCallOrder[0],
+		);
+	});
+
+	it("never sends a non-GST change to the Eko profile", async () => {
+		const form = await openEditor("Legal & Compliance");
+		fireEvent.change(form.getByLabelText("Authorized Signatory"), {
+			target: { value: "Ravi Rao" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() => expect(updateCrmLead).toHaveBeenCalled());
+		expect(updateProfile).not.toHaveBeenCalled();
+	});
+
+	it("says when only the CRM took a GSTIN, and retries on the next Save", async () => {
+		updateProfile.mockRejectedValueOnce(
+			new ApiError("PROFILE_UPDATE_REJECTED", "GSTIN does not match PAN.", 400),
+		);
+		const form = await openEditor("Legal & Compliance");
+		fireEvent.change(form.getByLabelText("GST Number"), {
+			target: { value: "29AABCU9603R1ZM" },
+		});
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		expect(
+			await form.findByText(
+				"Saved to our records, but your Eko profile wasn't updated. GSTIN does not match PAN. Save again to retry.",
+			),
+		).toBeInTheDocument();
+
+		// The CRM holds the value now, so nothing reads as changed — Save still
+		// resends the Eko profile write, and only that.
+		fireEvent.click(form.getByRole("button", { name: "Save" }));
+		await waitFor(() => expect(updateProfile).toHaveBeenCalledTimes(2));
+		expect(updateCrmLead).toHaveBeenCalledTimes(1);
+		await waitFor(() =>
+			expect(screen.queryByRole("button", { name: "Save" })).toBeNull(),
 		);
 	});
 

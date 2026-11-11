@@ -36,6 +36,7 @@ import { mountDashboard } from "./dashboard";
 import { AppError, errorBody, unusableProfile } from "./errors";
 import { mountActivationFee } from "./activationFee";
 import { mountCrm } from "./crm";
+import { mountProfile } from "./profile";
 import { mountNotifications } from "./notifications";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
@@ -752,6 +753,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	// a deployment without Zoho credentials answers a named 404 the console can
 	// explain, rather than the route itself vanishing.
 	mountCrm(app, { sessions, eko, zoho, kv, enabled: cfg.zoho.enabled });
+	mountProfile(app, { sessions, eko, kv });
 
 	// Mounted unconditionally, unlike the Connect-widget routes below: it serves
 	// aggregate counts rather than credentials, so under the `eko` provider the
