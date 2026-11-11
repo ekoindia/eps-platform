@@ -50,14 +50,14 @@ or the PATCH refuses it.
 | --- | --- | --- | --- |
 | Company Type | (read-only, profile) | – | – |
 | Industry | Which industry is your business in? | 2 | crm `Industry` |
-| Annual Turnover | What is your annual turnover? | 2 | crm `Annual_Turnover` |
+| Annual Turnover | What is your annual turnover? | 1 | crm `Annual_Turnover` |
 | Employees | How many people work in your business? | 1 | crm `Number_of_Employees` |
 | Clients | Roughly how many clients do you serve? | 0 | crm `Number_of_Clients` |
 | GST Number | What is your GST number? | 2 | crm `GST_No` |
-| Number of Directors / Partners | How many {directors\|partners} does your business have? | 1 | crm `Count_of_Directors` |
+| Number of Directors / Partners | How many {directors\|partners} does your business have? | 2 | crm `Count_of_Directors` |
 | Authorized Signatory | Who is the authorized signatory? | 1 | crm `Authorized_Signatory_Full_name` |
 | Email | (read-only, profile) | – | – |
-| Website | What is your business website? | 1 | crm `Website` |
+| Website | What is your business website? | 2 | crm `Website` |
 | Mobile App | What is your mobile app called? | 0 | crm `Mobile_App_Name` |
 
 ## Adding a field
