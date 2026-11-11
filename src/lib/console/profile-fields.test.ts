@@ -108,14 +108,16 @@ describe("questionOrder", () => {
 	});
 
 	it("shuffles within a priority", () => {
+		// Read the top tier from the config, so retuning priorities doesn't
+		// break this test.
+		const top = fields
+			.filter((f) => f.question && f.priority === 2)
+			.map((f) => f.key)
+			.sort();
 		const high = (random: () => number) =>
-			questionOrder(fields, random).slice(0, 3);
+			questionOrder(fields, random).slice(0, top.length);
 		expect(high(() => 0)).not.toEqual(high(() => 0.99));
-		expect([...high(() => 0)].sort()).toEqual([
-			"Annual_Turnover",
-			"GST_No",
-			"Industry",
-		]);
+		expect([...high(() => 0)].sort()).toEqual(top);
 	});
 });
 
