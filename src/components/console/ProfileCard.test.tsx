@@ -1,6 +1,7 @@
 import ProfileCard from "@/components/console/ProfileCard";
 import type { MeView } from "@/lib/auth/client";
 import { ApiError } from "@/lib/auth/client";
+import { resetUnsyncedProfile } from "@/lib/console/profile-fields";
 import type { CrmLeadState } from "@/lib/crm/lead-store";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -8,10 +9,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The card reads the CRM Lead for its meter and questions; the store itself has
 // its own tests, so it's mocked at the hook, as the Documents page tests do.
-const { crm, update } = vi.hoisted(() => ({
+const { crm, update, updateProfile } = vi.hoisted(() => ({
 	crm: { state: { status: "loading" } as CrmLeadState },
 	update: vi.fn(),
+	updateProfile: vi.fn(),
 }));
+vi.mock("@/lib/auth/client", async (orig) => {
+	const actual = await orig<typeof import("@/lib/auth/client")>();
+	return { ...actual, authClient: { ...actual.authClient, updateProfile } };
+});
 vi.mock("@/lib/crm/use-crm-lead", () => ({
 	useCrmLead: () => ({ state: crm.state, fields: null, update }),
 }));
@@ -19,6 +25,8 @@ vi.mock("@/lib/crm/use-crm-lead", () => ({
 beforeEach(() => {
 	crm.state = { status: "loading" };
 	update.mockReset().mockResolvedValue(undefined);
+	updateProfile.mockReset().mockResolvedValue({ updated: {} });
+	resetUnsyncedProfile();
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -227,6 +235,24 @@ describe("ProfileCard questions", () => {
 		await waitFor(() =>
 			expect(update).toHaveBeenCalledWith({ GST_No: "07AAACA1234A1Z5" }),
 		);
+		// …and to the Eko profile, after the CRM.
+		await waitFor(() =>
+			expect(updateProfile).toHaveBeenCalledWith({ gstin: "07AAACA1234A1Z5" }),
+		);
+	});
+
+	it("warns when the CRM took a GSTIN but the Eko profile didn't", async () => {
+		updateProfile.mockRejectedValue(new ApiError("UPSTREAM_ERROR", "down", 502));
+		withEmpty("GST_No");
+		fireEvent.change(screen.getByLabelText("What is your GST number?"), {
+			target: { value: "07AAACA1234A1Z5" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		expect(
+			await screen.findByText(
+				"Saved to our records, but your Eko profile wasn't updated. Save again to retry.",
+			),
+		).toBeInTheDocument();
 	});
 
 	it("says why a save failed, and keeps the question", async () => {

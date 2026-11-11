@@ -1197,6 +1197,49 @@ describe("agreementIdOf", () => {
 	});
 });
 
+describe("updateGstin", () => {
+	const identity = {
+		initiatorId: "9990000001",
+		userCode: "20810001",
+		orgId: 1,
+	};
+
+	const bodyOf = (f: typeof fetch) =>
+		new URLSearchParams(
+			(f as unknown as Mock).mock.calls[0][1].body as string,
+		);
+
+	it("posts 546 with the gstin, as the acting user", async () => {
+		const f = mockFetch(200, { status: 0, message: "Updated" });
+		const eko = createEkoClient(ekoCfg, f);
+		expect(
+			await eko.updateGstin({ gstin: "07AAACA1234A1Z5", identity }),
+		).toEqual({ ok: true });
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("546");
+		expect(body.get("gstin")).toBe("07AAACA1234A1Z5");
+		expect(body.get("initiator_id")).toBe("9990000001");
+		expect(body.get("user_code")).toBe("20810001");
+		expect(body.get("client_ref_id")).toMatch(CLIENT_REF_ID);
+	});
+
+	it("passes upstream's refusal through", async () => {
+		const f = mockFetch(200, {
+			status: 1,
+			response_type_id: 1234,
+			message: "GSTIN does not match PAN",
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(
+			await eko.updateGstin({ gstin: "07AAACA1234A1Z5", identity }),
+		).toMatchObject({
+			ok: false,
+			message: "GSTIN does not match PAN",
+			responseTypeId: 1234,
+		});
+	});
+});
+
 describe("getWalletBalance", () => {
 	const identity = {
 		initiatorId: "9990000001",

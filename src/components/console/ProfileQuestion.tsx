@@ -6,12 +6,14 @@ import {
 	MAX_TEXT_LEN,
 	type ProfileField,
 	type ProfileFieldsView,
+	ProfileSyncError,
 	checkAnswer,
 	questionOrder,
 	saveFailureMessage,
 	useProfileFields,
 } from "@/lib/console/profile-fields";
-import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Check, TriangleAlert } from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 /** Up to this many choices show as tappable chips; more get a select. */
@@ -37,7 +39,8 @@ function QuestionCard({
 	view: ProfileFieldsView;
 	count: number;
 	focusOnMount: boolean;
-	onSaved: () => void;
+	/** `warning` when the CRM saved but SimpliBank didn't: the field is filled. */
+	onSaved: (warning?: string) => void;
 	onSkip: () => void;
 }) {
 	const id = useId();
@@ -71,6 +74,12 @@ function QuestionCard({
 			await view.save(field, checked.payload);
 			onSaved();
 		} catch (failure) {
+			// The CRM holds the answer, so this card is about to drop out of the
+			// queue: hand the warning up rather than showing it here.
+			if (failure instanceof ProfileSyncError) {
+				onSaved(failure.message);
+				return;
+			}
 			setError(saveFailureMessage(failure));
 			setSaving(false);
 		}
@@ -222,7 +231,9 @@ export function ProfileQuestions({
 }) {
 	const view = useProfileFields(profile);
 	const [order, setOrder] = useState(() => questionOrder(view.fields));
-	const [flash, setFlash] = useState<string | null>(null);
+	const [flash, setFlash] = useState<{ text: string; warn: boolean } | null>(
+		null,
+	);
 	const [interacted, setInteracted] = useState(false);
 	if (!view.strength) return contact ?? null;
 
@@ -245,10 +256,20 @@ export function ProfileQuestions({
 			{flash ? (
 				<p
 					role="status"
-					className="-mt-2 flex items-center gap-1.5 text-xs text-green-300"
+					className={cn(
+						"-mt-2 flex items-start gap-1.5 text-xs",
+						flash.warn ? "text-amber-300" : "text-green-300",
+					)}
 				>
-					<Check className="h-3.5 w-3.5" aria-hidden="true" />
-					{flash}
+					{flash.warn ? (
+						<TriangleAlert
+							className="mt-px h-3.5 w-3.5 shrink-0"
+							aria-hidden="true"
+						/>
+					) : (
+						<Check className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+					)}
+					{flash.text}
 				</p>
 			) : null}
 			{current ? (
@@ -272,8 +293,12 @@ export function ProfileQuestions({
 						view={view}
 						count={queue.length}
 						focusOnMount={interacted}
-						onSaved={() => {
-							setFlash(`${current.label} saved`);
+						onSaved={(warning) => {
+							setFlash(
+								warning
+									? { text: warning, warn: true }
+									: { text: `${current.label} saved`, warn: false },
+							);
 							setInteracted(true);
 						}}
 						onSkip={() => {

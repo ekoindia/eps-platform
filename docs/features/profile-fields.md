@@ -38,9 +38,22 @@ Every other type gets a question with the type's legal range as its options.
 | Store | Key | Writer |
 | --- | --- | --- |
 | `crm` | Zoho Lead `api_name` | `PATCH /crm/lead` via `useCrmLead().update` (see [crm-lead.md](./crm-lead.md)) |
-| `simplibank` | Eko profile field | **None yet.** Configuring it makes `save()` throw. Add the writer in `useProfileFields().save` when a profile-write API exists. |
+| `simplibank` | Eko profile field | `PATCH /profile` (eps-backend `http/profile.ts`). The backend acts as the caller and whitelists fields; today only `gstin`, through interaction **546**. A new field needs its interaction added there. |
 
-A field can name both stores. Every CRM field must also be in the backend
+A field can name both stores. `writeProfileStores` writes them in a fixed
+order, used by both the profile page and the home deck:
+
+1. **CRM first.** If it fails, nothing else is tried, and the usual error is
+   shown.
+2. **Then SimpliBank.** If this fails after the CRM write landed, the answer
+   counts as saved, because the field now reads as filled. The partner sees
+   "Saved to our records, but your Eko profile wasn't updated", followed by
+   upstream's reason when it gave one. The write is also queued in memory.
+3. **Retry.** The next save resends whatever is queued. That includes a profile
+   page Save with nothing changed, because the CRM already holds the value.
+   The queue is lost on reload.
+
+ Every CRM field must also be in the backend
 whitelist (`LEAD_FIELDS` in `packages/eps-backend/src/clients/lead-fields.ts`),
 or the PATCH refuses it.
 
@@ -53,7 +66,7 @@ or the PATCH refuses it.
 | Annual Turnover | What is your annual turnover? | 1 | crm `Annual_Turnover` |
 | Employees | How many people work in your business? | 1 | crm `Number_of_Employees` |
 | Clients | Roughly how many clients do you serve? | 0 | crm `Number_of_Clients` |
-| GST Number | What is your GST number? | 2 | crm `GST_No` |
+| GST Number | What is your GST number? | 2 | crm `GST_No` + simplibank `gstin` |
 | Number of Directors / Partners | How many {directors\|partners} does your business have? | 2 | crm `Count_of_Directors` |
 | Authorized Signatory | Who is the authorized signatory? | 1 | crm `Authorized_Signatory_Full_name` |
 | Email | (read-only, profile) | – | – |

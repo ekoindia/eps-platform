@@ -12,8 +12,10 @@ import {
 	profileFields,
 	rawText,
 	saveFailureMessage,
+	hasUnsyncedProfile,
 	toPayload,
 	validate,
+	writeProfileStores,
 } from "@/lib/console/profile-fields";
 import type { CrmLeadState } from "@/lib/crm/lead-store";
 import { useCrmLead } from "@/lib/crm/use-crm-lead";
@@ -164,7 +166,7 @@ function DetailSection({
 	async function save() {
 		if (form.mode !== "edit") return;
 		const errors: Record<string, string> = {};
-		const changed: Record<string, unknown> = {};
+		const changed: { field: ProfileField; payload: unknown }[] = [];
 		for (const row of crmRows) {
 			const name = row.saveTo!.crm!;
 			const kind = row.kind;
@@ -176,19 +178,25 @@ function DetailSection({
 					? "This can't be left empty once filled in."
 					: validate(kind, value);
 			if (error) errors[name] = error;
-			else if (value !== original) changed[name] = toPayload(kind, value);
+			else if (value !== original) {
+				changed.push({ field: row, payload: toPayload(kind, value) });
+			}
 		}
 		if (Object.keys(errors).length > 0) {
 			setForm({ ...form, errors, failure: null });
 			return;
 		}
-		if (Object.keys(changed).length === 0) {
+		// Nothing changed still saves when an earlier SimpliBank write is waiting
+		// for a retry: the CRM holds the value, so the form shows no change.
+		const retry =
+			hasUnsyncedProfile() && crmRows.some((row) => row.saveTo?.simplibank);
+		if (changed.length === 0 && !retry) {
 			setForm({ mode: "view" });
 			return;
 		}
 		setForm({ ...form, errors: {}, saving: true, failure: null });
 		try {
-			await update(changed);
+			await writeProfileStores(changed, update);
 			setForm({ mode: "view" });
 		} catch (error) {
 			setForm({

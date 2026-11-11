@@ -1,4 +1,4 @@
-import { ApiError, type Profile } from "@/lib/auth/client";
+import { ApiError, authClient, type Profile } from "@/lib/auth/client";
 import { profileCompanyType } from "@/lib/auth/identity";
 import { DIRECTOR_MAX, directorRule } from "@/lib/connect/directors";
 import type { CrmLeadState } from "@/lib/crm/lead-store";
@@ -36,8 +36,11 @@ export type ProfileSection = (typeof PROFILE_SECTIONS)[number];
  * Where an answer is written. A field may name either store or both.
  *
  * - `crm` — the Zoho Lead field's `api_name`, written via `PATCH /crm/lead`.
- * - `simplibank` — the Eko profile. Typed so a field can be configured for it,
- *   but no writer exists yet: saving such a field throws.
+ * - `simplibank` — the Eko profile field, written via `PATCH /profile`
+ *   (interaction 546 for `gstin`). The backend whitelists what it accepts.
+ *
+ * With both, the CRM is written first and SimpliBank second — see
+ * `writeProfileStores`.
  */
 export interface FieldStores {
 	crm?: string;
@@ -171,7 +174,7 @@ export function profileFields(profile: Profile | null): ProfileField[] {
 			priority: 2,
 			kind: "gstin",
 			question: "What is your GST number?",
-			saveTo: { crm: "GST_No" },
+			saveTo: { crm: "GST_No", simplibank: "gstin" },
 		},
 		...directorFields(profile),
 		{
@@ -344,10 +347,74 @@ export function checkAnswer(
  * CRM being unreachable.
  */
 export function saveFailureMessage(error: unknown): string {
+	if (error instanceof ProfileSyncError) return error.message;
 	return error instanceof ApiError &&
 		(error.httpStatus === 400 || error.httpStatus === 409)
 		? error.message
 		: "Couldn't save to our records. Please try again shortly.";
+}
+
+/**
+ * SimpliBank writes that failed after their CRM write had landed, by
+ * SimpliBank field. The next save retries them, even one with nothing else to
+ * send — the CRM already holds the value, so the form shows nothing changed.
+ * ponytail: in memory, so a reload forgets them; persist if drift shows up.
+ */
+const unsynced = new Map<string, unknown>();
+
+/** True while a SimpliBank write is waiting to be retried. */
+export function hasUnsyncedProfile(): boolean {
+	return unsynced.size > 0;
+}
+
+/** Test hook: forgets pending SimpliBank retries. */
+export function resetUnsyncedProfile(): void {
+	unsynced.clear();
+}
+
+/**
+ * The CRM saved, SimpliBank didn't. The answer is recorded (the field reads as
+ * filled), so callers move on, but tell the partner and keep the write queued.
+ */
+export class ProfileSyncError extends Error {}
+
+/**
+ * Writes answers to every store their fields name: the CRM first, then the Eko
+ * profile (SimpliBank), plus any SimpliBank write still pending from an earlier
+ * failure.
+ *
+ * A CRM failure throws its `ApiError` before SimpliBank is tried. A SimpliBank
+ * failure after the CRM landed throws `ProfileSyncError` and queues the write.
+ * @param changes - Each field with its value from `checkAnswer`/`toPayload`.
+ * @param updateCrm - `useCrmLead().update`, so the shared cache is patched.
+ */
+export async function writeProfileStores(
+	changes: readonly { field: ProfileField; payload: unknown }[],
+	updateCrm: (fields: Record<string, unknown>) => Promise<void>,
+): Promise<void> {
+	const crm: Record<string, unknown> = {};
+	const simplibank: Record<string, unknown> = Object.fromEntries(unsynced);
+	for (const { field, payload } of changes) {
+		if (field.saveTo?.crm) crm[field.saveTo.crm] = payload;
+		if (field.saveTo?.simplibank) simplibank[field.saveTo.simplibank] = payload;
+	}
+	if (Object.keys(crm).length > 0) await updateCrm(crm);
+	if (Object.keys(simplibank).length === 0) return;
+	try {
+		await authClient.updateProfile(simplibank);
+		for (const key of Object.keys(simplibank)) unsynced.delete(key);
+	} catch (error) {
+		for (const [key, value] of Object.entries(simplibank)) {
+			unsynced.set(key, value);
+		}
+		const reason =
+			error instanceof ApiError && error.httpStatus === 400
+				? ` ${error.message}`
+				: "";
+		throw new ProfileSyncError(
+			`Saved to our records, but your Eko profile wasn't updated.${reason} Save again to retry.`,
+		);
+	}
 }
 
 /** How filled-in a profile is. */
@@ -433,15 +500,6 @@ export function useProfileFields(profile: Profile | null): ProfileFieldsView {
 		valueOf: (field) => fieldValue(field, profile, record),
 		optionsOf: (field) => fieldOptions(field, picklists),
 		strength: record ? profileStrength(fields, profile, record) : null,
-		save: async (field, payload) => {
-			// ponytail: no SimpliBank profile-write API yet; add the writer here
-			// when one exists.
-			if (field.saveTo?.simplibank) {
-				throw new Error(
-					`Saving ${field.label} to SimpliBank is not supported yet.`,
-				);
-			}
-			if (field.saveTo?.crm) await update({ [field.saveTo.crm]: payload });
-		},
+		save: (field, payload) => writeProfileStores([{ field, payload }], update),
 	};
 }

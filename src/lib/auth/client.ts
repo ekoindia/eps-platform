@@ -781,6 +781,22 @@ export const authClient = {
 			body: JSON.stringify(fields),
 		}) as Promise<CrmLeadUpdateView>,
 	/**
+	 * Writes the partner's own Eko (SimpliBank) profile fields — `gstin` only,
+	 * today (interaction 546). Prefer `writeProfileStores` from
+	 * `@/lib/console/profile-fields`, which pairs it with the CRM write.
+	 *
+	 * 400 `INVALID_FIELD_VALUE` / `FIELD_NOT_WRITABLE` for a bad body; 400
+	 * `PROFILE_UPDATE_REJECTED` carries upstream's own reason; 403 `NO_PROFILE`
+	 * for an account that isn't active.
+	 */
+	updateProfile: (
+		fields: Record<string, unknown>,
+	): Promise<{ updated: Record<string, unknown> }> =>
+		request("/profile", {
+			method: "PATCH",
+			body: JSON.stringify(fields),
+		}) as Promise<{ updated: Record<string, unknown> }>,
+	/**
 	 * Records marketing attribution on the Lead: the backend derives the UTM /
 	 * ad fields from `url` (the first landing URL) and writes only fields the
 	 * Lead does not hold yet. Idempotent; `updated` may be `{}`. Open to signup
