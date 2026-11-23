@@ -3,7 +3,7 @@ namespace Eko\Eps;
 
 /**
  * A non-GET call on a money-moving endpoint ended without a confirmed outcome
- * (timeout, transport failure, HTTP 429 or 5xx). The SDK never re-sends such a
+ * (timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON). The SDK never re-sends such a
  * request — that is how a customer gets debited twice — so it inquired by the
  * call's `client_ref_id` instead and reports what it found. `$statusCheck` is
  * the Transaction Inquiry envelope (`data.tx_status`: 0 success, 1 fail,
@@ -13,7 +13,7 @@ namespace Eko\Eps;
  */
 final class EpsIndeterminateException extends EpsException
 {
-    /** HTTP status of the original attempt, or null for a transport failure. */
+    /** HTTP status of the original attempt (a 2xx when its body was not JSON), or null for a transport failure. */
     public readonly ?int $status;
 
     public function __construct(
@@ -28,6 +28,8 @@ final class EpsIndeterminateException extends EpsException
             0,
             $cause
         );
-        $this->status = $cause instanceof EpsHttpException ? $cause->status : null;
+        $this->status = $cause instanceof EpsHttpException || $cause instanceof EpsInvalidResponseException
+            ? $cause->status
+            : null;
     }
 }

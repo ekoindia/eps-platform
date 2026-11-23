@@ -468,9 +468,10 @@ class EpsClientTest {
 
 		@Test
 		void handleResponseThrowsWhenSuccessBodyIsNotJson() {
-			EpsClient.EpsException e =
+			EpsClient.EpsInvalidResponseException e =
 					assertThrows(
-							EpsClient.EpsException.class, () -> EpsClient.handleResponse(200, URL, "not json"));
+							EpsClient.EpsInvalidResponseException.class,
+							() -> EpsClient.handleResponse(200, URL, "not json"));
 			assertEquals("EPS response from " + URL + " was not valid JSON.", e.getMessage());
 		}
 	}
@@ -896,6 +897,31 @@ class EpsClientTest {
 			assertEquals(503, ((EpsClient.EpsHttpException) e.statusCheckError).status);
 			assertEquals(500, ((EpsClient.EpsHttpException) e.getCause()).status);
 			assertEquals(1 + 3, t.sent.size());
+		}
+
+		@Test
+		void financialPostUnparseable2xxInquiresAndThrowsIndeterminate() {
+			String inquiry = "{\"status\":0,\"data\":{\"tx_status\":\"0\",\"tid\":\"1\"}}";
+			Scripted t = new Scripted(Step.body("{\"status\":0,\"da"), Step.body(inquiry));
+			EpsClient.EpsIndeterminateException e =
+					assertThrows(
+							EpsClient.EpsIndeterminateException.class,
+							() -> fast(t).call("dmt-initiate-transfer", TRANSFER));
+			String ref = (String) t.sent.get(0).json().get("client_ref_id");
+			assertEquals(ref, e.clientRefId);
+			assertEquals(200, e.status);
+			assertEquals("0", ((Map<?, ?>) e.statusCheck.get("data")).get("tx_status"));
+			assertTrue(e.getCause() instanceof EpsClient.EpsInvalidResponseException);
+			assertEquals("{\"status\":0,\"da", ((EpsClient.EpsInvalidResponseException) e.getCause()).raw);
+			assertEquals(2, t.sent.size());
+			assertTrue(t.sent.get(1).request().uri().toString().contains("client_ref_id=" + ref));
+		}
+
+		@Test
+		void nonFinancialPostUnparseable2xxNoInquiry() {
+			Scripted t = new Scripted(Step.body(""));
+			assertThrows(EpsClient.EpsInvalidResponseException.class, () -> fast(t).call("pan-lite", PAN));
+			assertEquals(1, t.sent.size());
 		}
 
 		@Test

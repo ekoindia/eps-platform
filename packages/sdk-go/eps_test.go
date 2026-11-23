@@ -835,6 +835,36 @@ func TestFailingInquiryLandsOnStatusCheckErr(t *testing.T) {
 	}
 }
 
+func TestFinancialPostUnparseable2xxInquiresAndReturnsIndeterminate(t *testing.T) {
+	inquiry := `{"status":0,"data":{"tx_status":"0","tid":"1"}}`
+	tr := &scripted{steps: []step{withBody(`{"status":0,"da`), withBody(inquiry)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) {
+		t.Fatalf("err = %v, want *IndeterminateError", err)
+	}
+	ref := tr.body(t, 0)["client_ref_id"].(string)
+	if ind.ClientRefID != ref || ind.Status != 200 || ind.StatusCheck["data"].(map[string]any)["tx_status"] != "0" {
+		t.Errorf("IndeterminateError = %+v, want ref %q / 200 / the inquiry envelope", ind, ref)
+	}
+	var invalid *InvalidResponseError
+	if !errors.As(err, &invalid) || string(invalid.Raw) != `{"status":0,"da` {
+		t.Errorf("errors.As(*InvalidResponseError) through Unwrap failed: %v", err)
+	}
+	if len(tr.requests) != 2 || tr.requests[1].URL.Query().Get("client_ref_id") != ref {
+		t.Errorf("sent %d requests, want 2 with an inquiry by %q", len(tr.requests), ref)
+	}
+}
+
+func TestNonFinancialPostUnparseable2xxNoInquiry(t *testing.T) {
+	tr := &scripted{steps: []step{withBody("")}}
+	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", panParams)
+	var invalid *InvalidResponseError
+	if !errors.As(err, &invalid) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want *InvalidResponseError after 1", err, len(tr.requests))
+	}
+}
+
 func TestFinancialPost4xxIsPlainHTTPError(t *testing.T) {
 	tr := &scripted{steps: []step{httpStep(401)}}
 	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)

@@ -6,6 +6,7 @@ import {
 	EpsError,
 	EpsHttpError,
 	EpsIndeterminateError,
+	EpsInvalidResponseError,
 	MULTIPART_JSON_FIELD,
 	generateClientRefId,
 	signSecretKey,
@@ -763,6 +764,35 @@ describe("retry and status check", () => {
 		expect((err.statusCheckError as EpsHttpError).status).toBe(503);
 		expect((err.cause as EpsHttpError).status).toBe(500);
 		expect(f).toHaveBeenCalledTimes(1 + 3);
+	});
+
+	it("financial POST + 2xx that is not JSON: indeterminate, inquires by client_ref_id", async () => {
+		const inquiry = { status: 0, data: { tx_status: "0", tid: "1" } };
+		const f = vi
+			.fn()
+			.mockResolvedValueOnce(new Response("{\"status\":0,\"da", { status: 200 }))
+			.mockResolvedValueOnce(new Response(JSON.stringify(inquiry)));
+		const err = (await make(f)
+			.call("dmt-initiate-transfer", TRANSFER)
+			.catch((e: unknown) => e)) as EpsIndeterminateError;
+		expect(err).toBeInstanceOf(EpsIndeterminateError);
+		expect(err.clientRefId).toBe(bodyOf(f, 0).client_ref_id);
+		expect(err.status).toBe(200);
+		expect(err.statusCheck).toEqual(inquiry);
+		expect(err.cause).toBeInstanceOf(EpsInvalidResponseError);
+		expect((err.cause as EpsInvalidResponseError).raw).toBe('{"status":0,"da');
+		expect(f).toHaveBeenCalledTimes(2);
+		expect(new URL(urlOf(f, 1)).searchParams.get("client_ref_id")).toBe(
+			err.clientRefId,
+		);
+	});
+
+	it("non-financial POST + 2xx that is not JSON: EpsInvalidResponseError, no inquiry", async () => {
+		const f = vi.fn(async () => new Response("", { status: 200 }));
+		const err = await make(f).call("pan-lite", PAN).catch((e: unknown) => e);
+		expect(err).toBeInstanceOf(EpsInvalidResponseError);
+		expect(err).toBeInstanceOf(EpsError);
+		expect(f).toHaveBeenCalledTimes(1);
 	});
 
 	it("financial POST + decisive 4xx: plain EpsHttpError, no inquiry", async () => {

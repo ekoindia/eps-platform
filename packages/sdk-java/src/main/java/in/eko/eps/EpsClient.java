@@ -120,8 +120,27 @@ public final class EpsClient {
 	}
 
 	/**
+	 * A 2xx response whose body is not JSON (empty, truncated, a proxy's HTML page). EPS may well
+	 * have processed the request, so the outcome is unknown, not decided: a financial call gets
+	 * the status check and a retry-safe one is retried. Still an {@link EpsException}, so existing
+	 * catches keep matching.
+	 */
+	public static final class EpsInvalidResponseException extends EpsException {
+		public final int status;
+		public final String url;
+		public final String raw;
+
+		EpsInvalidResponseException(int status, String url, String raw) {
+			super("EPS response from " + url + " was not valid JSON.");
+			this.status = status;
+			this.url = url;
+			this.raw = raw;
+		}
+	}
+
+	/**
 	 * A non-GET call on a money-moving endpoint ended without a confirmed outcome (timeout,
-	 * transport failure, HTTP 429 or 5xx). The SDK never re-sends such a request — that is how a
+	 * transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON). The SDK never re-sends such a request — that is how a
 	 * customer gets debited twice — so it inquired by the call's {@code client_ref_id} instead and
 	 * reports what it found. {@link #statusCheck} is the Transaction Inquiry envelope ({@code
 	 * data.tx_status}: "0" success, "1" fail, "2" awaited, …) or null when the inquiry itself
@@ -131,7 +150,7 @@ public final class EpsClient {
 	public static final class EpsIndeterminateException extends EpsException {
 		public final String slug;
 		public final String clientRefId;
-		/** HTTP status of the original attempt, or null for a transport failure. */
+		/** HTTP status of the original attempt (a 2xx when its body was not JSON), or null for a transport failure. */
 		public final Integer status;
 		public final Map<String, Object> statusCheck;
 		public final Throwable statusCheckError;
@@ -148,19 +167,22 @@ public final class EpsClient {
 					cause);
 			this.slug = slug;
 			this.clientRefId = clientRefId;
-			this.status = cause instanceof EpsHttpException h ? h.status : null;
+			this.status =
+					cause instanceof EpsHttpException h
+							? Integer.valueOf(h.status)
+							: cause instanceof EpsInvalidResponseException i ? Integer.valueOf(i.status) : null;
 			this.statusCheck = statusCheck;
 			this.statusCheckError = statusCheckError;
 		}
 	}
 
 	/**
-	 * True when the outcome is unknown: no response, or a 429/5xx that says nothing about whether
-	 * the request was processed. A 4xx is a decisive no, and so is a 2xx that failed to decode.
+	 * True when the outcome is unknown: no response, a 429/5xx, or a 2xx whose body could not be
+	 * read — none says whether the request was processed. A 4xx is a decisive no.
 	 */
 	private static boolean isIndeterminate(EpsException e) {
 		if (e instanceof EpsHttpException h) return h.status == 429 || h.status >= 500;
-		return e instanceof EpsTransportException;
+		return e instanceof EpsTransportException || e instanceof EpsInvalidResponseException;
 	}
 
 	/** An in-memory upload, for callers that do not have the bytes on disk. */
@@ -742,7 +764,8 @@ public final class EpsClient {
 	 * @throws EpsIndeterminateException when a financial non-GET call has no confirmed outcome
 	 * @throws EpsHttpException on any other non-2xx response; the envelope is on {@code body}
 	 * @throws EpsTransportException on a transport failure that was not retried
-	 * @throws EpsException on a 2xx body that is not JSON — never a silent empty map
+	 * @throws EpsInvalidResponseException on a 2xx body that is not JSON (when not inquired) —
+	 *     never a silent empty map
 	 */
 	public Map<String, Object> call(String slug, Map<String, Object> params) {
 		Target target = resolveTarget(slug, params);
@@ -835,7 +858,7 @@ public final class EpsClient {
 	 * stubbing the abstract {@link HttpClient}.
 	 *
 	 * @throws EpsHttpException on any non-2xx response; the decoded envelope is on {@code body}.
-	 * @throws EpsException when a 2xx body is not JSON — never a silent empty map.
+	 * @throws EpsInvalidResponseException when a 2xx body is not JSON — never a silent empty map.
 	 */
 	static Map<String, Object> handleResponse(int status, String url, String raw) {
 		Map<String, Object> envelope = decodeOrNull(raw);
@@ -843,7 +866,7 @@ public final class EpsClient {
 			throw new EpsHttpException(status, url, envelope, raw);
 		}
 		if (envelope == null) {
-			throw new EpsException("EPS response from " + url + " was not valid JSON.");
+			throw new EpsInvalidResponseException(status, url, raw);
 		}
 		return envelope;
 	}

@@ -349,7 +349,7 @@ class ResponseContract(unittest.TestCase):
 import re
 import socket
 
-from eps_sdk import EpsIndeterminateError, generate_client_ref_id
+from eps_sdk import EpsIndeterminateError, EpsInvalidResponseError, generate_client_ref_id
 from eps_sdk.client import _base36, value_problem
 
 REF = re.compile(r"^[0-9a-z]{15}$")
@@ -591,6 +591,29 @@ class RetryAndStatusCheck(unittest.TestCase):
         self.assertEqual(e.status_check_error.status, 503)
         self.assertEqual(e.__cause__.status, 500)
         self.assertEqual(len(t.requests), 1 + 3)
+
+    def test_financial_post_unparseable_2xx_inquires_and_raises_indeterminate(self):
+        inquiry = {"status": 0, "data": {"tx_status": "0", "tid": "1"}}
+        t = Transport(_response(b'{"status":0,"da'), _response(json.dumps(inquiry).encode()))
+        with patched(t):
+            with self.assertRaises(EpsIndeterminateError) as ctx:
+                fast().call("dmt-initiate-transfer", TRANSFER)
+        e = ctx.exception
+        ref = t.body(0)["client_ref_id"]
+        self.assertEqual(e.client_ref_id, ref)
+        self.assertEqual(e.status, 200)
+        self.assertEqual(e.status_check, inquiry)
+        self.assertIsInstance(e.__cause__, EpsInvalidResponseError)
+        self.assertEqual(e.__cause__.raw, b'{"status":0,"da')
+        self.assertEqual(len(t.requests), 2)
+        self.assertIn(f"client_ref_id={ref}", t.url(1))
+
+    def test_non_financial_post_unparseable_2xx_no_inquiry(self):
+        t = Transport(_response(b""))
+        with patched(t):
+            with self.assertRaises(EpsInvalidResponseError):
+                fast().call("pan-lite", PAN)
+        self.assertEqual(len(t.requests), 1)
 
     def test_financial_post_4xx_is_plain_http_error(self):
         t = Transport(_http(401))

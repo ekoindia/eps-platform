@@ -3,6 +3,7 @@ export {
 	EpsError,
 	EpsHttpError,
 	EpsIndeterminateError,
+	EpsInvalidResponseError,
 	MULTIPART_JSON_FIELD,
 	generateClientRefId,
 	signSecretKey,

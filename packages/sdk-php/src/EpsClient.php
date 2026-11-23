@@ -360,7 +360,7 @@ final class EpsClient
      * object envelope; widen to `mixed` if that ever stops being true.
      *
      * @throws EpsHttpException On any non-2xx response.
-     * @throws EpsException When a 2xx body is not a JSON object — never a silent [].
+     * @throws EpsInvalidResponseException When a 2xx body is not a JSON object — never a silent [].
      */
     public static function decodeResponse(int $status, string $url, string $raw): array
     {
@@ -370,7 +370,7 @@ final class EpsClient
             throw new EpsHttpException($status, $url, $body, $raw);
         }
         if ($body === null) {
-            throw new EpsException("EPS response from $url was not valid JSON.");
+            throw new EpsInvalidResponseException($status, $url, $raw);
         }
         return $body;
     }
@@ -389,7 +389,7 @@ final class EpsClient
      * @throws EpsIndeterminateException When a financial non-GET call has no confirmed outcome.
      * @throws EpsHttpException On any other non-2xx response (the envelope is on `$body`).
      * @throws EpsTransportException On a transport failure that was not retried.
-     * @throws EpsException On a 2xx body that is not JSON.
+     * @throws EpsInvalidResponseException On a 2xx body that is not JSON (when not inquired).
      */
     public function call(string $slug, array $params = []): array
     {
@@ -415,13 +415,14 @@ final class EpsClient
     }
 
     /**
-     * True when the outcome is unknown: no response, or a 429/5xx that says
-     * nothing about whether the request was processed. A 4xx is a decisive no.
+     * True when the outcome is unknown: no response, a 429/5xx, or a 2xx whose
+     * body could not be read — none says whether the request was processed. A
+     * 4xx is a decisive no.
      */
     private static function isIndeterminate(EpsException $e): bool
     {
         if ($e instanceof EpsHttpException) return $e->status === 429 || $e->status >= 500;
-        return $e instanceof EpsTransportException;
+        return $e instanceof EpsTransportException || $e instanceof EpsInvalidResponseException;
     }
 
     /** Attempt n sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter. */

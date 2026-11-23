@@ -192,8 +192,25 @@ export class EpsHttpError extends EpsError {
 }
 
 /**
+ * A 2xx response whose body is not JSON (empty, truncated, an HTML error page
+ * from a proxy). EPS may well have processed the request, so this is
+ * indeterminate, not decisive: a `financial` call gets the status inquiry and a
+ * `retrySafe` one is retried. Still an `EpsError`, so existing catches hold.
+ */
+export class EpsInvalidResponseError extends EpsError {
+	constructor(
+		readonly status: number,
+		readonly url: string,
+		readonly raw: string,
+	) {
+		super(`EPS response from ${url} was not valid JSON.`);
+		this.name = "EpsInvalidResponseError";
+	}
+}
+
+/**
  * A non-GET call on a money-moving endpoint ended without a confirmed outcome
- * (timeout, transport failure, HTTP 429 or 5xx). The SDK never re-sends such a
+ * (timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON). The SDK never re-sends such a
  * request — that is how a customer gets debited twice — so it inquired by the
  * call's `client_ref_id` instead and reports what it found. `statusCheck` is the
  * Transaction Inquiry envelope (`data.tx_status`: 0 success, 1 fail, 2 awaited,
@@ -202,7 +219,8 @@ export class EpsHttpError extends EpsError {
  * retrying; never assume a timeout meant failure.
  */
 export class EpsIndeterminateError extends EpsError {
-	/** HTTP status of the original attempt, or null for a transport failure. */
+	/** HTTP status of the original attempt (a 2xx when its body was not JSON),
+	 * or null for a transport failure. */
 	readonly status: number | null;
 	constructor(
 		readonly slug: string,
@@ -216,16 +234,21 @@ export class EpsIndeterminateError extends EpsError {
 			{ cause },
 		);
 		this.name = "EpsIndeterminateError";
-		this.status = cause instanceof EpsHttpError ? cause.status : null;
+		this.status =
+			cause instanceof EpsHttpError || cause instanceof EpsInvalidResponseError
+				? cause.status
+				: null;
 	}
 }
 
-/** True when the outcome is unknown: no response, or a 429/5xx that says
- * nothing about whether the request was processed. A 4xx is a decisive no. */
+/** True when the outcome is unknown: no response, a 429/5xx, or a 2xx whose
+ * body could not be read — none says whether the request was processed. A 4xx
+ * is a decisive no. */
 const isIndeterminate = (err: unknown): boolean =>
-	err instanceof EpsHttpError
+	err instanceof EpsInvalidResponseError ||
+	(err instanceof EpsHttpError
 		? err.status === 429 || err.status >= 500
-		: !(err instanceof EpsError);
+		: !(err instanceof EpsError));
 
 /** Decode a response body, or null when it is not JSON — the non-2xx path still
  * wants whatever envelope the server sent. Mirrors `_decode_json_or_none` in
@@ -600,7 +623,7 @@ export class EpsClient {
 		// A non-2xx envelope is an error, not a result — see docs/sdk-golden-vector.md.
 		if (!res.ok) throw new EpsHttpError(res.status, url, envelope, raw);
 		if (envelope === null)
-			throw new EpsError(`EPS response from ${url} was not valid JSON.`);
+			throw new EpsInvalidResponseError(res.status, url, raw);
 		return envelope;
 	}
 }

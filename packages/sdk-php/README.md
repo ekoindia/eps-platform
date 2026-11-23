@@ -30,8 +30,8 @@ Requires PHP >= 8.1, with `ext-curl` and `ext-json`. No other dependencies.
 - **Validates first** — missing required params and wrong types throw `\InvalidArgumentException` before a request goes out.
 - **Routes the params** — path tokens, query string, JSON body, or `multipart/form-data` for file-upload endpoints, per the endpoint's spec.
 - **Fails loudly** — a non-2xx response throws `Eko\Eps\EpsHttpException` (with the decoded envelope on `->body`); a non-JSON body throws rather than returning `[]`.
-- **Never loses a transaction** — every non-GET call carries a `client_ref_id` (yours, or a generated 15-char one). A money-moving call that times out is looked up by that ref and surfaced as `Eko\Eps\EpsIndeterminateException` with the inquiry result attached, never silently re-sent.
-- **Retries the safe things** — a call that times out or gets a 429/5xx is retried with jittered backoff (`$retries`, default 2) only when the endpoint is marked `retrySafe` (idempotent, free, moves no money). Paid lookups and money-moving calls are never re-sent.
+- **Never loses a transaction** — every non-GET call carries a `client_ref_id` (yours, or a generated 15-char one). A money-moving call that times out (or gets back an unreadable response) is looked up by that ref and surfaced as `Eko\Eps\EpsIndeterminateException` with the inquiry result attached, never silently re-sent.
+- **Retries the safe things** — a call that times out or gets a 429/5xx or an unreadable 2xx is retried with jittered backoff (`$retries`, default 2) only when the endpoint is marked `retrySafe` (idempotent, free, moves no money). Paid lookups and money-moving calls are never re-sent.
 - **Validates values too** — spec-driven format / enum / range / length rules (dates, PAN, IFSC, `client_ref_id` …) fail before the request is signed.
 
 ### Reconciling an indeterminate transaction
@@ -103,8 +103,10 @@ try {
 }
 ```
 
-A 2xx body that is not JSON throws `Eko\Eps\EpsException` — never a silent
-`[]`. Input validation keeps SPL's `\InvalidArgumentException`, which is a
+A 2xx body that is not JSON throws `Eko\Eps\EpsInvalidResponseException` (an
+`EpsException`) — never a silent `[]`. On a money-moving endpoint it is treated
+like a timeout: the SDK looks the transaction up by its `client_ref_id` and
+throws `EpsIndeterminateException` instead. Input validation keeps SPL's `\InvalidArgumentException`, which is a
 `\LogicException` and therefore cannot share that base. The contract is shared
 by all five EPS SDKs; see
 [docs/sdk-golden-vector.md](../../docs/sdk-golden-vector.md).

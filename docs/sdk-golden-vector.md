@@ -86,7 +86,7 @@ value, the rest raise/throw).
 | 2xx, JSON body                  | return the decoded envelope                                                        |
 | non-2xx, JSON body              | fail with the typed HTTP error carrying `status`, `url`, the decoded `body`, `raw` |
 | non-2xx, non-JSON body          | same, with a null/nil `body`; `raw` keeps the bytes verbatim                       |
-| 2xx, non-JSON body              | fail — **never** a silent `{}`, `[]` or `null`                                     |
+| 2xx, non-JSON body              | fail with the typed invalid-response error (`status`, `url`, `raw`) — **never** a silent `{}`, `[]` or `null`; indeterminate (see below) |
 | no response within the timeout  | fail; default 30s, overridable                                                     |
 | transport failure               | fail, surfacing the language's native transport error                              |
 
@@ -103,6 +103,12 @@ still carried on the error so callers can inspect `status` / `message`.
 | PHP    | `Eko\Eps\EpsHttpException` | `EpsException`¹           | `status`, `url`, `body`, `raw`      |
 | Go     | `*eps.HTTPError`           | plain `error`             | `StatusCode`, `URL`, `Body`, `Raw`  |
 | Java   | `EpsClient.EpsHttpException` | `EpsClient.EpsException` | `status`, `url`, `body`, `raw`      |
+
+A 2xx whose body is not JSON fails with a subclass of the "other client-side
+failure" type, so existing catches still match: `EpsInvalidResponseError` (Node,
+Python), `Eko\Eps\EpsInvalidResponseException` (PHP), `*eps.InvalidResponseError`
+(Go; `Unwrap` gives the decode error), `EpsClient.EpsInvalidResponseException`
+(Java). Each carries the HTTP `status`, `url` and `raw` body.
 
 ¹ PHP keeps `\InvalidArgumentException` for **input validation** — SPL already
 has the semantically correct class, and it is a `\LogicException`, so it cannot
@@ -197,8 +203,9 @@ Java), `generate_client_ref_id(now_ms)` (Python), `GenerateClientRefID(nowMs)`
 
 An outcome is **indeterminate** when the SDK cannot know whether EPS processed
 the request: a transport failure, the per-attempt timeout, HTTP 429, or any
-5xx. A 4xx is a decisive answer and is never retried or inquired; a 2xx whose
-body is not JSON is decisive too. A cancelled context (Go) or an interrupted
+5xx, or a 2xx whose body is not JSON (empty, truncated, a proxy's HTML page —
+EPS may have processed the request, and the SDK cannot read whether it did). A
+4xx is a decisive answer and is never retried or inquired. A cancelled context (Go) or an interrupted
 thread (Java) stops everything — no retry, no inquiry.
 
 Which calls may be re-sent is **data, not method**: each surface endpoint

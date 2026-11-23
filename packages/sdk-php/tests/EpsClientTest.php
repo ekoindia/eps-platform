@@ -4,6 +4,7 @@ use Eko\Eps\EpsClient;
 use Eko\Eps\EpsException;
 use Eko\Eps\EpsHttpException;
 use Eko\Eps\EpsIndeterminateException;
+use Eko\Eps\EpsInvalidResponseException;
 use Eko\Eps\EpsTransportException;
 
 final class EpsClientTest extends TestCase
@@ -319,7 +320,7 @@ final class EpsClientTest extends TestCase
     /** Regression for the old `json_decode($res, true) ?? []`. */
     public function testDecodeResponseThrowsWhenSuccessBodyIsNotJson(): void
     {
-        $this->expectException(EpsException::class);
+        $this->expectException(EpsInvalidResponseException::class);
         $this->expectExceptionMessage('was not valid JSON');
         EpsClient::decodeResponse(200, self::URL, 'not json');
     }
@@ -576,6 +577,32 @@ final class EpsClientTest extends TestCase
             $this->assertSame(500, $e->getPrevious()->status);
             $this->assertCount(1 + 3, $t->requests);
         }
+    }
+
+    public function testFinancialPostUnparseable2xxInquiresAndThrowsIndeterminate(): void
+    {
+        $inquiry = ['status' => 0, 'data' => ['tx_status' => '0', 'tid' => '1']];
+        $t = self::transport([[200, '{"status":0,"da'], [200, json_encode($inquiry)]]);
+        try {
+            self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
+            $this->fail('expected EpsIndeterminateException');
+        } catch (EpsIndeterminateException $e) {
+            $ref = $t->body(0)['client_ref_id'];
+            $this->assertSame($ref, $e->clientRefId);
+            $this->assertSame(200, $e->status);
+            $this->assertSame($inquiry, $e->statusCheck);
+            $this->assertInstanceOf(EpsInvalidResponseException::class, $e->getPrevious());
+            $this->assertSame('{"status":0,"da', $e->getPrevious()->raw);
+            $this->assertCount(2, $t->requests);
+            $this->assertStringContainsString("client_ref_id=$ref", $t->url(1));
+        }
+    }
+
+    public function testNonFinancialPostUnparseable2xxNoInquiry(): void
+    {
+        $t = self::transport([[200, '']]);
+        $this->expectException(EpsInvalidResponseException::class);
+        try { self::fast($t)->call('pan-lite', self::PAN); } finally { $this->assertCount(1, $t->requests); }
     }
 
     public function testFinancialPost4xxIsPlainHttpException(): void

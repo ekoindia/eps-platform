@@ -81,10 +81,25 @@ class EpsHttpError(EpsError):
         self.raw = raw
 
 
+class EpsInvalidResponseError(EpsError):
+    """A 2xx response whose body is not JSON (empty, truncated, a proxy's HTML).
+
+    EPS may well have processed the request, so this is indeterminate, not
+    decisive: a ``financial`` call gets the status inquiry and a ``retry_safe``
+    one is retried. Still an ``EpsError``, so existing handlers keep matching.
+    """
+
+    def __init__(self, status: int, url: str, raw: bytes) -> None:
+        super().__init__(f"EPS response from {url} was not valid JSON: {raw[:200]!r}")
+        self.status = status
+        self.url = url
+        self.raw = raw
+
+
 class EpsIndeterminateError(EpsError):
     """A non-GET call on a money-moving endpoint ended without a confirmed outcome.
 
-    Timeout, transport failure, HTTP 429 or 5xx. The SDK never re-sends such a
+    Timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON. The SDK never re-sends such a
     request -- that is how a customer gets debited twice -- so it inquired by the
     call's ``client_ref_id`` instead. ``status_check`` is the Transaction Inquiry
     envelope (``data.tx_status``: 0 success, 1 fail, 2 awaited, ...) or ``None``
@@ -107,16 +122,24 @@ class EpsIndeterminateError(EpsError):
         )
         self.slug = slug
         self.client_ref_id = client_ref_id
-        #: HTTP status of the original attempt, or None for a transport failure.
-        self.status = cause.status if isinstance(cause, EpsHttpError) else None
+        #: HTTP status of the original attempt (a 2xx when its body was not
+        #: JSON), or None for a transport failure.
+        self.status = (
+            cause.status
+            if isinstance(cause, (EpsHttpError, EpsInvalidResponseError))
+            else None
+        )
         self.status_check = status_check
         self.status_check_error = status_check_error
         self.__cause__ = cause
 
 
 def _is_indeterminate(exc: BaseException) -> bool:
-    """True when the outcome is unknown: no response, or a 429/5xx that says
-    nothing about whether the request was processed. A 4xx is a decisive no."""
+    """True when the outcome is unknown: no response, a 429/5xx, or a 2xx whose
+    body could not be read -- none says whether the request was processed. A
+    4xx is a decisive no."""
+    if isinstance(exc, EpsInvalidResponseError):
+        return True
     if isinstance(exc, EpsHttpError):
         return exc.status == 429 or exc.status >= 500
     return not isinstance(exc, EpsError)
@@ -644,9 +667,7 @@ class EpsClient:
         try:
             return json.loads(raw)
         except ValueError as exc:
-            raise EpsError(
-                f"EPS response from {target.url} was not valid JSON: {raw[:200]!r}"
-            ) from exc
+            raise EpsInvalidResponseError(status, target.url, raw) from exc
 
 
 def _dump_json(payload: Mapping[str, Any]) -> bytes:

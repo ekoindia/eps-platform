@@ -178,8 +178,27 @@ func (e *TransportError) Error() string {
 
 func (e *TransportError) Unwrap() error { return e.Err }
 
+// InvalidResponseError is a 2xx response whose body is not JSON (empty,
+// truncated, a proxy's HTML page). EPS may well have processed the request, so
+// the outcome is unknown, not decided: a financial call gets a status check and
+// a retry-safe one is retried. Err is the decode error, reachable with
+// errors.As / errors.Is.
+type InvalidResponseError struct {
+	StatusCode int
+	URL        string
+	Raw        []byte
+	Err        error
+}
+
+func (e *InvalidResponseError) Error() string {
+	return fmt.Sprintf("eps: response from %s was not valid JSON: %v", e.URL, e.Err)
+}
+
+func (e *InvalidResponseError) Unwrap() error { return e.Err }
+
 // IndeterminateError is a non-GET call on a money-moving endpoint that ended
-// without a confirmed outcome (timeout, transport failure, HTTP 429 or 5xx).
+// without a confirmed outcome (timeout, transport failure, HTTP 429 or 5xx, or
+// a 2xx that was not JSON).
 // The SDK never re-sends such a request — that is how a customer gets debited
 // twice — so it inquired by the call's client_ref_id instead and reports what
 // it found. StatusCheck is the Transaction Inquiry envelope (data.tx_status:
@@ -190,8 +209,8 @@ func (e *TransportError) Unwrap() error { return e.Err }
 type IndeterminateError struct {
 	Slug        string
 	ClientRefID string
-	// Status is the HTTP status of the original attempt, or 0 for a transport
-	// failure.
+	// Status is the HTTP status of the original attempt (a 2xx when its body
+	// was not JSON), or 0 for a transport failure.
 	Status         int
 	StatusCheck    map[string]any
 	StatusCheckErr error
@@ -204,16 +223,17 @@ func (e *IndeterminateError) Error() string {
 
 func (e *IndeterminateError) Unwrap() error { return e.Err }
 
-// isIndeterminate reports whether the outcome is unknown: no response, or a
-// 429/5xx that says nothing about whether the request was processed. A 4xx is
-// a decisive no, and so is a 2xx that failed to decode.
+// isIndeterminate reports whether the outcome is unknown: no response, a
+// 429/5xx, or a 2xx whose body could not be read — none says whether the
+// request was processed. A 4xx is a decisive no.
 func isIndeterminate(err error) bool {
 	var httpErr *HTTPError
 	if errors.As(err, &httpErr) {
 		return httpErr.StatusCode == 429 || httpErr.StatusCode >= 500
 	}
 	var transportErr *TransportError
-	return errors.As(err, &transportErr)
+	var invalidErr *InvalidResponseError
+	return errors.As(err, &transportErr) || errors.As(err, &invalidErr)
 }
 
 // GenerateClientRefID mints a client_ref_id for a non-GET call that did not
@@ -812,8 +832,11 @@ func (c *Client) indeterminate(ctx context.Context, target *Target, cause error)
 		Err:            cause,
 	}
 	var httpErr *HTTPError
+	var invalidErr *InvalidResponseError
 	if errors.As(cause, &httpErr) {
 		result.Status = httpErr.StatusCode
+	} else if errors.As(cause, &invalidErr) {
+		result.Status = invalidErr.StatusCode
 	}
 	return result
 }
@@ -852,7 +875,7 @@ func (c *Client) send(ctx context.Context, target *Target) (map[string]any, erro
 		return nil, &HTTPError{StatusCode: res.StatusCode, URL: target.URL, Body: envelope, Raw: raw}
 	}
 	if decodeErr != nil {
-		return nil, fmt.Errorf("eps: response from %s was not valid JSON: %w", target.URL, decodeErr)
+		return nil, &InvalidResponseError{StatusCode: res.StatusCode, URL: target.URL, Raw: raw, Err: decodeErr}
 	}
 	return envelope, nil
 }
