@@ -204,7 +204,7 @@ func (e *InvalidResponseError) Unwrap() error { return e.Err }
 
 // IndeterminateError is a non-GET call on a money-moving endpoint that ended
 // without a confirmed outcome (timeout, transport failure, HTTP 429 or 5xx, or
-// a 2xx that was not JSON). Inquiry key: the call's client_ref_id, or — on an
+// a 2xx that was not an EPS envelope). Inquiry key: the call's client_ref_id, or — on an
 // endpoint that has none, such as initiate-refund — the tid it acted on (then
 // TID is set and ClientRefID is empty). Only tx_status 4 (refunded) confirms
 // the refund; 3 (refund pending) is also the state before a refund is
@@ -224,7 +224,7 @@ type IndeterminateError struct {
 	// TID is the tid inquired by when there was no ref, else empty.
 	TID string
 	// Status is the HTTP status of the original attempt (a 2xx when its body
-	// was not JSON), or 0 for a transport failure.
+	// was not an EPS envelope), or 0 for a transport failure.
 	Status         int
 	StatusCheck    map[string]any
 	StatusCheckErr error

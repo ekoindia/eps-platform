@@ -415,7 +415,7 @@ final class EpsClient
      * @throws EpsIndeterminateException When a financial non-GET call has no confirmed outcome.
      * @throws EpsHttpException On any other non-2xx response (the envelope is on `$body`).
      * @throws EpsTransportException On a transport failure that was not retried.
-     * @throws EpsInvalidResponseException On a 2xx body that is not JSON (when not inquired).
+     * @throws EpsInvalidResponseException On a 2xx body that is not an EPS envelope (when not inquired).
      */
     public function call(string $slug, array $params = []): array
     {

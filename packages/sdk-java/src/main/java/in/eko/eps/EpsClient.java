@@ -151,7 +151,7 @@ public final class EpsClient {
 
 	/**
 	 * A non-GET call on a money-moving endpoint ended without a confirmed outcome (timeout,
-	 * transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON). Inquiry key: the call's {@code
+	 * transport failure, HTTP 429 or 5xx, or a 2xx that was not an EPS envelope). Inquiry key: the call's {@code
 	 * client_ref_id}, or — on an endpoint that has none, such as {@code initiate-refund} — the {@code
 	 * tid} it acted on (then {@link #tid} is set and {@link #clientRefId} is null). Only {@code
 	 * tx_status} 4 (refunded) confirms the refund; 3 (refund pending) is also the state before a
@@ -168,7 +168,7 @@ public final class EpsClient {
 		public final String clientRefId;
 		/** The {@code tid} inquired by when there was no ref, else null. */
 		public final String tid;
-		/** HTTP status of the original attempt (a 2xx when its body was not JSON), or null for a transport failure. */
+		/** HTTP status of the original attempt (a 2xx when its body was not an EPS envelope), or null for a transport failure. */
 		public final Integer status;
 		public final Map<String, Object> statusCheck;
 		public final Throwable statusCheckError;
@@ -797,7 +797,7 @@ public final class EpsClient {
 	 * @throws EpsIndeterminateException when a financial non-GET call has no confirmed outcome
 	 * @throws EpsHttpException on any other non-2xx response; the envelope is on {@code body}
 	 * @throws EpsTransportException on a transport failure that was not retried
-	 * @throws EpsInvalidResponseException on a 2xx body that is not JSON (when not inquired) —
+	 * @throws EpsInvalidResponseException on a 2xx body that is not an EPS envelope (when not inquired) —
 	 *     never a silent empty map
 	 */
 	public Map<String, Object> call(String slug, Map<String, Object> params) {

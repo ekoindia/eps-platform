@@ -108,7 +108,7 @@ class EpsInvalidResponseError(EpsError):
 class EpsIndeterminateError(EpsError):
     """A non-GET call on a money-moving endpoint ended without a confirmed outcome.
 
-    Timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON.
+    Timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not an EPS envelope.
     Inquiry key: the call's ``client_ref_id``, or -- on an endpoint that has
     none, such as ``initiate-refund`` -- the ``tid`` it acted on (then ``tid`` is
     set and ``client_ref_id`` is None). Only ``tx_status`` 4 (refunded) confirms

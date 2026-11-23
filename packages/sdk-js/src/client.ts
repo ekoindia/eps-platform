@@ -212,7 +212,7 @@ export class EpsInvalidResponseError extends EpsError {
 
 /**
  * A non-GET call on a money-moving endpoint ended without a confirmed outcome
- * (timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON).
+ * (timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not an EPS envelope).
  * Inquiry key: the call's `client_ref_id`, or — on an endpoint that has none,
  * such as `initiate-refund` — the `tid` it acted on (then `tid` is set and
  * `clientRefId` is null). Only `tx_status` 4 (refunded) confirms the refund; 3
@@ -226,7 +226,7 @@ export class EpsInvalidResponseError extends EpsError {
  * retrying; never assume a timeout meant failure.
  */
 export class EpsIndeterminateError extends EpsError {
-	/** HTTP status of the original attempt (a 2xx when its body was not JSON),
+	/** HTTP status of the original attempt (a 2xx when its body was not an EPS envelope),
 	 * or null for a transport failure. */
 	readonly status: number | null;
 	constructor(

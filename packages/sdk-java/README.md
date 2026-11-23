@@ -75,7 +75,7 @@ binary — a leaked access key lets anyone transact as you.
   returning an empty map.
 - **Never loses a transaction** — every non-GET call carries a `client_ref_id` (yours, or a generated 15-char one). A money-moving call that times out (or gets back an unreadable response) is looked up by that ref (or, on a refund, which has no ref, by its `tid`) and surfaced as `EpsClient.EpsIndeterminateException` with the inquiry result attached, never silently re-sent.
 - **Retries the safe things** — a call that times out or gets a 429/5xx or an unreadable 2xx is retried with jittered backoff (`.retries(…)`, default 2) only when the endpoint is marked `retrySafe` (idempotent, free, moves no money). Paid lookups and money-moving calls are never re-sent.
-- **Validates values too** — spec-driven format / enum / range / length rules (dates, PAN, IFSC, `client_ref_id` …) fail before the request is signed.
+- **Validates values too** — spec-driven format / enum / range / length rules (dates, PAN, IFSC, `client_ref_id` …) fail before the request is signed. A `client_ref_id` you pass to a money-moving call must not be blank (whitespace, incl. no-break and zero-width spaces) — it is the only key a lost response can be reconciled by.
 
 Uploads take a path or in-memory bytes:
 

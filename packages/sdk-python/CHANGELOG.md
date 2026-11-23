@@ -32,3 +32,8 @@
   has reached end of life, and GitHub Actions has no 3.9 build for Ubuntu 26.04,
   so it can no longer be tested on the current runner image. On Python 3.9, `pip`
   keeps installing the last release that supports it.
+- A blank `client_ref_id` you pass to a financial endpoint (empty, or only
+  Unicode whitespace / zero-width characters such as U+00A0 or U+200B) now
+  raises `EpsError` before sending — `Invalid param values for "<slug>":
+  client_ref_id (must not be blank on a financial call).` It is never replaced.
+  Previously it was sent as is and a lost response could not be reconciled.

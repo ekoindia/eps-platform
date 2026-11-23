@@ -28,7 +28,7 @@ Requires Node.js >= 18. No runtime dependencies — standard library only.
 - **Fails loudly** — a non-2xx response throws `EpsHttpError` (with the decoded envelope on `.body`); a non-JSON body throws rather than returning `{}`.
 - **Never loses a transaction** — every non-GET call carries a `client_ref_id` (yours, or a generated 15-char one). A money-moving call that times out (or gets back an unreadable response) is looked up by that ref (or, on a refund, which has no ref, by its `tid`) and surfaced as `EpsIndeterminateError` with the inquiry result attached, never silently re-sent.
 - **Retries the safe things** — a call that times out or gets a 429/5xx or an unreadable 2xx is retried with jittered backoff (`retries`, default 2) only when the endpoint is marked `retrySafe` (idempotent, free, moves no money). Paid lookups and money-moving calls are never re-sent.
-- **Validates values too** — spec-driven format / enum / range / length rules (dates, PAN, IFSC, `client_ref_id` …) fail before the request is signed.
+- **Validates values too** — spec-driven format / enum / range / length rules (dates, PAN, IFSC, `client_ref_id` …) fail before the request is signed. A `client_ref_id` you pass to a money-moving call must not be blank (whitespace, incl. no-break and zero-width spaces) — it is the only key a lost response can be reconciled by.
 
 ### Reconciling an indeterminate transaction
 
@@ -104,7 +104,9 @@ try {
 
 Every other client-side failure (unknown slug, missing param, wrong type, bad
 option) throws `EpsError`, which `EpsHttpError` extends. A 2xx body that is not
-JSON throws `EpsInvalidResponseError` — never a silent `{}`; on a money-moving
+an EPS envelope (not JSON, not an object, no numeric `status` — or, on a
+money-moving endpoint, no numeric `response_status_id`, like a proxy's
+`{"status":502,…}`) throws `EpsInvalidResponseError` — never a silent `{}`; on a money-moving
 endpoint it is treated like a timeout (status inquiry by `client_ref_id`, then
 `EpsIndeterminateError`). The slug list is pinned to the SDK release, so a newly
 launched API throws `Unknown endpoint slug` until you upgrade (`npm install @ekoindia/eps-sdk@latest`). The contract is shared by all five EPS
