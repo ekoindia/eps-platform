@@ -103,8 +103,9 @@ class EpsIndeterminateError(EpsError):
     Timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON.
     Inquiry key: the call's ``client_ref_id``, or -- on an endpoint that has
     none, such as ``initiate-refund`` -- the ``tid`` it acted on (then ``tid`` is
-    set and ``client_ref_id`` is None; ``tx_status`` 3/4 means the refund is
-    initiated/done). The SDK never re-sends such a
+    set and ``client_ref_id`` is None). Only ``tx_status`` 4 (refunded) confirms
+    the refund; 3 (refund pending) is also the state before a refund is
+    requested, so it settles nothing. The SDK never re-sends such a
     request -- that is how a customer gets debited twice -- so it inquired by the
     call's ``client_ref_id`` instead. ``status_check`` is the Transaction Inquiry
     envelope (``data.tx_status``: 0 success, 1 fail, 2 awaited, ...) or ``None``

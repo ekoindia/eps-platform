@@ -238,8 +238,10 @@ GET transaction-inquiry          (GET /tools/reference/transaction)
     initiator_id  = <the initiator the call resolved>
 ```
 
-An inquiry by `tid` reports the **original** transaction: `tx_status` 3 (refund
-initiated) or 4 (refunded) means the refund went through. With neither a ref
+An inquiry by `tid` reports the **original** transaction, so only `tx_status` 4
+(refunded) confirms the refund. 3 (refund pending) does **not**: a failed
+transaction already sits in 3 before Initiate Refund is called, so a lost
+refund response leaves 3 either way — treat it as unresolved. With neither a ref
 nor a `tid`, the indeterminate error is still thrown, with no inquiry.
 
 The inquiry goes through the ordinary GET path, so it has the GET retry budget
