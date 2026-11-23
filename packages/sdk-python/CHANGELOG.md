@@ -18,7 +18,9 @@
   was raised as is, with no inquiry.
 - A 2xx response whose body is not an EPS envelope (unparseable; a bare
   `null` / string / number / array; or an object without a numeric `status`,
-  such as `{}` or a proxy's error object) now raises `EpsInvalidResponseError`
+  such as `{}` or a proxy's error object; on a financial endpoint also one
+  without a numeric `response_status_id`, such as a proxy's
+  `{"status":502,...}`) now raises `EpsInvalidResponseError`
   (still an `EpsError`) and counts as an indeterminate outcome: a financial call
   runs the Transaction Inquiry by `client_ref_id` and raises
   `EpsIndeterminateError`, and a retry-safe call is retried. Previously it was a

@@ -83,8 +83,9 @@ class EpsHttpError(EpsError):
 
 class EpsInvalidResponseError(EpsError):
     """A 2xx response whose body is not an EPS envelope -- a JSON object with a
-    numeric ``status`` (empty, truncated, a proxy's HTML, valid JSON such as
-    ``null`` / ``[]``, or an object such as ``{}`` / a proxy's error).
+    numeric ``status``, plus a numeric ``response_status_id`` on a financial
+    endpoint (empty, truncated, a proxy's HTML, valid JSON such as ``null`` /
+    ``[]``, or an object such as ``{}`` / a proxy's ``{"status":502,...}``).
 
     EPS may well have processed the request, so this is indeterminate, not
     decisive: a ``financial`` call gets the status inquiry and a ``retry_safe``
@@ -700,9 +701,16 @@ class EpsClient:
         # Only an EPS envelope -- a JSON object with a numeric ``status`` -- is
         # a result. Anything else (null, a scalar, an array, ``{}``, a proxy's
         # error object) is as unreadable as a truncated body. bool is an int
-        # subclass, so ``"status": true`` is ruled out explicitly.
-        code = envelope.get("status") if isinstance(envelope, dict) else None
-        if not isinstance(code, (int, float)) or isinstance(code, bool):
+        # subclass, so ``"status": true`` is ruled out explicitly. A financial
+        # endpoint also needs a numeric ``response_status_id``, so a proxy's
+        # ``{"status":502,...}`` cannot pass for a result there (a wrong "no"
+        # just costs an inquiry).
+        def numeric(value: Any) -> bool:
+            return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+        if not isinstance(envelope, dict) or not numeric(envelope.get("status")):
+            raise EpsInvalidResponseError(status, target.url, raw)
+        if target.financial and not numeric(envelope.get("response_status_id")):
             raise EpsInvalidResponseError(status, target.url, raw)
         return envelope
 

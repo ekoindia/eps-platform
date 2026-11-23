@@ -179,8 +179,9 @@ func (e *TransportError) Error() string {
 func (e *TransportError) Unwrap() error { return e.Err }
 
 // InvalidResponseError is a 2xx response whose body is not an EPS envelope —
-// a JSON object with a numeric "status" (empty, truncated, a proxy's HTML page,
-// valid JSON such as null or [], or an object such as {} or a proxy's error). EPS may well have processed the request, so
+// a JSON object with a numeric "status", plus a numeric "response_status_id" on
+// a financial endpoint (empty, truncated, a proxy's HTML page, valid JSON such
+// as null or [], or an object such as {} or a proxy's {"status":502,…}). EPS may well have processed the request, so
 // the outcome is unknown, not decided: a financial call gets a status check and
 // a retry-safe one is retried. Err is the decode error, reachable with
 // errors.As / errors.Is.
@@ -925,6 +926,10 @@ func (c *Client) send(ctx context.Context, target *Target) (map[string]any, erro
 		decodeErr = errors.New("body is JSON null, not an object")
 	} else if _, numeric := envelope["status"].(float64); decodeErr == nil && !numeric {
 		decodeErr = errors.New(`body has no numeric "status", not an EPS envelope`)
+	} else if _, numeric := envelope["response_status_id"].(float64); decodeErr == nil && target.Financial && !numeric {
+		// A financial envelope also needs it, so a proxy's {"status":502,…}
+		// cannot pass for a result (a wrong "no" just costs an inquiry).
+		decodeErr = errors.New(`financial body has no numeric "response_status_id", not an EPS envelope`)
 	}
 	if decodeErr != nil {
 		return nil, &InvalidResponseError{StatusCode: res.StatusCode, URL: target.URL, Raw: raw, Err: decodeErr}

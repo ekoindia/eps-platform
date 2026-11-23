@@ -497,6 +497,8 @@ class EpsClientTest {
 					"otp_ref_id", "ref1");
 	private static final Map<String, Object> GET = Map.of("initiator_id", "9962981729");
 	private static final String OK = "{\"status\":0}";
+	/** A financial endpoint's envelope also carries a numeric response_status_id. */
+	private static final String OK_FINANCIAL = "{\"status\":0,\"response_status_id\":0}";
 
 	/** One scripted outcome: a response, or an I/O failure to throw. */
 	private record Step(int status, String body, Exception failure) {
@@ -717,7 +719,7 @@ class EpsClientTest {
 
 		@Test
 		void satisfiesARequiredClientRefId() {
-			Scripted t = new Scripted(Step.ok());
+			Scripted t = new Scripted(Step.body(OK_FINANCIAL));
 			fast(t).call("dmt-initiate-transfer", TRANSFER);
 			assertTrue(REF.matcher((String) t.sent.get(0).json().get("client_ref_id")).matches());
 		}
@@ -927,7 +929,9 @@ class EpsClientTest {
 		@org.junit.jupiter.params.provider.ValueSource(
 				strings = {
 					"null", "\"ok\"", "5", "[]", "[{\"status\":0}]",
-					"{}", "{\"error\":\"Bad Gateway\"}", "{\"status\":\"0\"}", "{\"status\":true}", "{\"status\":null}"
+					"{}", "{\"error\":\"Bad Gateway\"}", "{\"status\":\"0\"}", "{\"status\":true}", "{\"status\":null}",
+					"{\"status\":502,\"error\":\"Bad Gateway\"}", "{\"status\":0}",
+					"{\"status\":0,\"response_status_id\":\"0\"}"
 				})
 		void financialPostNonObjectJson2xxInquires(String body) {
 			String inquiry = "{\"status\":0,\"data\":{\"tx_status\":\"0\",\"tid\":\"1\"}}";
@@ -940,6 +944,16 @@ class EpsClientTest {
 			assertEquals("0", ((Map<?, ?>) e.statusCheck.get("data")).get("tx_status"));
 			assertTrue(e.getCause() instanceof EpsClient.EpsInvalidResponseException);
 			assertEquals(2, t.sent.size());
+		}
+
+		@Test
+		void financialEnvelopeNeedsResponseStatusIdNonFinancialOnlyStatus() {
+			Map<String, Object> got =
+					fast(new Scripted(Step.body("{\"status\":0,\"response_status_id\":0,\"data\":{\"tid\":\"1\"}}")))
+							.call("dmt-initiate-transfer", TRANSFER);
+			assertEquals(0.0, got.get("response_status_id"));
+			// pan-fetch-style success with no response_status_id stays a result off the financial path
+			assertEquals(0.0, fast(new Scripted(Step.ok())).call("pan-lite", PAN).get("status"));
 		}
 
 		@Test

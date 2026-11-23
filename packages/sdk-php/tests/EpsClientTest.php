@@ -367,6 +367,8 @@ final class EpsClientTest extends TestCase
     ];
     private const GET_ARGS = ['bbps-get-operators', ['initiator_id' => '9962981729']];
     private const OK = '{"status":0}';
+    /** A financial endpoint's envelope also carries a numeric response_status_id. */
+    private const OK_FINANCIAL = '{"status":0,"response_status_id":0}';
 
     /**
      * Scripted transport standing in for cURL: each step is [status, raw], a
@@ -436,7 +438,7 @@ final class EpsClientTest extends TestCase
 
     public function testClientRefIdSatisfiesRequiredParam(): void
     {
-        $t = self::transport([[200, self::OK]]);
+        $t = self::transport([[200, self::OK_FINANCIAL]]);
         self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
         $this->assertMatchesRegularExpression(self::REF, $t->body()['client_ref_id']);
     }
@@ -601,7 +603,7 @@ final class EpsClientTest extends TestCase
     public function testFinancialPostNonObjectJson2xxInquires(): void
     {
         $inquiry = ['status' => 0, 'data' => ['tx_status' => '0', 'tid' => '1']];
-        foreach (['null', '"ok"', '5', '[]', '[{"status":0}]', '{}', '{"error":"Bad Gateway"}', '{"status":"0"}', '{"status":true}', '{"status":null}'] as $body) {
+        foreach (['null', '"ok"', '5', '[]', '[{"status":0}]', '{}', '{"error":"Bad Gateway"}', '{"status":"0"}', '{"status":true}', '{"status":null}', '{"status":502,"error":"Bad Gateway"}', '{"status":0}', '{"status":0,"response_status_id":"0"}'] as $body) {
             $t = self::transport([[200, $body], [200, json_encode($inquiry)]]);
             try {
                 self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
@@ -613,6 +615,15 @@ final class EpsClientTest extends TestCase
                 $this->assertCount(2, $t->requests, $body);
             }
         }
+    }
+
+    public function testFinancialEnvelopeNeedsResponseStatusIdNonFinancialOnlyStatus(): void
+    {
+        $full = ['status' => 0, 'response_status_id' => 0, 'data' => ['tid' => '1']];
+        $this->assertSame($full, self::fast(self::transport([[200, json_encode($full)]]))->call('dmt-initiate-transfer', self::TRANSFER));
+        // pan-fetch-style success with no response_status_id stays a result off the financial path
+        $this->assertSame(['status' => 0], self::fast(self::transport([[200, self::OK]]))->call('pan-lite', self::PAN));
+        $this->assertSame(['status' => 0], EpsClient::decodeResponse(200, self::URL, self::OK));
     }
 
     public function testNonFinancialPostUnparseable2xxNoInquiry(): void

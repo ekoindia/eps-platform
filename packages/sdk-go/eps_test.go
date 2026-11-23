@@ -528,6 +528,9 @@ func httpStep(s int) step    { return step{status: s, body: `{"status":1}`} }
 func transportFail() step    { return step{err: errors.New("dial tcp: connection refused")} }
 func withBody(b string) step { return step{status: 200, body: b} }
 
+// okFinancial: a financial endpoint's envelope also carries a numeric response_status_id.
+func okFinancial() step { return step{status: 200, body: `{"status":0,"response_status_id":0}`} }
+
 // scripted replays steps in order (the last one repeats) and records every
 // request with its body already read, so URLs, bodies and headers can be
 // asserted after the fact.
@@ -621,7 +624,7 @@ func TestClientRefIDSuppliedValueKept(t *testing.T) {
 }
 
 func TestClientRefIDSatisfiesRequiredParam(t *testing.T) {
-	tr := &scripted{steps: []step{ok()}}
+	tr := &scripted{steps: []step{okFinancial()}}
 	mustCall(t, fastClient(t, tr), "dmt-initiate-transfer", transferParams)
 	if ref, _ := tr.body(t, 0)["client_ref_id"].(string); !refRe.MatchString(ref) {
 		t.Errorf("client_ref_id = %q, want a generated ref", ref)
@@ -925,7 +928,8 @@ func TestFinancialPostUnparseable2xxInquiresAndReturnsIndeterminate(t *testing.T
 func TestFinancialPostNonObjectJSON2xxInquires(t *testing.T) {
 	inquiry := `{"status":0,"data":{"tx_status":"0","tid":"1"}}`
 	for _, body := range []string{`null`, `"ok"`, `5`, `[]`, `[{"status":0}]`,
-		`{}`, `{"error":"Bad Gateway"}`, `{"status":"0"}`, `{"status":true}`, `{"status":null}`} {
+		`{}`, `{"error":"Bad Gateway"}`, `{"status":"0"}`, `{"status":true}`, `{"status":null}`,
+		`{"status":502,"error":"Bad Gateway"}`, `{"status":0}`, `{"status":0,"response_status_id":"0"}`} {
 		t.Run(body, func(t *testing.T) {
 			tr := &scripted{steps: []step{withBody(body), withBody(inquiry)}}
 			_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
@@ -938,6 +942,21 @@ func TestFinancialPostNonObjectJSON2xxInquires(t *testing.T) {
 				t.Errorf("sent %d requests, want 2", len(tr.requests))
 			}
 		})
+	}
+}
+
+func TestFinancialEnvelopeNeedsResponseStatusIDNonFinancialOnlyStatus(t *testing.T) {
+	full := `{"status":0,"response_status_id":0,"data":{"tid":"1"}}`
+	got, err := fastClient(t, &scripted{steps: []step{withBody(full)}}).
+		Call(context.Background(), "dmt-initiate-transfer", transferParams)
+	if err != nil || got["response_status_id"] != float64(0) {
+		t.Errorf("financial full envelope: got %v, err %v; want it returned", got, err)
+	}
+	// pan-fetch-style success with no response_status_id stays a result off the financial path
+	got, err = fastClient(t, &scripted{steps: []step{ok()}}).
+		Call(context.Background(), "pan-lite", panParams)
+	if err != nil || got["status"] != float64(0) {
+		t.Errorf("non-financial status-only: got %v, err %v; want it returned", got, err)
 	}
 }
 

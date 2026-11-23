@@ -193,8 +193,9 @@ export class EpsHttpError extends EpsError {
 
 /**
  * A 2xx response whose body is not an EPS envelope — a JSON object with a
- * numeric `status` (empty, truncated, an HTML error page from a proxy, valid
- * JSON such as `null` / `[]`, or an object such as `{}` / a proxy's error). EPS may well have processed the request, so this is
+ * numeric `status`, plus a numeric `response_status_id` on a financial endpoint
+ * (empty, truncated, an HTML error page from a proxy, valid JSON such as
+ * `null` / `[]`, or an object such as `{}` / a proxy's `{"status":502,…}`). EPS may well have processed the request, so this is
  * indeterminate, not decisive: a `financial` call gets the status inquiry and a
  * `retrySafe` one is retried. Still an `EpsError`, so existing catches hold.
  */
@@ -654,12 +655,19 @@ export class EpsClient {
 		if (!res.ok) throw new EpsHttpError(res.status, url, envelope, raw);
 		// Only an EPS envelope — a JSON object with a numeric `status` — is a
 		// result. Anything else (null, a scalar, an array, `{}`, a proxy's error
-		// object) is as unreadable as a truncated body.
+		// object) is as unreadable as a truncated body. A financial endpoint also
+		// needs a numeric `response_status_id`, so a proxy's `{"status":502,…}`
+		// cannot pass for a result there (a wrong "no" just costs an inquiry).
+		const fields = envelope as {
+			status?: unknown;
+			response_status_id?: unknown;
+		} | null;
 		if (
-			envelope === null ||
-			typeof envelope !== "object" ||
-			Array.isArray(envelope) ||
-			typeof (envelope as { status?: unknown }).status !== "number"
+			fields === null ||
+			typeof fields !== "object" ||
+			Array.isArray(fields) ||
+			typeof fields.status !== "number" ||
+			(endpoint.financial && typeof fields.response_status_id !== "number")
 		)
 			throw new EpsInvalidResponseError(res.status, url, raw);
 		return envelope;

@@ -83,10 +83,10 @@ value, the rest raise/throw).
 
 | Case                            | Required outcome                                                                   |
 | ------------------------------- | ---------------------------------------------------------------------------------- |
-| 2xx, EPS envelope (JSON object with a numeric `status`) | return the decoded envelope                                         |
+| 2xx, EPS envelope (JSON object with a numeric `status`; on a `financial` endpoint also a numeric `response_status_id`) | return the decoded envelope |
 | non-2xx, JSON body              | fail with the typed HTTP error carrying `status`, `url`, the decoded `body`, `raw` |
 | non-2xx, non-JSON body          | same, with a null/nil `body`; `raw` keeps the bytes verbatim                       |
-| 2xx, body not an EPS envelope (unparseable; JSON `null` / string / number / array; or an object without a numeric `status`, e.g. `{}` or a proxy's error object) | fail with the typed invalid-response error (`status`, `url`, `raw`) — **never** a silent `{}`, `[]` or `null`; indeterminate (see below) |
+| 2xx, body not an EPS envelope (unparseable; JSON `null` / string / number / array; an object without a numeric `status`, e.g. `{}` or a proxy's error object; or, on a `financial` endpoint, one without a numeric `response_status_id`, e.g. a proxy's `{"status":502,"error":"Bad Gateway"}`) | fail with the typed invalid-response error (`status`, `url`, `raw`) — **never** a silent `{}`, `[]` or `null`; indeterminate (see below) |
 | no response within the timeout  | fail; default 30s, overridable                                                     |
 | transport failure               | fail, surfacing the language's native transport error                              |
 
@@ -105,11 +105,21 @@ still carried on the error so callers can inspect `status` / `message`.
 | Java   | `EpsClient.EpsHttpException` | `EpsClient.EpsException` | `status`, `url`, `body`, `raw`      |
 
 A 2xx whose body is not an **EPS envelope** — a JSON object whose `status` is a
-number (a bool, string or null `status` does not count) — fails with a subclass of the "other client-side
+number (a bool, string or null `status` does not count) and, on a `financial`
+endpoint, whose `response_status_id` is a number too — fails with a subclass of the "other client-side
 failure" type, so existing catches still match: `EpsInvalidResponseError` (Node,
 Python), `Eko\Eps\EpsInvalidResponseException` (PHP), `*eps.InvalidResponseError`
 (Go; `Unwrap` gives the decode error), `EpsClient.EpsInvalidResponseException`
 (Java). Each carries the HTTP `status`, `url` and `raw` body.
+
+Why `response_status_id` only on financial endpoints: it is numeric on every
+documented 2xx body the SDK can receive (123 of 124 success samples, the gap a
+webhook the SDK never calls, and all 135 HTTP-200 error examples), while
+`message` is missing on four SDK endpoints (`pan-fetch` and the three bank
+account verifications). On a financial call a wrongly rejected body costs only
+the status inquiry; on a paid lookup it would fail a call that succeeded and
+invite a re-billed retry, so non-financial endpoints keep the `status`-only
+check.
 
 ¹ PHP keeps `\InvalidArgumentException` for **input validation** — SPL already
 has the semantically correct class, and it is a `\LogicException`, so it cannot
@@ -206,7 +216,9 @@ Java), `generate_client_ref_id(now_ms)` (Python), `GenerateClientRefID(nowMs)`
 An outcome is **indeterminate** when the SDK cannot know whether EPS processed
 the request: a transport failure, the per-attempt timeout, HTTP 429, or any
 5xx, or a 2xx whose body is not an EPS envelope (empty, truncated, a proxy's HTML
-page, a bare `null` or array, `{}` or a proxy's error object —
+page, a bare `null` or array, `{}` or a proxy's error object, or — on a
+`financial` endpoint — an object with no numeric `response_status_id` such as a
+proxy's `{"status":502,…}` —
 EPS may have processed the request, and the SDK cannot read whether it did). A
 4xx is a decisive answer and is never retried or inquired. A done context (Go:
 deadline or cancel) or an interrupted thread (Java) stops retries and the

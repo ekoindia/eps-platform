@@ -524,6 +524,11 @@ describe("EpsClient timeout", () => {
 // ── Shared fixtures for the three suites below (docs/sdk-golden-vector.md) ──
 
 const ok = () => new Response(JSON.stringify({ status: 0 }), { status: 200 });
+/** A financial endpoint's envelope also carries a numeric response_status_id. */
+const okFinancial = () =>
+	new Response(JSON.stringify({ status: 0, response_status_id: 0 }), {
+		status: 200,
+	});
 const http = (status: number) =>
 	new Response(JSON.stringify({ status: 1 }), { status });
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -584,7 +589,7 @@ describe("client_ref_id", () => {
 	});
 
 	it("satisfies an endpoint that requires client_ref_id", async () => {
-		const f = vi.fn(async () => ok());
+		const f = vi.fn(async () => okFinancial());
 		await make(f).call("dmt-initiate-transfer", TRANSFER);
 		expect(bodyOf(f).client_ref_id).toMatch(REF);
 	});
@@ -798,6 +803,9 @@ describe("retry and status check", () => {
 		'{"status":"0"}',
 		'{"status":true}',
 		'{"status":null}',
+		'{"status":502,"error":"Bad Gateway"}',
+		'{"status":0}',
+		'{"status":0,"response_status_id":"0"}',
 	])(
 		"financial POST + 2xx JSON that is not an EPS envelope (%s): indeterminate, inquires",
 		async (body) => {
@@ -816,6 +824,19 @@ describe("retry and status check", () => {
 			expect(f).toHaveBeenCalledTimes(2);
 		},
 	);
+
+	it("financial envelope needs response_status_id; non-financial needs only status", async () => {
+		const full = { status: 0, response_status_id: 0, data: { tid: "1" } };
+		const fin = vi.fn(async () => new Response(JSON.stringify(full)));
+		await expect(
+			make(fin).call("dmt-initiate-transfer", TRANSFER),
+		).resolves.toEqual(full);
+		// pan-fetch-style success with no response_status_id stays a result off the financial path
+		const plain = vi.fn(async () => ok());
+		await expect(make(plain).call("pan-lite", PAN)).resolves.toEqual({
+			status: 0,
+		});
+	});
 
 	it("non-financial POST + 2xx that is not JSON: EpsInvalidResponseError, no inquiry", async () => {
 		const f = vi.fn(async () => new Response("", { status: 200 }));

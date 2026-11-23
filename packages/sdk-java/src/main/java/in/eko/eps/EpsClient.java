@@ -120,9 +120,10 @@ public final class EpsClient {
 	}
 
 	/**
-	 * A 2xx response whose body is not an EPS envelope — a JSON object with a numeric {@code status}
-	 * (empty, truncated, a proxy's HTML page, valid JSON such as {@code null} / {@code []}, or an
-	 * object such as {@code {}} / a proxy's error). EPS may well
+	 * A 2xx response whose body is not an EPS envelope — a JSON object with a numeric {@code status},
+	 * plus a numeric {@code response_status_id} on a financial endpoint (empty, truncated, a proxy's
+	 * HTML page, valid JSON such as {@code null} / {@code []}, or an object such as {@code {}} / a
+	 * proxy's {@code {"status":502,…}}). EPS may well
 	 * have processed the request, so the outcome is unknown, not decided: a financial call gets
 	 * the status check and a retry-safe one is retried. Still an {@link EpsException}, so existing
 	 * catches keep matching.
@@ -881,7 +882,7 @@ public final class EpsClient {
 			throw new EpsException("EPS request to " + target.url() + " was interrupted", e);
 		}
 
-		return handleResponse(response.statusCode(), target.url(), response.body());
+		return handleResponse(response.statusCode(), target.url(), response.body(), target.financial());
 	}
 
 	/**
@@ -894,13 +895,24 @@ public final class EpsClient {
 	 *     a numeric {@code status}) — never a silent empty map.
 	 */
 	static Map<String, Object> handleResponse(int status, String url, String raw) {
+		return handleResponse(status, url, raw, false);
+	}
+
+	/**
+	 * As {@link #handleResponse(int, String, String)}; a {@code financial} endpoint's envelope must
+	 * also carry a numeric {@code response_status_id}, so a proxy's {@code {"status":502,…}} cannot
+	 * pass for a result (a wrong "no" there just costs an inquiry).
+	 */
+	static Map<String, Object> handleResponse(int status, String url, String raw, boolean financial) {
 		Map<String, Object> envelope = decodeOrNull(raw);
 		if (status < 200 || status >= 300) {
 			throw new EpsHttpException(status, url, envelope, raw);
 		}
 		// Only an EPS envelope — an object with a numeric status — is a result; {} or a proxy's
 		// error object is as unreadable as a truncated body.
-		if (envelope == null || !(envelope.get("status") instanceof Number)) {
+		if (envelope == null
+				|| !(envelope.get("status") instanceof Number)
+				|| (financial && !(envelope.get("response_status_id") instanceof Number))) {
 			throw new EpsInvalidResponseException(status, url, raw);
 		}
 		return envelope;

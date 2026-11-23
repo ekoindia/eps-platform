@@ -363,10 +363,12 @@ final class EpsClient
      * `[…]` into a PHP array too, hence the leading-`{` check.
      *
      * @throws EpsHttpException On any non-2xx response.
+     * @param bool $financial A financial endpoint's envelope must also carry a numeric
+     *     `response_status_id`, so a proxy's `{"status":502,…}` cannot pass for a result.
      * @throws EpsInvalidResponseException When a 2xx body is not an EPS envelope (a JSON object
-     *     with a numeric `status`) — never a silent [].
+     *     with a numeric `status`, plus `response_status_id` when `$financial`) — never a silent [].
      */
-    public static function decodeResponse(int $status, string $url, string $raw): array
+    public static function decodeResponse(int $status, string $url, string $raw, bool $financial = false): array
     {
         $decoded = json_decode($raw, true);
         $body = is_array($decoded) && str_starts_with(ltrim($raw), '{') ? $decoded : null;
@@ -375,8 +377,11 @@ final class EpsClient
         }
         // Only an EPS envelope — an object with a numeric `status` — is a result;
         // `{}` or a proxy's error object is as unreadable as a truncated body.
-        $code = $body['status'] ?? null;
-        if ($body === null || !(is_int($code) || is_float($code))) {
+        // A financial endpoint also needs a numeric `response_status_id` (a
+        // wrong "no" there just costs an inquiry).
+        $numeric = fn ($v) => is_int($v) || is_float($v);
+        if ($body === null || !$numeric($body['status'] ?? null)
+            || ($financial && !$numeric($body['response_status_id'] ?? null))) {
             throw new EpsInvalidResponseException($status, $url, $raw);
         }
         return $body;
@@ -473,7 +478,7 @@ final class EpsClient
         $options = $this->curlOptions($target);
         if ($this->transport !== null) {
             [$status, $raw] = ($this->transport)($target, $options);
-            return self::decodeResponse($status, $target['url'], $raw);
+            return self::decodeResponse($status, $target['url'], $raw, $target['financial']);
         }
         $ch = curl_init($target['url']);
         curl_setopt_array($ch, $options);
@@ -485,6 +490,6 @@ final class EpsClient
         if ($res === false) {
             throw new EpsTransportException("EPS request to {$target['url']} failed: $curlError");
         }
-        return self::decodeResponse($status, $target['url'], $res);
+        return self::decodeResponse($status, $target['url'], $res, $target['financial']);
     }
 }

@@ -421,6 +421,8 @@ def fast(**kwargs):
 
 
 OK = b'{"status":0}'
+#: A financial endpoint's envelope also carries a numeric response_status_id.
+OK_FINANCIAL = b'{"status":0,"response_status_id":0}'
 
 
 class ClientRefId(unittest.TestCase):
@@ -444,7 +446,7 @@ class ClientRefId(unittest.TestCase):
         self.assertEqual(t.body()["client_ref_id"], "MY-REF_1")
 
     def test_satisfies_a_required_client_ref_id(self):
-        t = Transport(_response(OK))
+        t = Transport(_response(OK_FINANCIAL))
         with patched(t):
             fast().call("dmt-initiate-transfer", TRANSFER)
         self.assertRegex(t.body()["client_ref_id"], REF)
@@ -614,6 +616,8 @@ class RetryAndStatusCheck(unittest.TestCase):
             b"null", b'"ok"', b"5", b"[]", b'[{"status":0}]',
             b"{}", b'{"error":"Bad Gateway"}', b'{"status":"0"}',
             b'{"status":true}', b'{"status":null}',
+            b'{"status":502,"error":"Bad Gateway"}', b'{"status":0}',
+            b'{"status":0,"response_status_id":"0"}',
         ):
             with self.subTest(body=body):
                 t = Transport(_response(body), _response(json.dumps(inquiry).encode()))
@@ -624,6 +628,14 @@ class RetryAndStatusCheck(unittest.TestCase):
                 self.assertEqual(ctx.exception.status_check, inquiry)
                 self.assertIsInstance(ctx.exception.__cause__, EpsInvalidResponseError)
                 self.assertEqual(len(t.requests), 2)
+
+    def test_financial_envelope_needs_response_status_id_non_financial_only_status(self):
+        full = {"status": 0, "response_status_id": 0, "data": {"tid": "1"}}
+        with patched(Transport(_response(json.dumps(full).encode()))):
+            self.assertEqual(fast().call("dmt-initiate-transfer", TRANSFER), full)
+        # pan-fetch-style success with no response_status_id stays a result off the financial path
+        with patched(Transport(_response(OK))):
+            self.assertEqual(fast().call("pan-lite", PAN), {"status": 0})
 
     def test_non_financial_post_unparseable_2xx_no_inquiry(self):
         t = Transport(_response(b""))
