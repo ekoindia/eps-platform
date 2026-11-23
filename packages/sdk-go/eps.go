@@ -113,9 +113,12 @@ type environment struct {
 }
 
 type surface struct {
-	Environments []environment     `json:"environments"`
-	Endpoints    []Endpoint        `json:"endpoints"`
-	Formats      map[string]string `json:"formats"`
+	BundleVersion string            `json:"bundleVersion"`
+	Environments  []environment     `json:"environments"`
+	Endpoints     []Endpoint        `json:"endpoints"`
+	Formats       map[string]string `json:"formats"`
+	// Redact classifies keys for debug-mode masking.
+	Redact redactLists `json:"redact"`
 }
 
 var loadedSurface = func() surface {
@@ -311,10 +314,29 @@ type Client struct {
 	// now is test-only clock injection (milliseconds since the epoch); not part
 	// of the public surface.
 	now func() int64
+	// debug is nil when debug mode is off.
+	debug *debugger
 }
 
 // New validates the config against the baked surface and returns a client.
+// Debug mode follows the EPS_SDK_DEBUG env var; see NewWithDebug.
 func New(cfg Config) (*Client, error) {
+	return NewWithDebug(cfg, nil)
+}
+
+// NewWithDebug is New with debug mode: masked diagnostics (init, request,
+// response, transport_error, retry and error events) to share with Eko
+// support. w == nil: on when the env var EPS_SDK_DEBUG is "1" or "true"
+// (trimmed, case-insensitive), writing to os.Stderr; w == io.Discard: off,
+// even with the env var set; any other writer: on.
+//
+// Each event is one JSON object plus "\n" in a single Write. A package-level
+// mutex serializes this SDK's own writes (every client, every writer); it does
+// not coordinate with anything else writing to w. Write errors and panics are
+// swallowed: debug never changes a call's outcome. Credentials and personal
+// data are masked best-effort; review the output before sharing it. See
+// "Debug mode conformance" in docs/sdk-golden-vector.md.
+func NewWithDebug(cfg Config, w io.Writer) (*Client, error) {
 	c := &Client{
 		cfg:             cfg,
 		http:            cfg.HTTPClient,
@@ -344,6 +366,7 @@ func New(cfg Config) (*Client, error) {
 	for _, env := range loadedSurface.Environments {
 		if env.ID == cfg.Environment {
 			c.baseURL = env.BaseURL
+			c.debug = startDebug(c, w)
 			return c, nil
 		}
 	}
@@ -555,6 +578,14 @@ func (c *Client) BuildHeaders(multipartBody bool) map[string]string {
 // documents. nil values are dropped (a form field has no null encoding), while
 // nulls nested inside a value survive the JSON.
 func encodeMultipart(values map[string]any, fileParams map[string]bool) ([]byte, string, error) {
+	body, contentType, _, err := encodeMultipartWithMeta(values, fileParams)
+	return body, contentType, err
+}
+
+// encodeMultipartWithMeta is encodeMultipart plus the debug metadata (the
+// form-data JSON and each upload's param, name and size) from values already
+// in hand.
+func encodeMultipartWithMeta(values map[string]any, fileParams map[string]bool) ([]byte, string, *multipartMeta, error) {
 	payload := map[string]any{}
 	type upload struct {
 		field, name string
@@ -578,11 +609,11 @@ func encodeMultipart(values map[string]any, fileParams map[string]bool) ([]byte,
 		case string:
 			content, err := os.ReadFile(v)
 			if err != nil {
-				return nil, "", fmt.Errorf("eps: reading upload %q: %w", name, err)
+				return nil, "", nil, fmt.Errorf("eps: reading upload %q: %w", name, err)
 			}
 			uploads = append(uploads, upload{name, filepath.Base(v), content})
 		default:
-			return nil, "", fmt.Errorf("eps: param %q is not a file value", name)
+			return nil, "", nil, fmt.Errorf("eps: param %q is not a file value", name)
 		}
 	}
 
@@ -590,27 +621,31 @@ func encodeMultipart(values map[string]any, fileParams map[string]bool) ([]byte,
 	// fail far from its cause.
 	encoded, err := json.Marshal(payload)
 	if err != nil {
-		return nil, "", fmt.Errorf("eps: params could not be JSON-encoded: %w", err)
+		return nil, "", nil, fmt.Errorf("eps: params could not be JSON-encoded: %w", err)
 	}
 
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
 	if err := writer.WriteField(MultipartJSONField, string(encoded)); err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	for _, u := range uploads {
 		part, err := writer.CreateFormFile(u.field, u.name)
 		if err != nil {
-			return nil, "", err
+			return nil, "", nil, err
 		}
 		if _, err := part.Write(u.content); err != nil {
-			return nil, "", err
+			return nil, "", nil, err
 		}
 	}
 	if err := writer.Close(); err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
-	return buf.Bytes(), writer.FormDataContentType(), nil
+	meta := &multipartMeta{fields: string(encoded)}
+	for _, u := range uploads {
+		meta.files = append(meta.files, uploadMeta{u.field, u.name, len(u.content)})
+	}
+	return buf.Bytes(), writer.FormDataContentType(), meta, nil
 }
 
 // sortedKeys keeps request bytes deterministic — Go map iteration is randomized,
@@ -629,9 +664,16 @@ func sortedKeys(m map[string]any) []string {
 // It fails before anything is signed or sent on an unknown slug, a missing
 // required param or a type mismatch.
 func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, error) {
+	target, _, err := c.resolve(slug, params)
+	return target, err
+}
+
+// resolve is ResolveTarget plus the multipart debug metadata (nil unless the
+// body is multipart).
+func (c *Client) resolve(slug string, params map[string]any) (*Target, *multipartMeta, error) {
 	endpoint, err := endpointFor(slug)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Client-level defaults first; an explicit per-call value wins, including an
@@ -677,7 +719,7 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		}
 	}
 	if len(missing) > 0 {
-		return nil, fmt.Errorf("Missing required params for %q: %s.", slug, strings.Join(missing, ", "))
+		return nil, nil, fmt.Errorf("Missing required params for %q: %s.", slug, strings.Join(missing, ", "))
 	}
 
 	// Type guard: every provided param known to the spec must match its type.
@@ -693,7 +735,7 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		}
 	}
 	if len(badTypes) > 0 {
-		return nil, fmt.Errorf("Invalid param types for %q: %s.", slug, strings.Join(badTypes, ", "))
+		return nil, nil, fmt.Errorf("Invalid param types for %q: %s.", slug, strings.Join(badTypes, ", "))
 	}
 
 	// Value guard: enum / format / min / max / maxLength from the spec, on the
@@ -709,14 +751,14 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		}
 	}
 	if len(badValues) > 0 {
-		return nil, fmt.Errorf("Invalid param values for %q: %s.", slug, strings.Join(badValues, ", "))
+		return nil, nil, fmt.Errorf("Invalid param values for %q: %s.", slug, strings.Join(badValues, ", "))
 	}
 	// A financial call's ref is its only reconciliation key after a lost
 	// response, so a blank one is refused (never silently replaced) even on
 	// endpoints whose param declares no client-ref format. ("" would also read
 	// as "no ref" on IndeterminateError.)
 	if endpoint.Financial && declaresRef && blankRefRe.MatchString(clientRefID) {
-		return nil, fmt.Errorf("Invalid param values for %q: client_ref_id (must not be blank on a financial call).", slug)
+		return nil, nil, fmt.Errorf("Invalid param values for %q: client_ref_id (must not be blank on a financial call).", slug)
 	}
 
 	// A type:"file" param flips the whole request to multipart/form-data.
@@ -759,6 +801,7 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 	if endpoint.RetrySafe != nil {
 		target.RetrySafe = *endpoint.RetrySafe
 	}
+	var meta *multipartMeta
 	switch {
 	case endpoint.Method == http.MethodGet:
 		query := url.Values{}
@@ -773,20 +816,21 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 			target.URL += separator + encoded
 		}
 	case isMultipart:
-		body, contentType, err := encodeMultipart(rest, fileParams)
+		body, contentType, multipartDebug, err := encodeMultipartWithMeta(rest, fileParams)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		meta = multipartDebug
 		target.Body = body
 		target.Headers["content-type"] = contentType
 	default:
 		body, err := json.Marshal(rest)
 		if err != nil {
-			return nil, fmt.Errorf("eps: params could not be JSON-encoded: %w", err)
+			return nil, nil, fmt.Errorf("eps: params could not be JSON-encoded: %w", err)
 		}
 		target.Body = body
 	}
-	return target, nil
+	return target, meta, nil
 }
 
 // Call signs and sends one endpoint call, returning the decoded response
@@ -802,16 +846,27 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 // the inquiry, but a financial call still returns *IndeterminateError carrying
 // its ref (or TID) so it can be reconciled later. See docs/sdk-golden-vector.md.
 func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (map[string]any, error) {
-	target, err := c.ResolveTarget(slug, params)
+	tr := c.debug.trace(slug)
+	envelope, err := c.call(ctx, slug, params, tr)
+	if err != nil {
+		tr.failed(err)
+	}
+	return envelope, err
+}
+
+// call is Call without the debug wrapper: validate, send, retry, inquire.
+func (c *Client) call(ctx context.Context, slug string, params map[string]any, tr *trace) (map[string]any, error) {
+	target, meta, err := c.resolve(slug, params)
 	if err != nil {
 		return nil, err
 	}
+	tr.resolved(meta)
 	attempts := 1
 	if target.RetrySafe {
 		attempts = c.retries + 1
 	}
 	for attempt := 1; ; attempt++ {
-		envelope, err := c.send(ctx, target)
+		envelope, err := c.send(ctx, target, attempt, tr)
 		if err == nil {
 			return envelope, nil
 		}
@@ -823,7 +878,7 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 		// caller gets the ref/TID to reconcile by with a fresh ctx.
 		ctxDone := ctx.Err() != nil
 		if attempt < attempts && !ctxDone {
-			if err := c.backoff(ctx, attempt); err != nil {
+			if err := c.backoff(ctx, attempt, tr); err != nil {
 				return nil, err
 			}
 			continue
@@ -839,16 +894,18 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 }
 
 // backoff sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter —
-// or returns early when ctx is done.
-func (c *Client) backoff(ctx context.Context, attempt int) error {
+// or returns early when ctx is done. The debug retry event precedes the sleep.
+func (c *Client) backoff(ctx context.Context, attempt int, tr *trace) error {
 	limit := c.retryBaseDelay << (attempt - 1)
 	if limit > maxRetryDelay || limit < 0 {
 		limit = maxRetryDelay
 	}
 	if limit <= 0 {
+		tr.retry(attempt, 0)
 		return nil
 	}
 	delay := time.Duration(rand.Int63n(int64(limit) + 1))
+	tr.retry(attempt, delay)
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -900,7 +957,7 @@ func (c *Client) indeterminate(ctx context.Context, target *Target, cause error)
 // contract. The multipart content-type, with its boundary, is kept from the
 // target; every other header is re-signed so a retry never reuses a stale
 // secret-key-timestamp.
-func (c *Client) send(ctx context.Context, target *Target) (map[string]any, error) {
+func (c *Client) send(ctx context.Context, target *Target, attempt int, tr *trace) (map[string]any, error) {
 	var body io.Reader
 	if target.Body != nil {
 		body = bytes.NewReader(target.Body)
@@ -912,18 +969,23 @@ func (c *Client) send(ctx context.Context, target *Target) (map[string]any, erro
 	for name, value := range target.Headers {
 		req.Header.Set(name, value)
 	}
-	for name, value := range c.BuildHeaders(target.Multipart) {
+	signed := c.BuildHeaders(target.Multipart)
+	for name, value := range signed {
 		req.Header.Set(name, value)
 	}
+	tr.request(attempt, target, signed)
 	res, err := c.http.Do(req)
 	if err != nil {
+		tr.transportError(attempt, err, 0)
 		return nil, &TransportError{URL: target.URL, Err: err}
 	}
 	defer res.Body.Close()
 	raw, err := io.ReadAll(res.Body)
 	if err != nil {
+		tr.transportError(attempt, err, res.StatusCode)
 		return nil, &TransportError{URL: target.URL, Err: err}
 	}
+	tr.response(attempt, res.StatusCode, raw)
 	var envelope map[string]any
 	decodeErr := json.Unmarshal(raw, &envelope)
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
