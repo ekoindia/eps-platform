@@ -387,7 +387,9 @@ export class EpsClient {
 
 	private endpoint(slug: string): SdkEndpoint {
 		const e = SURFACE.endpoints.find((x) => x.slug === slug);
-		if (!e) throw new EpsError(`Unknown endpoint slug "${slug}".`);
+		if (!e) throw new EpsError(
+				`Unknown endpoint slug "${slug}". Check the spelling, or upgrade the SDK if this API is newer than your installed version (npm install @ekoindia/eps-sdk@latest).`,
+			);
 		return e;
 	}
 

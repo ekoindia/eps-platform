@@ -4,6 +4,8 @@
 
 ### Changed
 
+- The "Unknown endpoint slug" error now says to check the spelling or upgrade
+  the SDK (`pip install -U eps-sdk`), since the slug list is pinned to the release.
 - **Minimum Python version is now 3.10.** Python 3.9 is no longer supported: it
   has reached end of life, and GitHub Actions has no 3.9 build for Ubuntu 26.04,
   so it can no longer be tested on the current runner image. On Python 3.9, `pip`

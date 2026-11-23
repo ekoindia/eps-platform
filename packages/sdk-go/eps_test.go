@@ -176,7 +176,7 @@ func TestUnknownEnvironmentRejected(t *testing.T) {
 
 func TestUnknownSlugRejected(t *testing.T) {
 	_, err := newTestClient(t).ResolveTarget("no-such-endpoint", nil)
-	wantErr(t, err, "Unknown endpoint slug")
+	wantErr(t, err, "Unknown endpoint slug", "upgrade the SDK")
 }
 
 func TestGetPutsNonPathParamsInQueryStringNoBody(t *testing.T) {

@@ -46,6 +46,8 @@ One generic `Call(ctx, slug, params)` covers every endpoint. The slug list, each
 endpoint's params and which of them are required all come from the same
 generated API surface the docs are built from, so the client validates your
 input **before** it signs and sends anything.
+That surface is pinned to the SDK release: a newly launched API returns
+"Unknown endpoint slug" until you upgrade (`go get github.com/ekoindia/eps-sdk-go@latest`).
 
 ## Backend only
 

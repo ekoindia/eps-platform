@@ -145,7 +145,8 @@ need to sign requests yourself.
 
 The embedded endpoint catalog (slugs, methods, paths, required params) is generated from the
 EPS bundle at `/agent/sdk-surface.json` and shipped as `data/sdk-surface.json`. It is read at
-runtime — no network call is needed to resolve a slug.
+runtime — no network call is needed to resolve a slug. It is pinned to the SDK release, so a
+newly launched API returns `Unknown endpoint slug` until you run `composer update ekoindia/eps-sdk`.
 
 ## Upgrading to 2.0
 

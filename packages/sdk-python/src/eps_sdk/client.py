@@ -429,7 +429,10 @@ class EpsClient:
         for endpoint in _SURFACE["endpoints"]:
             if endpoint["slug"] == slug:
                 return endpoint
-        raise EpsError(f'Unknown endpoint slug "{slug}".')
+        raise EpsError(
+            f'Unknown endpoint slug "{slug}". Check the spelling, or upgrade the SDK '
+            "if this API is newer than your installed version (pip install -U eps-sdk)."
+        )
 
     def build_headers(self, multipart: bool = False) -> Dict[str, str]:
         """Signed auth headers. Multipart callers get no ``content-type`` here —

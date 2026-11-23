@@ -95,7 +95,7 @@ class TestSigning(unittest.TestCase):
             EpsClient("dev123", ACCESS_KEY, "moon")
 
     def test_unknown_slug_rejected(self):
-        with self.assertRaisesRegex(EpsError, "Unknown endpoint slug"):
+        with self.assertRaisesRegex(EpsError, r"Unknown endpoint slug .*upgrade the SDK"):
             client().resolve_target("no-such-endpoint", {})
 
 

@@ -210,7 +210,7 @@ final class EpsClient
     {
         $endpoint = null;
         foreach ($this->surface['endpoints'] as $e) if ($e['slug'] === $slug) { $endpoint = $e; break; }
-        if ($endpoint === null) throw new \InvalidArgumentException("Unknown endpoint slug: $slug");
+        if ($endpoint === null) throw new \InvalidArgumentException("Unknown endpoint slug: $slug. Check the spelling, or upgrade the SDK if this API is newer than your installed version (composer update ekoindia/eps-sdk).");
 
         // Client-level defaults (initiator_id, user_code) are injected first; an
         // explicit per-call value overrides because $params wins the merge.

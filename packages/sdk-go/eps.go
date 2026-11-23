@@ -486,7 +486,7 @@ func endpointFor(slug string) (*Endpoint, error) {
 			return &loadedSurface.Endpoints[i], nil
 		}
 	}
-	return nil, fmt.Errorf("Unknown endpoint slug %q.", slug)
+	return nil, fmt.Errorf("Unknown endpoint slug %q. Check the spelling, or upgrade the SDK if this API is newer than your installed version (go get github.com/ekoindia/eps-sdk-go@latest).", slug)
 }
 
 // BuildHeaders returns the signed auth headers. Multipart callers get no

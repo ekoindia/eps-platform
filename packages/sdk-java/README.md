@@ -54,6 +54,8 @@ One generic `call(slug, params)` covers every endpoint. The slug list, each
 endpoint's params and which of them are required all come from the same
 generated API surface the docs are built from, so the client validates your
 input **before** it signs and sends anything.
+That surface is pinned to the SDK release: a newly launched API returns
+"Unknown endpoint slug" until you upgrade (`bump com.github.ekoindia:eps-sdk-java to the latest tag`).
 
 ## Backend only
 

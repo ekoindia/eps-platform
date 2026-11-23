@@ -165,7 +165,8 @@ class EpsClientTest {
 			EpsClient.EpsException e =
 					assertThrows(
 							EpsClient.EpsException.class, () -> client().resolveTarget("no-such-endpoint", null));
-			assertTrue(e.getMessage().contains("Unknown endpoint slug"));
+			assertTrue(e.getMessage().startsWith("Unknown endpoint slug"));
+			assertTrue(e.getMessage().contains("upgrade the SDK"));
 		}
 	}
 

@@ -102,7 +102,8 @@ try {
 
 Every other client-side failure (unknown slug, missing param, wrong type, bad
 option) throws `EpsError`, which `EpsHttpError` extends. A 2xx body that is not
-JSON throws too — never a silent `{}`. The contract is shared by all five EPS
+JSON throws too — never a silent `{}`. The slug list is pinned to the SDK release, so a newly
+launched API throws `Unknown endpoint slug` until you upgrade (`npm install @ekoindia/eps-sdk@latest`). The contract is shared by all five EPS
 SDKs; see [docs/sdk-golden-vector.md](../../docs/sdk-golden-vector.md).
 
 ### File uploads

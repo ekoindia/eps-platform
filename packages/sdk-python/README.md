@@ -27,6 +27,8 @@ One generic `call(slug, params)` covers every endpoint. The slug list, each
 endpoint's params and which of them are required all come from the same
 generated API surface the docs are built from, so the client validates your
 input **before** it signs and sends anything.
+That surface is pinned to the SDK release: a newly launched API returns
+"Unknown endpoint slug" until you upgrade (`pip install -U eps-sdk`).
 
 `timeout` is the whole-request budget in **seconds**, defaulting to `30.0` — the
 same 30s every EPS SDK defaults to. (Node names its knob `timeout_ms` /

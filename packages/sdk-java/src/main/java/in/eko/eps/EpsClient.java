@@ -531,7 +531,8 @@ public final class EpsClient {
 		return SURFACE.endpoints().stream()
 				.filter(e -> e.slug().equals(slug))
 				.findFirst()
-				.orElseThrow(() -> new EpsException("Unknown endpoint slug \"" + slug + "\"."));
+				.orElseThrow(() -> new EpsException("Unknown endpoint slug \"" + slug + "\". Check the spelling, or upgrade the SDK"
+						+ " if this API is newer than your installed version (bump com.github.ekoindia:eps-sdk-java to the latest tag)."));
 	}
 
 	/**

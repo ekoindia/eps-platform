@@ -52,6 +52,14 @@ final class EpsClientTest extends TestCase
         $client->resolveTarget('dmt-get-sender', ['user_code' => '20810200']);
     }
 
+    public function testUnknownSlugHintsAtUpgrade(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/^Unknown endpoint slug: no-such-endpoint\..*composer update ekoindia\/eps-sdk/');
+        $client->resolveTarget('no-such-endpoint', []);
+    }
+
     public function testThrowsWhenRequiredParamNull(): void
     {
         $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);

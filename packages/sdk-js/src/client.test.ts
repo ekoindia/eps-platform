@@ -103,6 +103,17 @@ describe("EpsClient.call", () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
+	it("rejects an unknown slug with a spelling/upgrade hint", async () => {
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+		});
+		await expect(client.call("no-such-endpoint", {})).rejects.toThrow(
+			/^Unknown endpoint slug "no-such-endpoint"\..*npm install @ekoindia\/eps-sdk@latest/,
+		);
+	});
+
 	it("injects client-level initiatorId/userCode into every call", async () => {
 		const fetchMock = vi.fn(
 			async (_url: RequestInfo | URL, _init?: RequestInit) =>
