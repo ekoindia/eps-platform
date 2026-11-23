@@ -4,6 +4,12 @@
 
 ### Changed
 
+- `auto_status_check=False` now skips only the Transaction Inquiry: an
+  indeterminate outcome on a financial endpoint still raises
+  `EpsIndeterminateError` carrying the `client_ref_id` (or `tid`), with
+  `status_check` and `status_check_error` both `None`. Previously the raw
+  5xx / transport / invalid-response error was raised and a generated ref was
+  lost.
 - A financial endpoint without a `client_ref_id` param (`initiate-refund`) now
   raises `EpsIndeterminateError` on an indeterminate outcome too, after a
   Transaction Inquiry by the call's `tid` (only `tx_status` 4 = refunded

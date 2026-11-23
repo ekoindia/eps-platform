@@ -233,7 +233,8 @@ so the ref, if any) are fixed across attempts.
 **Not `retrySafe`** — never retried: re-sending a debit is how a customer is
 charged twice, and re-sending a paid lookup bills it twice. If the endpoint is
 `financial` in the surface, the call **always** fails with the indeterminate
-error, after one Transaction Inquiry keyed by the call's `client_ref_id` — or,
+error — auto inquire on or off — after (when on) one Transaction Inquiry keyed
+by the call's `client_ref_id` — or,
 on a financial endpoint that has no ref param (`initiate-refund`), by the `tid`
 it acted on:
 
@@ -253,7 +254,10 @@ The inquiry goes through the ordinary GET path, so it has the GET retry budget
 and can never recurse (it is a GET). The call then fails with the language's
 indeterminate error, which **never** substitutes the inquiry envelope for the
 endpoint's own response — the shapes differ. Outside this path (non-financial
-endpoint, decisive status, auto inquire off) behaviour is exactly as before.
+endpoint, decisive status) behaviour is exactly as before. Auto inquire off
+skips **only** the inquiry: a financial call still fails with the
+indeterminate error carrying its ref / `tid` (`statusCheck` and
+`statusCheckError` both null), so a generated ref is never lost.
 
 | SDK    | Indeterminate error            | Transport error                | Knobs (retries / backoff base / auto inquire)                       |
 | ------ | ------------------------------ | ------------------------------ | -------------------------------------------------------------------- |
@@ -309,7 +313,7 @@ POST that omits `client_ref_id`. Every suite pins the exact request counts:
 | financial POST: 500, inquiry 503 every attempt              | 1 + 3    | indeterminate error; `statusCheck` null; `statusCheckError` is the 503; cause is the 500 |
 | financial POST: 401                                         | 1        | typed HTTP error, no inquiry                                    |
 | `initiate-refund` (financial, no ref param): 500 or 2xx `null`, inquiry 200 | 2 | indeterminate error; `clientRefId` null/""; `tid` the call's tid; inquiry query `tid=<tid>`, no `client_ref_id`; message `… on tid "<tid>" …` |
-| financial POST with auto inquire off: 500                   | 1        | typed HTTP error                                                |
+| financial POST with auto inquire off: 500                   | 1        | indeterminate error with the generated `clientRefId`, `status` 500, no inquiry, `statusCheck` and `statusCheckError` null |
 | Go only — financial POST, ctx deadline expires in flight    | 1        | `*IndeterminateError` with the generated `ClientRefID` (refund: `TID`), no inquiry, `StatusCheckErr` is `DeadlineExceeded`; non-financial: plain error |
 | Java only — financial POST, thread interrupted mid-send     | 1        | `EpsIndeterminateException` with the generated `clientRefId` (refund: `tid`), no inquiry, `statusCheckError` an `InterruptedException`, interrupt flag still set; non-financial: plain `EpsException` |
 

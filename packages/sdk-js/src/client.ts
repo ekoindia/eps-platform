@@ -366,8 +366,9 @@ export interface EpsClientOptions {
 	 * min(base × 2^(n-1), 2000). Default 200; 0 retries immediately (tests). */
 	retryBaseDelayMs?: number;
 	/** After an indeterminate failure on a money-moving (`financial`) endpoint,
-	 * look the transaction up by its `client_ref_id` and surface the result on
-	 * `EpsIndeterminateError.statusCheck`. Default true. */
+	 * look the transaction up by its `client_ref_id` (or `tid`) and surface the
+	 * result on `EpsIndeterminateError.statusCheck`. Default true. Off skips only
+	 * the inquiry: the call still throws `EpsIndeterminateError` with the key. */
 	autoStatusCheck?: boolean;
 	now?: () => number;
 }
@@ -461,7 +462,7 @@ export class EpsClient {
 				// Never re-send an unsafe call: that is how a customer is debited twice.
 				// Ask EPS what happened instead — by the ref, or by the tid on an
 				// endpoint that has no ref (initiate-refund).
-				if (this.autoStatusCheck && endpoint.financial) {
+				if (endpoint.financial) {
 					const tid =
 						clientRefId === undefined && merged["tid"] != null
 							? String(merged["tid"])
@@ -489,8 +490,9 @@ export class EpsClient {
 		if (delay > 0) await new Promise((r) => setTimeout(r, delay));
 	}
 
-	/** One inquiry by `client_ref_id=<ref>`, else `tid=<tid>`, else none; its
-	 * own failure is reported, never allowed to mask the original one. */
+	/** One inquiry by `client_ref_id=<ref>`, else `tid=<tid>`, else none — or
+	 * none at all with `autoStatusCheck` off; its own failure is reported, never
+	 * allowed to mask the original one. */
 	private async indeterminate(
 		slug: string,
 		clientRefId: string | null,
@@ -506,7 +508,8 @@ export class EpsClient {
 				: tid !== null
 					? { tid }
 					: null;
-		if (key)
+		// Off opts out of the inquiry, not of the key: the ref/tid still surfaces.
+		if (key && this.autoStatusCheck)
 			try {
 				statusCheck = await this.call(INQUIRY_SLUG, {
 					...key,

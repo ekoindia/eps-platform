@@ -42,8 +42,9 @@ final class EpsClient
         // min(base × 2^(n-1), 2s). 0 retries immediately (tests).
         private float $retryBaseDelay = 0.2,
         // After an indeterminate failure on a `financial` endpoint, look the
-        // transaction up by its client_ref_id and surface the result on
-        // EpsIndeterminateException::$statusCheck.
+        // transaction up by its client_ref_id (or tid) and surface the result on
+        // EpsIndeterminateException::$statusCheck. Off skips only the inquiry:
+        // the call still throws EpsIndeterminateException with the key.
         private bool $autoStatusCheck = true,
         // Test-only clock injection (not part of the public surface).
         private $now = null,
@@ -409,7 +410,7 @@ final class EpsClient
                 // Never re-send a non-GET: that is how a customer is debited twice.
                 // Ask EPS what happened instead — by the ref, or by the tid on an
                 // endpoint that has no ref (initiate-refund).
-                if ($this->autoStatusCheck && $target['financial']) {
+                if ($target['financial']) {
                     throw $this->indeterminate($target, $e);
                 }
                 throw $e;
@@ -447,7 +448,8 @@ final class EpsClient
         $params = $target['clientRefId'] !== null
             ? ['client_ref_id' => $target['clientRefId']]
             : ($target['tid'] !== null ? ['tid' => $target['tid']] : null);
-        if ($params !== null) {
+        // Off opts out of the inquiry, not of the key: the ref/tid still surfaces.
+        if ($params !== null && $this->autoStatusCheck) {
             if ($target['initiatorId'] !== null) $params['initiator_id'] = $target['initiatorId'];
             try {
                 $statusCheck = $this->call(self::INQUIRY_SLUG, $params);

@@ -46,7 +46,9 @@ try {
 }
 ```
 
-Knobs: `retries` (2), `retryBaseDelayMs` (200), `autoStatusCheck` (true).
+Knobs: `retries` (2), `retryBaseDelayMs` (200), `autoStatusCheck` (true). Off skips only the
+inquiry — a financial call still fails with the indeterminate error carrying
+its ref (or `tid`).
 
 ## Usage
 

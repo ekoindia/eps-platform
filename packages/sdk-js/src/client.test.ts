@@ -864,14 +864,17 @@ describe("retry and status check", () => {
 		},
 	);
 
-	it("autoStatusCheck: false → no inquiry", async () => {
+	it("autoStatusCheck: false skips only the inquiry — still indeterminate, with the generated ref", async () => {
 		const f = vi.fn(async () => http(500));
-		await expect(
-			make(f, { autoStatusCheck: false }).call(
-				"dmt-initiate-transfer",
-				TRANSFER,
-			),
-		).rejects.toBeInstanceOf(EpsHttpError);
+		const err = (await make(f, { autoStatusCheck: false })
+			.call("dmt-initiate-transfer", TRANSFER)
+			.catch((e: unknown) => e)) as EpsIndeterminateError;
+		expect(err).toBeInstanceOf(EpsIndeterminateError);
+		expect(err.clientRefId).toBe(bodyOf(f, 0).client_ref_id);
+		expect(err.status).toBe(500);
+		expect(err.statusCheck).toBeNull();
+		expect(err.statusCheckError).toBeNull();
+		expect(err.cause).toBeInstanceOf(EpsHttpError);
 		expect(f).toHaveBeenCalledTimes(1);
 	});
 

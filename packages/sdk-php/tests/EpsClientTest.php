@@ -657,13 +657,18 @@ final class EpsClientTest extends TestCase
         }
     }
 
-    public function testAutoStatusCheckOff(): void
+    public function testAutoStatusCheckOffSkipsOnlyTheInquiry(): void
     {
         $t = self::transport([self::http(500)]);
-        $this->expectException(EpsHttpException::class);
         try {
             self::fast($t, ['autoStatusCheck' => false])->call('dmt-initiate-transfer', self::TRANSFER);
-        } finally {
+            $this->fail('expected EpsIndeterminateException');
+        } catch (EpsIndeterminateException $e) {
+            $this->assertSame($t->body(0)['client_ref_id'], $e->clientRefId);
+            $this->assertSame(500, $e->status);
+            $this->assertNull($e->statusCheck);
+            $this->assertNull($e->statusCheckError);
+            $this->assertInstanceOf(EpsHttpException::class, $e->getPrevious());
             $this->assertCount(1, $t->requests);
         }
     }

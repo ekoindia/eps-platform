@@ -79,7 +79,9 @@ except EpsIndeterminateError as err:
     ...
 ```
 
-Knobs: `retries` (2), `retry_base_delay` (0.2 s), `auto_status_check` (True).
+Knobs: `retries` (2), `retry_base_delay` (0.2 s), `auto_status_check` (True). Off skips only the
+inquiry — a financial call still fails with the indeterminate error carrying
+its ref (or `tid`).
 
 ## Zero dependencies
 

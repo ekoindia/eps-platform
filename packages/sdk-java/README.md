@@ -103,7 +103,9 @@ try {
 ```
 
 Knobs: `.retries(2)`, `.retryBaseDelay(Duration.ofMillis(200))`,
-`.autoStatusCheck(true)`. A transport failure throws
+`.autoStatusCheck(true)`. Off skips only the
+inquiry — a financial call still fails with the indeterminate error carrying
+its ref (or `tid`). A transport failure throws
 `EpsClient.EpsTransportException`.
 
 ## Dependencies

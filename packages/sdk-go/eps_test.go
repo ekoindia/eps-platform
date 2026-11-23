@@ -996,14 +996,20 @@ func TestFinancialWithoutRefParamInquiresByTID(t *testing.T) {
 	}
 }
 
-func TestAutoStatusCheckOff(t *testing.T) {
+func TestAutoStatusCheckOffSkipsOnlyTheInquiry(t *testing.T) {
 	tr := &scripted{steps: []step{httpStep(500)}}
 	off := false
 	_, err := fastClient(t, tr, func(c *Config) { c.AutoStatusCheck = &off }).
 		Call(context.Background(), "dmt-initiate-transfer", transferParams)
 	var ind *IndeterminateError
-	if errors.As(err, &ind) || len(tr.requests) != 1 {
-		t.Errorf("err = %v after %d requests, want plain *HTTPError after 1", err, len(tr.requests))
+	if !errors.As(err, &ind) {
+		t.Fatalf("err = %v, want *IndeterminateError (off skips only the inquiry)", err)
+	}
+	ref, _ := tr.body(t, 0)["client_ref_id"].(string)
+	if ind.ClientRefID == "" || ind.ClientRefID != ref || ind.Status != 500 ||
+		ind.StatusCheck != nil || ind.StatusCheckErr != nil || len(tr.requests) != 1 {
+		t.Errorf("IndeterminateError = %+v after %d requests, want generated ref %q, 500, no inquiry, after 1",
+			ind, len(tr.requests), ref)
 	}
 }
 

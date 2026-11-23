@@ -433,8 +433,9 @@ class EpsClient:
     #: min(base * 2**(n-1), 2.0). 0 retries immediately (tests).
     retry_base_delay: float = _DEFAULT_RETRY_BASE_DELAY
     #: After an indeterminate failure on a ``financial`` endpoint, look the
-    #: transaction up by its client_ref_id and surface the result on
-    #: ``EpsIndeterminateError.status_check``.
+    #: transaction up by its client_ref_id (or tid) and surface the result on
+    #: ``EpsIndeterminateError.status_check``. Off skips only the inquiry: the
+    #: call still raises ``EpsIndeterminateError`` with the key.
     auto_status_check: bool = True
     #: Test-only clock injection (milliseconds since the epoch).
     now: Callable[[], int] = field(
@@ -629,7 +630,7 @@ class EpsClient:
                 # Never re-send an unsafe call: that is how a customer is
                 # debited twice. Ask EPS what happened instead -- by the ref, or
                 # by the tid on an endpoint that has no ref (initiate-refund).
-                if self.auto_status_check and target.financial:
+                if target.financial:
                     raise self._indeterminate(target, exc) from exc
                 raise
 
@@ -652,7 +653,8 @@ class EpsClient:
             if target.client_ref_id is not None
             else {"tid": target.tid} if target.tid is not None else None
         )
-        if params is not None:
+        # Off opts out of the inquiry, not of the key: the ref/tid still surfaces.
+        if params is not None and self.auto_status_check:
             if target.initiator_id is not None:
                 params["initiator_id"] = target.initiator_id
             try:

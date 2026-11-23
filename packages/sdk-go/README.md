@@ -94,7 +94,9 @@ if errors.As(err, &ind) {
 ```
 
 Knobs: `Config.Retries` (nil → 2), `Config.RetryBaseDelay` (0 → 200ms),
-`Config.AutoStatusCheck` (nil → true). A transport failure is a
+`Config.AutoStatusCheck` (nil → true). Off skips only the
+inquiry — a financial call still fails with the indeterminate error carrying
+its ref (or `tid`). A transport failure is a
 `*eps.TransportError` wrapping the native error.
 
 ## Zero dependencies

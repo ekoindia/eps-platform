@@ -1040,12 +1040,33 @@ class EpsClientTest {
 		}
 
 		@Test
-		void autoStatusCheckOff() {
+		void autoStatusCheckOffSkipsOnlyTheInquiry() {
 			Scripted t = new Scripted(Step.http(500));
-			assertThrows(
-					EpsClient.EpsHttpException.class,
-					() -> fast(t, b -> b.autoStatusCheck(false)).call("dmt-initiate-transfer", TRANSFER));
+			EpsClient.EpsIndeterminateException e =
+					assertThrows(
+							EpsClient.EpsIndeterminateException.class,
+							() -> fast(t, b -> b.autoStatusCheck(false)).call("dmt-initiate-transfer", TRANSFER));
+			assertEquals(t.sent.get(0).json().get("client_ref_id"), e.clientRefId);
+			assertEquals(500, e.status);
+			assertNull(e.statusCheck);
+			assertNull(e.statusCheckError);
+			assertTrue(e.getCause() instanceof EpsClient.EpsHttpException);
 			assertEquals(1, t.sent.size());
+		}
+
+		@Test
+		void autoStatusCheckOffInterruptedKeepsGeneratedRef() {
+			Scripted t = new Scripted(Step.interrupted());
+			try {
+				EpsClient.EpsIndeterminateException e =
+						assertThrows(
+								EpsClient.EpsIndeterminateException.class,
+								() -> fast(t, b -> b.autoStatusCheck(false)).call("dmt-initiate-transfer", TRANSFER));
+				assertEquals(t.sent.get(0).json().get("client_ref_id"), e.clientRefId);
+				assertEquals(1, t.sent.size());
+			} finally {
+				Thread.interrupted();
+			}
 		}
 
 		@Test

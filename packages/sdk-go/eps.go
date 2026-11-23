@@ -288,8 +288,10 @@ type Config struct {
 	// min(base × 2^(n-1), 2s). Zero means the default of 200ms.
 	RetryBaseDelay time.Duration
 	// AutoStatusCheck: after an indeterminate failure on a financial endpoint,
-	// look the transaction up by its client_ref_id and surface the result on
-	// IndeterminateError.StatusCheck. nil means the default of true.
+	// look the transaction up by its client_ref_id (or tid) and surface the
+	// result on IndeterminateError.StatusCheck. nil means the default of true.
+	// Off skips only the inquiry: the call still returns *IndeterminateError
+	// with the key.
 	AutoStatusCheck *bool
 }
 
@@ -817,7 +819,7 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 		// Never re-send an unsafe call: that is how a customer is debited twice. Ask
 		// EPS what happened instead — by the ref, or by the tid on an endpoint
 		// that has no ref (initiate-refund).
-		if c.autoStatusCheck && target.Financial {
+		if target.Financial {
 			return nil, c.indeterminate(ctx, target, err)
 		}
 		return nil, err
@@ -859,6 +861,10 @@ func (c *Client) indeterminate(ctx context.Context, target *Target, cause error)
 		params = map[string]any{"client_ref_id": target.ClientRefID}
 	} else if target.TID != "" {
 		params = map[string]any{"tid": target.TID}
+	}
+	// Off opts out of the inquiry, not of the key: the ref/TID still surfaces.
+	if !c.autoStatusCheck {
+		params = nil
 	}
 	if params != nil && ctx.Err() != nil {
 		result.StatusCheckErr = ctx.Err()

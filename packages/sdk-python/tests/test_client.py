@@ -670,11 +670,17 @@ class RetryAndStatusCheck(unittest.TestCase):
                 self.assertEqual(query["tid"], ["777"])
                 self.assertNotIn("client_ref_id", query)
 
-    def test_auto_status_check_off(self):
+    def test_auto_status_check_off_skips_only_the_inquiry(self):
         t = Transport(_http(500))
         with patched(t):
-            with self.assertRaises(EpsHttpError):
+            with self.assertRaises(EpsIndeterminateError) as ctx:
                 fast(auto_status_check=False).call("dmt-initiate-transfer", TRANSFER)
+        e = ctx.exception
+        self.assertEqual(e.client_ref_id, t.body(0)["client_ref_id"])
+        self.assertEqual(e.status, 500)
+        self.assertIsNone(e.status_check)
+        self.assertIsNone(e.status_check_error)
+        self.assertIsInstance(e.__cause__, EpsHttpError)
         self.assertEqual(len(t.requests), 1)
 
     def test_rejects_bad_knobs_at_construction(self):

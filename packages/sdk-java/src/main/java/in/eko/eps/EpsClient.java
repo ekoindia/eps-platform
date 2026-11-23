@@ -415,8 +415,9 @@ public final class EpsClient {
 
 		/**
 		 * After an indeterminate failure on a money-moving endpoint, look the transaction up by its
-		 * {@code client_ref_id} and surface the result on {@link EpsIndeterminateException#statusCheck}.
-		 * Default true.
+		 * {@code client_ref_id} (or {@code tid}) and surface the result on {@link
+		 * EpsIndeterminateException#statusCheck}. Default true. Off skips only the inquiry: the call
+		 * still throws {@link EpsIndeterminateException} carrying the ref/tid to reconcile by.
 		 */
 		public Builder autoStatusCheck(boolean v) {
 			this.autoStatusCheck = v;
@@ -804,7 +805,7 @@ public final class EpsClient {
 				// Never re-send an unsafe call: that is how a customer is debited twice. Ask
 				// EPS what happened instead — by the ref, or by the tid on an endpoint that
 				// has no ref (initiate-refund).
-				if (autoStatusCheck && target.financial()) throw indeterminate(target, tid, e);
+				if (target.financial()) throw indeterminate(target, tid, e);
 				throw e;
 			}
 		}
@@ -824,13 +825,16 @@ public final class EpsClient {
 	}
 
 	/**
-	 * One inquiry by {@code client_ref_id=<ref>}, else {@code tid=<tid>}, else none; its own failure
-	 * is reported, never allowed to mask the original one.
+	 * One inquiry by {@code client_ref_id=<ref>}, else {@code tid=<tid>}, else none — or none at all
+	 * with {@code autoStatusCheck} off; its own failure is reported, never allowed to mask the
+	 * original one.
 	 */
 	private EpsIndeterminateException indeterminate(Target target, String tid, EpsException cause) {
 		Map<String, Object> statusCheck = null;
 		Throwable statusCheckError = null;
-		if (Thread.currentThread().isInterrupted()) {
+		if (!autoStatusCheck) {
+			// Opted out of the inquiry, not of the key: the ref/tid still reaches the caller.
+		} else if (Thread.currentThread().isInterrupted()) {
 			// The inquiry would be interrupted too; the key stays on the error for later.
 			statusCheckError = new InterruptedException("EPS status check skipped: thread interrupted");
 		} else if (target.clientRefId() != null || tid != null) {

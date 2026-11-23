@@ -48,7 +48,9 @@ try {
 }
 ```
 
-Knobs: `retries` (2), `retryBaseDelay` (0.2 s), `autoStatusCheck` (true). A
+Knobs: `retries` (2), `retryBaseDelay` (0.2 s), `autoStatusCheck` (true). Off skips only the
+inquiry — a financial call still fails with the indeterminate error carrying
+its ref (or `tid`). A
 transport failure throws `Eko\Eps\EpsTransportException`.
 
 ## Usage
