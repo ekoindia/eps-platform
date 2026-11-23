@@ -162,11 +162,12 @@ Reference implementations of `call()` (and the `resolveTarget` it builds on):
 `packages/sdk-php/src/EpsClient.php`, `packages/sdk-go/eps.go`,
 `packages/sdk-java/src/main/java/in/eko/eps/EpsClient.java`.
 
-Because PHP and Java have no injectable transport, each exposes a pure seam the
+Every SDK accepts an injected transport for tests: Node a `fetch`, Python a
+patched `urlopen`, PHP the constructor's `transport` closure, Go an
+`http.Client`, Java an `HttpClient`. PHP and Java also expose pure seams the
 conformance tests drive directly: `EpsClient::decodeResponse(status, url, raw)`
 and `EpsClient.handleResponse(status, url, raw)`. PHP additionally exposes
-`curlOptions(target)` so the timeout wiring is assertable. Node and Go inject a
-`fetch` / `http.Client` instead.
+`curlOptions(target)` so the timeout wiring is assertable.
 
 ## Client reference id conformance
 
@@ -399,3 +400,174 @@ with `not one of: 1, 2`; `min 1, max 5` accepts `"1"` and `5`, rejects `0.5`
 (`below min 1`) and `"6"` (`above max 5`); `maxLength 3` accepts `abc` and
 rejects `é€` (`longer than 3 bytes`); `enum` wins over `format`, `format` over
 `maxLength`; a non-scalar type (`object`) is never checked.
+
+## Debug mode conformance
+
+Opt-in diagnostics a developer can switch on and share with Eko support. It is
+**off by default** and purely additive: no existing option, method or output
+changes. Debug output must never change a call's outcome.
+
+### Switching it on
+
+| SDK    | Option (new, optional, last in its option list)                                   |
+| ------ | --------------------------------------------------------------------------------- |
+| Node   | `debug?: boolean \| ((event) => void)`                                            |
+| Python | `debug: bool \| Callable[[dict], None] \| None = None`                            |
+| PHP    | `bool\|\Closure\|null $debug = null` (after `$transport`)                         |
+| Go     | `NewWithDebug(cfg Config, w io.Writer)`; `New(cfg)` = `NewWithDebug(cfg, nil)`    |
+| Java   | `Builder.debug(boolean)` / `Builder.debug(Consumer<Map<String,Object>>)`          |
+
+Precedence, resolved once at construction: an explicit option wins (`true` /
+a sink / Go non-nil writer = on, `false` / Go `io.Discard` = off); otherwise
+the env var `EPS_SDK_DEBUG` set to `1` or `true` (case-insensitive, trimmed)
+turns on the default text sink; otherwise off. Off means every emit point is a
+single `if`: no masking, no serialization.
+
+### Sinks
+
+- **Callback** (Node, Python, PHP, Java): receives one freshly built event
+  object per event, already masked. It is called synchronously on the calling
+  thread; a slow or re-entrant callback delays the call that emitted it
+  (documented: keep sinks fast, do not call the client from a sink).
+- **Text** (the default sink, and Go's writer): one complete JSON object plus
+  `\n` per event, in a single write. Node `process.stderr.write`, Python
+  `sys.stderr.write`, PHP CLI `fwrite(STDERR, …)`, PHP under any other SAPI
+  `error_log()` (the server may prefix the line; the JSON starts at the first
+  `{`), Go the writer behind a package-level mutex (it serializes this SDK's own
+  writes only), Java `System.err.println`.
+- **Isolation**: building, masking, serializing and delivering an event sit in
+  one catch-all. A throwing sink, a writer error, a cycle or a parse failure is
+  swallowed; the call proceeds exactly as with debug off. Debug never reads
+  the injected signing clock (`now`): `ts` uses the real wall clock and `ms` a
+  monotonic clock.
+- **Bounds**: structured values deeper than 8 levels become `"****"`; if a
+  serialized event exceeds 64 KiB its `body` is replaced by
+  `"[N bytes omitted]"`.
+
+### Events
+
+Every event starts with these keys, in this order: `logger` (`"eps-sdk"`),
+`ts` (ISO-8601 UTC, milliseconds, `Z`), `event`, `sdk` (`js` · `python` ·
+`php` · `go` · `java`), `sdk_version` (package metadata, else `"unknown"`),
+`surface` (the surface's `bundleVersion`), `env` (`sandbox` · `production`).
+Per-call events add `call_id` (8 random lowercase hex chars, one per `call()`)
+and `slug`.
+
+| `event`           | When                                         | Extra keys                                                                                         |
+| ----------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `init`            | construction, once                           | `base_url`, `runtime`, `developer_key` (masked), `timeout_ms`, `retries`, `auto_status_check`, `source` (`option` \| `env`) |
+| `request`         | each attempt, just before sending            | `attempt`, `method`, `url`, `headers`, `body`                                                       |
+| `response`        | each attempt that got an HTTP status         | `attempt`, `status`, `ms`, `body`                                                                   |
+| `transport_error` | an attempt with no usable response           | `attempt`, `ms`, `error` (class name), `message`, plus `status` if one arrived before the body failed |
+| `retry`           | before each backoff sleep                    | `attempt` (the one that failed), `delay_ms`                                                         |
+| `error`           | `call()` is about to throw                   | `error` (class name), `message`, `client_ref_id` / `tid` when the error carries them                |
+
+A pre-send failure (unknown slug, missing / bad param) yields an `error` with
+no `request` before it: nothing was sent. The automatic status-check inquiry
+re-enters `call()`, so it logs under its own `call_id`, slug
+`transaction-inquiry`.
+
+### Masking
+
+Masking is fail-closed and identical in every SDK. The surface carries the
+classification as a top-level `redact` object, built by
+`src/lib/sdk/sdk-redact.ts`; any list that is absent counts as empty.
+
+| List    | Meaning                                                                                       |
+| ------- | --------------------------------------------------------------------------------------------- |
+| `safe`  | Eko-issued ids, status codes, enums, amounts, timestamps: printed raw when safe-shaped        |
+| `last4` | classified identifiers (Aadhaar, PAN, account, mobile, VPA, …): `****` + last 4               |
+| `text`  | free-text fields (`message`, `invalid_params`, `reason`, …): printed after the text scrub     |
+| `nest`  | structural containers (`data`, `entries`, `recipient_list`, …): walked into                   |
+
+A key's class is looked up by its lowercased name (`last4` first, then
+`safe`, `text`, `nest`); anything else is **default** — `"****"`.
+
+`mask(value, class)`:
+
+1. `null` and booleans: unchanged, under any key.
+2. Object or array: walked only at the root or when the class is `nest`,
+   `safe` or `text`; otherwise the whole value is `"****"`. Array elements take
+   the array's class. Children of a `text` container are `text`; other
+   children take their own key's class. A child key name is printed if it is
+   in any list or matches `^[a-z][a-z0-9_]{0,39}$`; otherwise it is replaced by
+   `#1`, `#2`, … in iteration order (its value is then default-masked).
+3. Scalar (string or number), by class, on its wire string `s`:
+   - `last4`: `"****"` if `s` has 8 characters or fewer, else `"****"` + its
+     last 4.
+   - `safe`: `client_ref_id` must also match the surface's `client-ref`
+     format, else `"****"`. When `s` matches `^[A-Za-z0-9_.:\-]{0,64}$` it is
+     printed raw (numbers stay numbers) unless it contains a known value (then
+     `"****"`); otherwise it gets the text scrub, capped at 256.
+   - `text`: the text scrub, capped at 1024.
+   - default: `"****"`.
+
+**Text scrub** (also used for non-JSON response bodies, capped at 512, and for
+every `message` of `transport_error` / `error`, capped at 1024):
+
+1. Digit runs: 6–8 digits → `****`; 9 or more → `****` + last 4. This runs
+   first so a short known value cannot match inside a longer number and
+   leave its ends visible.
+2. Replace every **known value** and its percent-encoded form with `****`,
+   longest first. Known values are the developer key, the `secret-key` of the
+   attempt, and every scalar wire string of 4+ characters in the request that
+   masking did not print unchanged — in the JSON body, the multipart
+   `form-data` part, the query string and the path segments (the request is
+   masked first, against the developer key and `secret-key` only). Before
+   anything is sent (validation errors) only the developer key is known.
+   An empty string is never a known value.
+3. PAN shape `[A-Z]{5}[0-9]{4}[A-Z]` → `****`; e-mail shape → `****@****`.
+4. Cap at N code points, appending `…(+M chars)`.
+
+**Headers** (case-insensitive allowlist): `secret-key-timestamp` and
+`content-type` raw; `developer_key` → `last4`; every other header, including
+`secret-key`, → `"****"`. `access_key` never goes on the wire.
+
+**URL**: taken from the URL actually sent. It must start with the client's
+base URL and its path must have as many `/`-separated segments as the
+endpoint's template, with every literal segment equal; otherwise `url` is
+`"[unavailable]"`. Each `{param}` segment, and each query value, is masked by
+its key's class (decoded first; a `last4` result keeps its last 4 only when
+they are `[A-Za-z0-9]`, else `"****"`; a raw `safe` value keeps its original
+encoding). Query keys follow the key-name rule above.
+
+**Body**: the JSON body is parsed from the exact string sent and masked from
+the root. A multipart body is `{"fields": <masked form-data JSON>, "files":
+[{"param", "ext", "bytes"}]}` — `ext` the lowercased extension when it matches
+`^[a-z0-9]{1,5}$` else `null`, `bytes` the size already in hand (PHP: a
+warning-free `filesize()` stat, `null` on failure). File names and file bytes
+never appear. A GET has `body: null`. A response body is the parsed JSON
+masked from the root, or the text-scrubbed raw text when it is not JSON.
+
+### Fixtures
+
+Developer key `abcd1234wxyz`, sandbox. Every SDK asserts, over the bytes
+written by the text sink and over every callback event, that none of the
+**secrets** below appears and the **expected** outputs do.
+
+| Input                                                                   | Expected                                                      |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------- |
+| any request                                                             | header `developer_key: "****wxyz"`, `secret-key: "****"`       |
+| `init`                                                                   | `developer_key: "****wxyz"`, `source: "env"` under `EPS_SDK_DEBUG=1` |
+| `aadhar: "123456789012"` (also as key `AADHAR`)                          | `"****9012"`                                                   |
+| `otp: "4321"`, unknown `otp_code: "654321"`, unknown `foo_bar: "x"`       | each `"****"`                                                  |
+| `entries: [{bank_account: "000111222333", ifsc: "SBIN0000001"}]`         | `[{"bank_account":"****2333","ifsc":"SBIN0000001"}]`           |
+| GET path param `customer_mobile: "9876543210"`                           | URL segment `****3210`                                         |
+| `client_ref_id: "KUMAR 123456789012"` (non-financial call)               | `"****"` in request, response echo and `error`                 |
+| response `{"status":0,"response_status_id":0,"data":{"tid":"2611230001","name":"Kumar","email":"k@x.in","dob":"1990-01-01","photo":"<5 KB base64>"}}` | `tid` raw; `name`, `email`, `dob`, `photo` → `"****"`          |
+| response `{"data":{"john@example.com":"x","123456789012":"y"}}`         | `{"data":{"#1":"****","#2":"****"}}` (either order)           |
+| response `{"otp_code":{"reference_id":"r1"},"foo":[{"tid":"t1"}]}`      | `{"otp_code":"****","foo":"****"}`                            |
+| response `{"data":{"reference_id":"123456789012"}}` for a request that sent `aadhar: "123456789012"` | `"****"` (known value)           |
+| response `message: "sent to k@x.in, ref 9876543210"`                     | `"sent to ****@****, ref ****3210"`                            |
+| non-JSON 502 page echoing `123456789012`, its percent-encoded form, and `abcd1234wxyz` | none of the three appears; capped at 512        |
+| multipart `pan_card` from path `KUMAR_123456789012.JPG`                  | `{"param":"pan_card","ext":"jpg","bytes":<size>}`             |
+| `call("no-such-slug")`                                                    | one `error`, no `request`                                       |
+| transport failure                                                         | `transport_error` with `ms`, then `error`                       |
+| sink that throws on every event: a validation error, a successful financial call, an indeterminate financial call | outcome and request count identical to debug off |
+| explicit off option with `EPS_SDK_DEBUG=1`                                | no event                                                        |
+| debug off, `EPS_SDK_DEBUG` unset                                          | no event, nothing written to stderr                            |
+
+Secrets for the byte scan: `abcd1234wxyz`, the full `secret-key`,
+`123456789012`, `9876543210`, `000111222333`, `654321`, `k@x.in`,
+`john@example.com`, `Kumar`, `KUMAR_123456789012` (the 4-character `otp` is
+asserted by field, not by scan, so a random `call_id` cannot flake the test).
