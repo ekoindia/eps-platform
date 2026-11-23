@@ -54,12 +54,12 @@ export const AEPS_CASHOUT_SLABS: AmountSlab[] = [
 ];
 
 /** UPI Cash Withdrawal amount range (₹): whole rupees, multiples of ₹100. */
-export const UPI_CW_MIN = 100;
+export const UPI_CW_MIN = 200;
 export const UPI_CW_MAX = 5000;
 
 /**
  * UPI Cash Withdrawal commission slabs. Commercials are the same as AePS
- * cash withdrawal, so these are the AePS slabs cut to UPI's ₹100–₹5,000
+ * cash withdrawal, so these are the AePS slabs cut to UPI's ₹200–₹5,000
  * range — never a copy: an AePS rate change flows through.
  */
 export const UPI_CASH_WITHDRAWAL_SLABS: AmountSlab[] = AEPS_CASHOUT_SLABS.filter(
@@ -616,7 +616,7 @@ export const PAYMENTS_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "How does UPI Cash Withdrawal commission work?",
-		a: "UPI Cash Withdrawal has the same commercials as AePS cash withdrawal: 0.40% of the amount for transactions up to ₹3,000 and a flat ₹13 for ₹3,001–₹5,000 (the UPI maximum). Withdrawals run from ₹100 to ₹5,000 in multiples of ₹100. On success the retailer's wallet is credited with the amount plus commission, less TDS.",
+		a: "UPI Cash Withdrawal has the same commercials as AePS cash withdrawal: 0.40% of the amount for transactions up to ₹3,000 and a flat ₹13 for ₹3,001–₹5,000 (the UPI maximum). Withdrawals run from ₹200 to ₹5,000 in multiples of ₹100. On success the retailer's wallet is credited with the amount plus commission, less TDS.",
 	},
 	{
 		q: "What is the difference between instant and 6-hour BBPS bill payment?",

@@ -70,7 +70,7 @@ const bcProducts = [
 		features: [
 			"Pay with any UPI app",
 			"Customer's own UPI PIN",
-			"₹100–₹5,000 per withdrawal",
+			"₹200–₹5,000 per withdrawal",
 		],
 	},
 ];

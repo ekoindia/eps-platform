@@ -220,14 +220,19 @@ describe("EARNINGS_PRODUCTS", () => {
 });
 
 describe("UPI Cash Withdrawal", () => {
-	it("trims the AePS slabs to ₹100–₹5,000", () => {
+	it("trims the AePS slabs to ₹200–₹5,000", () => {
 		expect(UPI_CASH_WITHDRAWAL_SLABS).toEqual([
-			{ from: 100, upTo: 3000, pct: 0.004 },
+			{ from: 200, upTo: 3000, pct: 0.004 },
 			{ from: 3001, upTo: 5000, flat: 13 },
 		]);
 	});
 
-	it.each([100, 2000, 3000, 3001, 5000])(
+	it("floors a sub-minimum average to the ₹200 minimum", () => {
+		expect(commissionPerTxn("upi-cash-withdrawal", 200)).toBe(0.8);
+		expect(commissionPerTxn("upi-cash-withdrawal", 100)).toBe(0.8);
+	});
+
+	it.each([200, 2000, 3000, 3001, 5000])(
 		"pays the same commission as AePS cashout at ₹%i",
 		(amount) => {
 			expect(commissionPerTxn("upi-cash-withdrawal", amount)).toBe(

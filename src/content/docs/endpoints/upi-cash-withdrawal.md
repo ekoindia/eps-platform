@@ -18,7 +18,7 @@ It is a two-step flow:
 
 ## Key facts
 
-- **Amount:** ₹100 – ₹5,000, in multiples of ₹100, whole rupees only (no paise).
+- **Amount:** ₹200 – ₹5,000, in multiples of ₹100, whole rupees only (no paise).
   Validate in your app before calling.
 - **Daily caps:** ₹10,000 / ₹30,000 per merchant per day, set by the acquiring
   bank.

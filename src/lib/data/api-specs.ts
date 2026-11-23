@@ -3823,7 +3823,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Generate a single-use UPI QR for a cash withdrawal — the customer scans it from any UPI app and pays with their own UPI PIN, then you poll the status API before handing over cash.",
 		description:
-			'Step 1 of 2. Send the withdrawal amount (₹100–₹5,000, multiples of ₹100, no paise) and the retailer\'s live GPS fix; get back a base64 PNG UPI QR (`qr_string`, valid ~60 seconds), a transaction id (`tid`) and a polling schedule. The customer scans the QR from a second device with any UPI app and authorises with their own UPI PIN — no biometric, Aadhaar or customer eKYC. The retailer must already be onboarded and eKYC-complete for UPI Cash Withdrawal (else `response_type_id` 99016).\n\n**A successful response only means a QR was issued — no money has moved (`tx_status` `PENDING`).** Poll [UPI Cash Withdrawal Status](/docs/upi-cash-withdrawal-status) with `tid`: first after `status_check_start_in` seconds, then every `status_check_gap` seconds, up to `status_check_attempts` times. **Hand over cash only when Status returns `data.tx_status` `"0"`**; anything else — failed, pending, unknown, timeout — means not paid. Never show a QR twice or re-initiate against the same `tid`.\n\nIf this call times out with no `tid`, the customer never saw a QR and cannot have paid against it: wait for the QR validity window to pass, then start a new transaction.\n\nPer-merchant daily caps (₹10,000 / ₹30,000, set by the acquiring bank) apply, and transactions are blocked between 23:30 and 00:05 IST (NPCI / acquirer rules).',
+			'Step 1 of 2. Send the withdrawal amount (₹200–₹5,000, multiples of ₹100, no paise) and the retailer\'s live GPS fix; get back a base64 PNG UPI QR (`qr_string`, valid ~60 seconds), a transaction id (`tid`) and a polling schedule. The customer scans the QR from a second device with any UPI app and authorises with their own UPI PIN — no biometric, Aadhaar or customer eKYC. The retailer must already be onboarded and eKYC-complete for UPI Cash Withdrawal (else `response_type_id` 99016).\n\n**A successful response only means a QR was issued — no money has moved (`tx_status` `PENDING`).** Poll [UPI Cash Withdrawal Status](/docs/upi-cash-withdrawal-status) with `tid`: first after `status_check_start_in` seconds, then every `status_check_gap` seconds, up to `status_check_attempts` times. **Hand over cash only when Status returns `data.tx_status` `"0"`**; anything else — failed, pending, unknown, timeout — means not paid. Never show a QR twice or re-initiate against the same `tid`.\n\nIf this call times out with no `tid`, the customer never saw a QR and cannot have paid against it: wait for the QR validity window to pass, then start a new transaction.\n\nPer-merchant daily caps (₹10,000 / ₹30,000, set by the acquiring bank) apply, and transactions are blocked between 23:30 and 00:05 IST (NPCI / acquirer rules).',
 		descriptionFile: "upi-cash-withdrawal.md",
 		relevance: "H",
 		bestFor:
@@ -3852,8 +3852,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					'Withdrawal amount in ₹, as a whole-rupee string: ₹100–₹5,000 in multiples of ₹100, no paise (e.g. `"100"`, `"2500"`). Validate before calling — an invalid amount returns `response_type_id` 99015.',
-				example: "100",
+					'Withdrawal amount in ₹, as a whole-rupee string: ₹200–₹5,000 in multiples of ₹100, no paise (e.g. `"200"`, `"2500"`). Validate before calling — an invalid amount returns `response_type_id` 99015.',
+				example: "200",
 			},
 			{
 				name: "latitude",
@@ -3910,7 +3910,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				description: "Withdrawal amount (₹).",
 				imp: true,
-				example: "100.0",
+				example: "200.0",
 			},
 			{
 				name: "commission",
@@ -4005,7 +4005,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			message: "UPI QR generated. Ask the customer to scan and pay.",
 			data: {
 				tid: "123456789",
-				amount: "100.0",
+				amount: "200.0",
 				commission: "0.42",
 				tds: "0.0",
 				tx_status: "PENDING",
@@ -4027,14 +4027,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 		errorScenarios: [
 			{
 				scenario:
-					"Invalid amount — outside ₹100–₹5,000, not a multiple of ₹100, or has paise",
+					"Invalid amount — outside ₹200–₹5,000, not a multiple of ₹100, or has paise",
 				statusCode: 200,
 				example: {
 					response_status_id: 1,
 					response_type_id: 99015,
 					status: 99015,
 					message:
-						"Amount should be between Rs 100 and Rs 5000 in multiples of Rs 100.",
+						"Amount should be between Rs 200 and Rs 5000 in multiples of Rs 100.",
 				},
 			},
 			{
@@ -4080,7 +4080,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				id: 99015,
 				meaning:
-					"Invalid amount — must be ₹100–₹5,000 in multiples of ₹100, no paise. Fix the amount; do not retry as-is",
+					"Invalid amount — must be ₹200–₹5,000 in multiples of ₹100, no paise. Fix the amount; do not retry as-is",
 			},
 			{
 				id: 99016,
@@ -4157,7 +4157,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				description: "Withdrawal amount (₹).",
 				imp: true,
-				example: "100.0",
+				example: "200.0",
 			},
 			{
 				name: "bank_ref_num",
@@ -4187,7 +4187,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			message: "UPI cash withdrawal status fetched successfully.",
 			data: {
 				tid: "123456789",
-				amount: "100.0",
+				amount: "200.0",
 				commission: "0.42",
 				tds: "0.0",
 				tx_status: "0",
@@ -4207,7 +4207,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					message: "UPI cash withdrawal failed. No amount has been credited.",
 					data: {
 						tid: "123456789",
-						amount: "100.0",
+						amount: "200.0",
 						tx_status: "1",
 						txstatus_desc: "Failed",
 					},
@@ -4224,7 +4224,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 					message: "UPI cash withdrawal is pending. Do not hand over cash.",
 					data: {
 						tid: "123456789",
-						amount: "100.0",
+						amount: "200.0",
 						tx_status: "2",
 						txstatus_desc: "Pending",
 					},
