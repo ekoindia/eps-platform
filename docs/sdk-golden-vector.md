@@ -208,12 +208,13 @@ the request: a transport failure, the per-attempt timeout, HTTP 429, or any
 5xx, or a 2xx whose body is not a JSON object (empty, truncated, a proxy's HTML
 page, a bare `null` or array —
 EPS may have processed the request, and the SDK cannot read whether it did). A
-4xx is a decisive answer and is never retried or inquired. An interrupted
-thread (Java) stops everything — no retry, no inquiry. A done context (Go:
-deadline or cancel) stops retries and the inquiry too (both would fail on it),
-but a financial call still returns `*IndeterminateError` carrying its
-`ClientRefID` / `TID`, with `StatusCheckErr` = `ctx.Err()`, so a generated ref
-is never lost — inquire later with a fresh context.
+4xx is a decisive answer and is never retried or inquired. A done context (Go:
+deadline or cancel) or an interrupted thread (Java) stops retries and the
+inquiry (both would fail on it), but a financial call still fails with the
+indeterminate error carrying its ref / `tid`, so a generated ref is never lost —
+inquire later. Go sets `StatusCheckErr` = `ctx.Err()`; Java sets
+`statusCheckError` to an `InterruptedException`, keeps the thread's interrupt
+flag set, and the cause is the `EpsException` wrapping the interrupt.
 
 Which calls may be re-sent is **data, not method**: each surface endpoint
 carries `retrySafe`, computed once by `isRetrySafe` in
@@ -310,6 +311,7 @@ POST that omits `client_ref_id`. Every suite pins the exact request counts:
 | `initiate-refund` (financial, no ref param): 500 or 2xx `null`, inquiry 200 | 2 | indeterminate error; `clientRefId` null/""; `tid` the call's tid; inquiry query `tid=<tid>`, no `client_ref_id`; message `… on tid "<tid>" …` |
 | financial POST with auto inquire off: 500                   | 1        | typed HTTP error                                                |
 | Go only — financial POST, ctx deadline expires in flight    | 1        | `*IndeterminateError` with the generated `ClientRefID` (refund: `TID`), no inquiry, `StatusCheckErr` is `DeadlineExceeded`; non-financial: plain error |
+| Java only — financial POST, thread interrupted mid-send     | 1        | `EpsIndeterminateException` with the generated `clientRefId` (refund: `tid`), no inquiry, `statusCheckError` an `InterruptedException`, interrupt flag still set; non-financial: plain `EpsException` |
 
 ## Value validation conformance
 

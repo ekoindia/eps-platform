@@ -771,7 +771,8 @@ public final class EpsClient {
 	 * retrySafe} endpoint whose outcome is indeterminate is retried; any other never is — on a
 	 * {@code financial} endpoint it is
 	 * followed by a Transaction Inquiry on its {@code client_ref_id} and thrown as {@link
-	 * EpsIndeterminateException}. An interrupted thread stops everything: no retry, no inquiry. See
+	 * EpsIndeterminateException}. An interrupted thread stops retries and the inquiry, but a
+	 * financial call still throws {@link EpsIndeterminateException} carrying its ref/tid. See
 	 * docs/sdk-golden-vector.md.
 	 *
 	 * @throws EpsIndeterminateException when a financial non-GET call has no confirmed outcome
@@ -783,24 +784,27 @@ public final class EpsClient {
 	public Map<String, Object> call(String slug, Map<String, Object> params) {
 		Target target = resolveTarget(slug, params);
 		int attempts = endpointFor(slug).isRetrySafe() ? retries + 1 : 1;
+		// Inquiry key on a financial endpoint with no ref (initiate-refund). Client defaults
+		// never set tid, so the caller's params hold the resolved value.
+		Object rawTid = params == null ? null : params.get("tid");
+		String tid = target.clientRefId() == null && rawTid != null ? wireString(rawTid) : null;
 		for (int attempt = 1; ; attempt++) {
 			try {
 				return send(target);
 			} catch (EpsException e) {
-				if (!isIndeterminate(e) || Thread.currentThread().isInterrupted()) throw e;
-				if (attempt < attempts) {
+				// An interrupt mid-send leaves the outcome as unknown as a timeout. It stops
+				// retries and the inquiry, but a financial call still falls through, so the
+				// caller gets the ref/tid to reconcile by.
+				boolean interrupted = Thread.currentThread().isInterrupted();
+				if (!isIndeterminate(e) && !(e.getCause() instanceof InterruptedException)) throw e;
+				if (attempt < attempts && !interrupted) {
 					backoff(attempt);
 					continue;
 				}
 				// Never re-send an unsafe call: that is how a customer is debited twice. Ask
 				// EPS what happened instead — by the ref, or by the tid on an endpoint that
-				// has no ref (initiate-refund). Client defaults never set tid, so the
-				// caller's params hold the resolved value.
-				if (autoStatusCheck && target.financial()) {
-					Object tid = params == null ? null : params.get("tid");
-					throw indeterminate(
-							target, target.clientRefId() == null && tid != null ? wireString(tid) : null, e);
-				}
+				// has no ref (initiate-refund).
+				if (autoStatusCheck && target.financial()) throw indeterminate(target, tid, e);
 				throw e;
 			}
 		}
@@ -826,7 +830,10 @@ public final class EpsClient {
 	private EpsIndeterminateException indeterminate(Target target, String tid, EpsException cause) {
 		Map<String, Object> statusCheck = null;
 		Throwable statusCheckError = null;
-		if (target.clientRefId() != null || tid != null) {
+		if (Thread.currentThread().isInterrupted()) {
+			// The inquiry would be interrupted too; the key stays on the error for later.
+			statusCheckError = new InterruptedException("EPS status check skipped: thread interrupted");
+		} else if (target.clientRefId() != null || tid != null) {
 			Map<String, Object> params = new LinkedHashMap<>();
 			if (target.clientRefId() != null) params.put("client_ref_id", target.clientRefId());
 			else params.put("tid", tid);

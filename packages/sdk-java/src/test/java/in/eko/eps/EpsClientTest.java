@@ -499,7 +499,7 @@ class EpsClientTest {
 	private static final String OK = "{\"status\":0}";
 
 	/** One scripted outcome: a response, or an I/O failure to throw. */
-	private record Step(int status, String body, IOException failure) {
+	private record Step(int status, String body, Exception failure) {
 		static Step ok() {
 			return new Step(200, OK, null);
 		}
@@ -510,6 +510,11 @@ class EpsClientTest {
 
 		static Step transportFailure() {
 			return new Step(0, null, new IOException("Connection refused"));
+		}
+
+		/** What HttpClient.send throws when the calling thread is interrupted mid-request. */
+		static Step interrupted() {
+			return new Step(0, null, new InterruptedException());
 		}
 
 		static Step body(String json) {
@@ -538,10 +543,11 @@ class EpsClientTest {
 
 		@Override
 		public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler)
-				throws IOException {
+				throws IOException, InterruptedException {
 			sent.add(new Sent(request, drain(request)));
 			Step step = steps.size() > 1 ? steps.remove(0) : steps.get(0);
-			if (step.failure() != null) throw step.failure();
+			if (step.failure() instanceof InterruptedException ie) throw ie;
+			if (step.failure() instanceof IOException io) throw io;
 			return response(request, step.status(), step.body());
 		}
 
@@ -937,6 +943,59 @@ class EpsClientTest {
 			Scripted t = new Scripted(Step.body(""));
 			assertThrows(EpsClient.EpsInvalidResponseException.class, () -> fast(t).call("pan-lite", PAN));
 			assertEquals(1, t.sent.size());
+		}
+
+		@Test
+		void financialPostInterruptedKeepsGeneratedRef() {
+			Scripted t = new Scripted(Step.interrupted(), Step.ok());
+			try {
+				EpsClient.EpsIndeterminateException e =
+						assertThrows(
+								EpsClient.EpsIndeterminateException.class,
+								() -> fast(t).call("dmt-initiate-transfer", TRANSFER));
+				assertEquals(t.sent.get(0).json().get("client_ref_id"), e.clientRefId);
+				assertNull(e.tid);
+				assertNull(e.statusCheck);
+				assertTrue(e.statusCheckError instanceof InterruptedException);
+				assertTrue(e.getCause().getCause() instanceof InterruptedException);
+				assertEquals(1, t.sent.size()); // no inquiry
+				assertTrue(Thread.currentThread().isInterrupted()); // flag preserved for the caller
+			} finally {
+				Thread.interrupted();
+			}
+		}
+
+		@Test
+		void refundInterruptedKeepsTid() {
+			Scripted t = new Scripted(Step.interrupted(), Step.ok());
+			try {
+				EpsClient.EpsIndeterminateException e =
+						assertThrows(
+								EpsClient.EpsIndeterminateException.class,
+								() ->
+										fast(t).call(
+												"initiate-refund",
+												Map.of("initiator_id", "9962981729", "tid", "777", "otp", "1")));
+				assertNull(e.clientRefId);
+				assertEquals("777", e.tid);
+				assertEquals(1, t.sent.size());
+			} finally {
+				Thread.interrupted();
+			}
+		}
+
+		@Test
+		void nonFinancialInterruptedIsPlainException() {
+			Scripted t = new Scripted(Step.interrupted());
+			try {
+				EpsClient.EpsException e =
+						assertThrows(EpsClient.EpsException.class, () -> fast(t).call("pan-lite", PAN));
+				assertFalse(e instanceof EpsClient.EpsIndeterminateException);
+				assertTrue(e.getCause() instanceof InterruptedException);
+				assertEquals(1, t.sent.size());
+			} finally {
+				Thread.interrupted();
+			}
 		}
 
 		@Test
