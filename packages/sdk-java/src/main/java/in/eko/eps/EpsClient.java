@@ -120,8 +120,9 @@ public final class EpsClient {
 	}
 
 	/**
-	 * A 2xx response whose body is not a JSON object (empty, truncated, a proxy's HTML page, or
-	 * valid JSON such as {@code null} / {@code []} that is no envelope). EPS may well
+	 * A 2xx response whose body is not an EPS envelope — a JSON object with a numeric {@code status}
+	 * (empty, truncated, a proxy's HTML page, valid JSON such as {@code null} / {@code []}, or an
+	 * object such as {@code {}} / a proxy's error). EPS may well
 	 * have processed the request, so the outcome is unknown, not decided: a financial call gets
 	 * the status check and a retry-safe one is retried. Still an {@link EpsException}, so existing
 	 * catches keep matching.
@@ -889,14 +890,17 @@ public final class EpsClient {
 	 * stubbing the abstract {@link HttpClient}.
 	 *
 	 * @throws EpsHttpException on any non-2xx response; the decoded envelope is on {@code body}.
-	 * @throws EpsInvalidResponseException when a 2xx body is not JSON — never a silent empty map.
+	 * @throws EpsInvalidResponseException when a 2xx body is not an EPS envelope (a JSON object with
+	 *     a numeric {@code status}) — never a silent empty map.
 	 */
 	static Map<String, Object> handleResponse(int status, String url, String raw) {
 		Map<String, Object> envelope = decodeOrNull(raw);
 		if (status < 200 || status >= 300) {
 			throw new EpsHttpException(status, url, envelope, raw);
 		}
-		if (envelope == null) {
+		// Only an EPS envelope — an object with a numeric status — is a result; {} or a proxy's
+		// error object is as unreadable as a truncated body.
+		if (envelope == null || !(envelope.get("status") instanceof Number)) {
 			throw new EpsInvalidResponseException(status, url, raw);
 		}
 		return envelope;

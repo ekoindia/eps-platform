@@ -787,8 +787,19 @@ describe("retry and status check", () => {
 		);
 	});
 
-	it.each(["null", '"ok"', "5", "[]", '[{"status":0}]'])(
-		"financial POST + 2xx JSON that is not an object (%s): indeterminate, inquires",
+	it.each([
+		"null",
+		'"ok"',
+		"5",
+		"[]",
+		'[{"status":0}]',
+		"{}",
+		'{"error":"Bad Gateway"}',
+		'{"status":"0"}',
+		'{"status":true}',
+		'{"status":null}',
+	])(
+		"financial POST + 2xx JSON that is not an EPS envelope (%s): indeterminate, inquires",
 		async (body) => {
 			const inquiry = { status: 0, data: { tx_status: "0", tid: "1" } };
 			const f = vi

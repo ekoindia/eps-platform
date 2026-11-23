@@ -924,7 +924,11 @@ class EpsClientTest {
 		}
 
 		@org.junit.jupiter.params.ParameterizedTest
-		@org.junit.jupiter.params.provider.ValueSource(strings = {"null", "\"ok\"", "5", "[]", "[{\"status\":0}]"})
+		@org.junit.jupiter.params.provider.ValueSource(
+				strings = {
+					"null", "\"ok\"", "5", "[]", "[{\"status\":0}]",
+					"{}", "{\"error\":\"Bad Gateway\"}", "{\"status\":\"0\"}", "{\"status\":true}", "{\"status\":null}"
+				})
 		void financialPostNonObjectJson2xxInquires(String body) {
 			String inquiry = "{\"status\":0,\"data\":{\"tx_status\":\"0\",\"tid\":\"1\"}}";
 			Scripted t = new Scripted(Step.body(body), Step.body(inquiry));

@@ -82,8 +82,9 @@ class EpsHttpError(EpsError):
 
 
 class EpsInvalidResponseError(EpsError):
-    """A 2xx response whose body is not a JSON object (empty, truncated, a
-    proxy's HTML, or valid JSON such as ``null`` / ``[]`` that is no envelope).
+    """A 2xx response whose body is not an EPS envelope -- a JSON object with a
+    numeric ``status`` (empty, truncated, a proxy's HTML, valid JSON such as
+    ``null`` / ``[]``, or an object such as ``{}`` / a proxy's error).
 
     EPS may well have processed the request, so this is indeterminate, not
     decisive: a ``financial`` call gets the status inquiry and a ``retry_safe``
@@ -696,9 +697,12 @@ class EpsClient:
             envelope = json.loads(raw)
         except ValueError as exc:
             raise EpsInvalidResponseError(status, target.url, raw) from exc
-        # Valid JSON that is not an object (null, a string, a number, an array)
-        # is no EPS envelope either -- as unreadable as a truncated body.
-        if not isinstance(envelope, dict):
+        # Only an EPS envelope -- a JSON object with a numeric ``status`` -- is
+        # a result. Anything else (null, a scalar, an array, ``{}``, a proxy's
+        # error object) is as unreadable as a truncated body. bool is an int
+        # subclass, so ``"status": true`` is ruled out explicitly.
+        code = envelope.get("status") if isinstance(envelope, dict) else None
+        if not isinstance(code, (int, float)) or isinstance(code, bool):
             raise EpsInvalidResponseError(status, target.url, raw)
         return envelope
 

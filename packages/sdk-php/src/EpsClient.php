@@ -363,7 +363,8 @@ final class EpsClient
      * `[…]` into a PHP array too, hence the leading-`{` check.
      *
      * @throws EpsHttpException On any non-2xx response.
-     * @throws EpsInvalidResponseException When a 2xx body is not a JSON object — never a silent [].
+     * @throws EpsInvalidResponseException When a 2xx body is not an EPS envelope (a JSON object
+     *     with a numeric `status`) — never a silent [].
      */
     public static function decodeResponse(int $status, string $url, string $raw): array
     {
@@ -372,7 +373,10 @@ final class EpsClient
         if ($status < 200 || $status >= 300) {
             throw new EpsHttpException($status, $url, $body, $raw);
         }
-        if ($body === null) {
+        // Only an EPS envelope — an object with a numeric `status` — is a result;
+        // `{}` or a proxy's error object is as unreadable as a truncated body.
+        $code = $body['status'] ?? null;
+        if ($body === null || !(is_int($code) || is_float($code))) {
             throw new EpsInvalidResponseException($status, $url, $raw);
         }
         return $body;

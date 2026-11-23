@@ -610,7 +610,11 @@ class RetryAndStatusCheck(unittest.TestCase):
 
     def test_financial_post_non_object_json_2xx_inquires(self):
         inquiry = {"status": 0, "data": {"tx_status": "0", "tid": "1"}}
-        for body in (b"null", b'"ok"', b"5", b"[]", b'[{"status":0}]'):
+        for body in (
+            b"null", b'"ok"', b"5", b"[]", b'[{"status":0}]',
+            b"{}", b'{"error":"Bad Gateway"}', b'{"status":"0"}',
+            b'{"status":true}', b'{"status":null}',
+        ):
             with self.subTest(body=body):
                 t = Transport(_response(body), _response(json.dumps(inquiry).encode()))
                 with patched(t):

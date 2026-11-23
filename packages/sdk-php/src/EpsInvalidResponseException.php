@@ -2,9 +2,9 @@
 namespace Eko\Eps;
 
 /**
- * A 2xx response whose body is not a JSON object (empty, truncated, an HTML
- * error page from a proxy, or valid JSON such as `null` / `[]` that is no
- * envelope). EPS may well have processed the request, so this is
+ * A 2xx response whose body is not an EPS envelope — a JSON object with a
+ * numeric `status` (empty, truncated, an HTML error page from a proxy, valid
+ * JSON such as `null` / `[]`, or an object such as `{}` / a proxy's error). EPS may well have processed the request, so this is
  * indeterminate, not decisive: a `financial` call gets the status inquiry and a
  * `retrySafe` one is retried. Still an EpsException, so existing catches hold.
  */

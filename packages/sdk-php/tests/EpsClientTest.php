@@ -601,7 +601,7 @@ final class EpsClientTest extends TestCase
     public function testFinancialPostNonObjectJson2xxInquires(): void
     {
         $inquiry = ['status' => 0, 'data' => ['tx_status' => '0', 'tid' => '1']];
-        foreach (['null', '"ok"', '5', '[]', '[{"status":0}]'] as $body) {
+        foreach (['null', '"ok"', '5', '[]', '[{"status":0}]', '{}', '{"error":"Bad Gateway"}', '{"status":"0"}', '{"status":true}', '{"status":null}'] as $body) {
             $t = self::transport([[200, $body], [200, json_encode($inquiry)]]);
             try {
                 self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);

@@ -924,7 +924,8 @@ func TestFinancialPostUnparseable2xxInquiresAndReturnsIndeterminate(t *testing.T
 
 func TestFinancialPostNonObjectJSON2xxInquires(t *testing.T) {
 	inquiry := `{"status":0,"data":{"tx_status":"0","tid":"1"}}`
-	for _, body := range []string{`null`, `"ok"`, `5`, `[]`, `[{"status":0}]`} {
+	for _, body := range []string{`null`, `"ok"`, `5`, `[]`, `[{"status":0}]`,
+		`{}`, `{"error":"Bad Gateway"}`, `{"status":"0"}`, `{"status":true}`, `{"status":null}`} {
 		t.Run(body, func(t *testing.T) {
 			tr := &scripted{steps: []step{withBody(body), withBody(inquiry)}}
 			_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
