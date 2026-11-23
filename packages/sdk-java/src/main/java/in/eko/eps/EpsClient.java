@@ -75,6 +75,14 @@ public final class EpsClient {
 	 */
 	private static final Gson GSON = new com.google.gson.GsonBuilder().serializeNulls().create();
 	private static final SecureRandom RANDOM = new SecureRandom();
+	/**
+	 * A "blank" ref: only Unicode White_Space or zero-width characters. One explicit class shared by
+	 * all five SDKs (docs/sdk-golden-vector.md) — {@link String#isBlank()} misses U+00A0, U+2007 and
+	 * U+202F (no-break spaces are not {@code Character.isWhitespace}).
+	 */
+	private static final Pattern BLANK_REF =
+			Pattern.compile(
+					"[\\t\\n\\x0B\\f\\r \\x{85}\\x{A0}\\x{1680}\\x{2000}-\\x{200D}\\x{2028}\\x{2029}\\x{202F}\\x{205F}\\x{2060}\\x{3000}\\x{FEFF}]*");
 
 	/** Client-side failure: unknown slug, missing param, bad type, bad config. */
 	public static class EpsException extends RuntimeException {
@@ -717,7 +725,7 @@ public final class EpsClient {
 		// A financial call's ref is its only reconciliation key after a lost response, so a blank one
 		// is refused (never silently replaced) even on endpoints whose param declares no client-ref
 		// format.
-		if (endpoint.financial() && clientRefId != null && clientRefId.isBlank()) {
+		if (endpoint.financial() && clientRefId != null && BLANK_REF.matcher(clientRefId).matches()) {
 			throw new EpsException(
 					"Invalid param values for \"" + slug
 							+ "\": client_ref_id (must not be blank on a financial call).");

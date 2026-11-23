@@ -748,7 +748,9 @@ class EpsClientTest {
 		}
 
 		@org.junit.jupiter.params.ParameterizedTest
-		@org.junit.jupiter.params.provider.ValueSource(strings = {"", "   ", "\t"})
+		// ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+		@org.junit.jupiter.params.provider.ValueSource(
+				strings = {"", "   ", "\t", "\u00A0", "\u2003", "\u3000", "\u200B", "\uFEFF", " \u00A0\t\u2003"})
 		void blankRefOnFinancialCallIsRefused(String blank) {
 			Scripted t = new Scripted(Step.body(OK_FINANCIAL));
 			EpsClient.EpsException e =

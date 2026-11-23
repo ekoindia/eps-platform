@@ -617,7 +617,8 @@ describe("client_ref_id", () => {
 		expect(bodyOf(f, 0).client_ref_id).not.toBe(bodyOf(f, 1).client_ref_id);
 	});
 
-	it.each(["", "   ", "\t"])(
+	// ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+	it.each(["", "   ", "\t", "\u00A0", "\u2003", "\u3000", "\u200B", "\uFEFF", " \u00A0\t\u2003"])(
 		"financial call with a blank supplied client_ref_id (%j) is refused, nothing sent",
 		async (blank) => {
 			const f = vi.fn(async () => okFinancial());

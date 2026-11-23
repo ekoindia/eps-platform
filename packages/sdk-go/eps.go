@@ -69,6 +69,10 @@ var surfaceJSON []byte
 var (
 	numberRe  = regexp.MustCompile(`^-?\d+(\.\d+)?$`)
 	integerRe = regexp.MustCompile(`^-?\d+$`)
+	// blankRefRe: a "blank" ref is only Unicode White_Space or zero-width
+	// characters. One explicit class shared by all five SDKs
+	// (docs/sdk-golden-vector.md); strings.TrimSpace would miss U+200B / U+FEFF.
+	blankRefRe = regexp.MustCompile(`^[\t\n\v\f\r \x{85}\x{A0}\x{1680}\x{2000}-\x{200D}\x{2028}\x{2029}\x{202F}\x{205F}\x{2060}\x{3000}\x{FEFF}]*$`)
 )
 
 // Param is one request parameter as declared by the API spec.
@@ -711,7 +715,7 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 	// response, so a blank one is refused (never silently replaced) even on
 	// endpoints whose param declares no client-ref format. ("" would also read
 	// as "no ref" on IndeterminateError.)
-	if endpoint.Financial && declaresRef && strings.TrimSpace(clientRefID) == "" {
+	if endpoint.Financial && declaresRef && blankRefRe.MatchString(clientRefID) {
 		return nil, fmt.Errorf("Invalid param values for %q: client_ref_id (must not be blank on a financial call).", slug)
 	}
 

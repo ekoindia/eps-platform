@@ -206,15 +206,28 @@ Fixtures (every suite pins all of them):
 | `get-refund-otp` (POST, omits the param)                 | no `client_ref_id` in the body                       |
 | two successive `pan-lite` calls                          | different refs                                       |
 | `pan-lite` with `client_ref_id: ""`                      | throws `… client_ref_id (expected format client-ref)`, nothing sent |
-| `dmt-initiate-transfer` (financial, no client-ref format) with `client_ref_id` `""`, `"   "` or `"\t"` | throws `Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).`, nothing sent |
+| `dmt-initiate-transfer` (financial, no client-ref format) with `client_ref_id` `""`, `"   "`, `"\t"`, `"\u00A0"`, `"\u2003"`, `"\u3000"`, `"\u200B"`, `"\uFEFF"` or `" \u00A0\t\u2003"` | throws `Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).`, nothing sent |
 
 A supplied `client_ref_id` is the caller's to own and is never replaced —
-but on a `financial` endpoint a blank (empty or whitespace-only) one is
-refused before sending, because the ref is the only key a lost response can
+but on a `financial` endpoint a blank one is refused before sending, because the ref is the only key a lost response can
 be reconciled by. This holds even where the param declares no `client-ref`
 format (`dmt-initiate-transfer`, `dmt-levin-initiate-transfer`,
 `bbps-pay-bill`); where it does, the format check fires first with its own
 message. Non-financial endpoints are unaffected.
+
+**Blank** means made only of these characters — one explicit class, the same in
+every SDK, never the language's own `trim()` / `isBlank()` / `TrimSpace` (they
+disagree: PHP's `trim()` is ASCII-only, Java's `isBlank()` skips the no-break
+spaces, none of them strips zero-width characters):
+
+```
+[\t\n\x0B\f\r \x{85}\x{A0}\x{1680}\x{2000}-\x{200D}\x{2028}\x{2029}\x{202F}\x{205F}\x{2060}\x{3000}\x{FEFF}]*
+```
+
+That is Unicode `White_Space` (U+0009–000D, U+0020, U+0085, U+00A0, U+1680,
+U+2000–200A, U+2028, U+2029, U+202F, U+205F, U+3000) plus the zero-width
+U+200B–200D, U+2060 and U+FEFF. A ref that merely *contains* one of them
+(`"A\u00A0B"`) is not blank.
 
 Exported generator per language: `generateClientRefId(nowMs)` (Node, PHP,
 Java), `generate_client_ref_id(now_ms)` (Python), `GenerateClientRefID(nowMs)`

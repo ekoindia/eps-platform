@@ -472,7 +472,10 @@ class ClientRefId(unittest.TestCase):
         self.assertNotEqual(t.body(0)["client_ref_id"], t.body(1)["client_ref_id"])
 
     def test_blank_ref_on_financial_call_is_refused(self):
-        for blank in ("", "   ", "\t"):
+        # ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+        for blank in (
+            "", "   ", "\t", "\u00a0", "\u2003", "\u3000", "\u200b", "\ufeff", " \u00a0\t\u2003",
+        ):
             with self.subTest(blank=blank):
                 t = Transport(_response(OK_FINANCIAL))
                 with patched(t):

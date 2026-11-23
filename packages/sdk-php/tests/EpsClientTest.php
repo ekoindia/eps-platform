@@ -468,7 +468,8 @@ final class EpsClientTest extends TestCase
 
     public function testBlankRefOnFinancialCallIsRefused(): void
     {
-        foreach (['', '   ', "\t"] as $blank) {
+        // ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+        foreach (['', '   ', "\t", "\u{00A0}", "\u{2003}", "\u{3000}", "\u{200B}", "\u{FEFF}", " \u{00A0}\t\u{2003}"] as $blank) {
             $t = self::transport([[200, self::OK_FINANCIAL]]);
             try {
                 self::fast($t)->call('dmt-initiate-transfer', ['client_ref_id' => $blank] + self::TRANSFER);

@@ -59,6 +59,12 @@ _INTEGER_RE = re.compile(r"^-?\d+$")
 _BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz"
 #: Spec types whose values are scalars the value checks can stringify.
 _SCALAR_TYPES = frozenset({"string", "number", "integer", "boolean"})
+#: A "blank" ref: only Unicode White_Space or zero-width characters. One explicit
+#: class shared by all five SDKs (docs/sdk-golden-vector.md); str.strip() would
+#: also eat \x1c-\x1f and miss U+FEFF / U+200B.
+_BLANK_REF = re.compile(
+    "[\t\n\x0b\f\r \x85\xa0\u1680\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]*"
+)
 
 
 class EpsError(Exception):
@@ -558,7 +564,11 @@ class EpsClient:
         # A financial call's ref is its only reconciliation key after a lost
         # response, so a blank one is refused (never silently replaced) even on
         # endpoints whose param declares no client-ref format.
-        if endpoint.get("financial") and client_ref_id is not None and not client_ref_id.strip():
+        if (
+            endpoint.get("financial")
+            and client_ref_id is not None
+            and _BLANK_REF.fullmatch(client_ref_id)
+        ):
             raise EpsError(
                 f'Invalid param values for "{slug}": client_ref_id '
                 "(must not be blank on a financial call)."

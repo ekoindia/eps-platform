@@ -17,6 +17,12 @@ final class EpsClient
     private const MAX_RETRY_DELAY_MS = 2000;
     /** Spec types whose values are scalars the value checks can stringify. */
     private const SCALAR_TYPES = ['string', 'number', 'integer', 'boolean'];
+    /**
+     * A "blank" ref: only Unicode White_Space or zero-width characters. One
+     * explicit class shared by all five SDKs (docs/sdk-golden-vector.md) —
+     * trim() strips ASCII only, so a lone U+00A0 would otherwise pass.
+     */
+    private const BLANK_REF = '/^[\t\n\x0B\f\r \x{85}\x{A0}\x{1680}\x{2000}-\x{200D}\x{2028}\x{2029}\x{202F}\x{205F}\x{2060}\x{3000}\x{FEFF}]*$/uD';
 
     private array $surface;
     private string $baseUrl;
@@ -277,7 +283,7 @@ final class EpsClient
         // A financial call's ref is its only reconciliation key after a lost
         // response, so a blank one is refused (never silently replaced) even on
         // endpoints whose param declares no client-ref format.
-        if (($endpoint['financial'] ?? false) && $clientRefId !== null && trim($clientRefId) === '') {
+        if (($endpoint['financial'] ?? false) && $clientRefId !== null && preg_match(self::BLANK_REF, $clientRefId) === 1) {
             throw new \InvalidArgumentException(
                 "Invalid param values for \"$slug\": client_ref_id (must not be blank on a financial call)."
             );

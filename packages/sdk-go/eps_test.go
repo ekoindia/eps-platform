@@ -658,7 +658,8 @@ func TestClientRefIDDiffersBetweenCalls(t *testing.T) {
 }
 
 func TestBlankRefOnFinancialCallIsRefused(t *testing.T) {
-	for _, blank := range []string{"", "   ", "\t"} {
+	// ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+	for _, blank := range []string{"", "   ", "\t", "\u00a0", "\u2003", "\u3000", "\u200b", "\ufeff", " \u00a0\t\u2003"} {
 		tr := &scripted{steps: []step{okFinancial()}}
 		params := map[string]any{"client_ref_id": blank}
 		for k, v := range transferParams {

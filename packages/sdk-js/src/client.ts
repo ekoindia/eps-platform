@@ -279,6 +279,12 @@ const decodeJsonOrNull = (raw: string): unknown => {
 	}
 };
 
+/** A "blank" ref: only Unicode White_Space or zero-width characters. One
+ * explicit class shared by all five SDKs (docs/sdk-golden-vector.md), so no
+ * SDK leans on its own trim()'s idea of whitespace. */
+const BLANK_REF =
+	/^[\t\n\v\f\r \u0085\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u2060\u3000\uFEFF]*$/u;
+
 /** Per-attempt budget, matching the 30s every other EPS SDK defaults to. */
 const DEFAULT_TIMEOUT_MS = 30_000;
 /** Extra attempts for a `retrySafe` call that ended indeterminate. */
@@ -599,7 +605,7 @@ export class EpsClient {
 		// A financial call's ref is its only reconciliation key after a lost
 		// response, so a blank one is refused (never silently replaced) even on
 		// endpoints whose param declares no client-ref format.
-		if (endpoint.financial && clientRefId !== undefined && clientRefId.trim() === "")
+		if (endpoint.financial && clientRefId !== undefined && BLANK_REF.test(clientRefId))
 			throw new EpsError(
 				`Invalid param values for "${slug}": client_ref_id (must not be blank on a financial call).`,
 			);
