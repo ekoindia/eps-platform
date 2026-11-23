@@ -147,6 +147,57 @@ itself.
 A static `EpsClient::signSecretKey($accessKey, $timestamp)` helper is also available if you
 need to sign requests yourself.
 
+## Debugging
+
+Debug mode shows what the SDK sends and receives: the environment, the full URL,
+headers, body, HTTP status, the raw EPS response, validation failures, retries
+and the automatic status check. Each event is one JSON object per line. Turn it
+on when a call misbehaves and share the output with Eko support instead of just
+the response body.
+
+No code change: set the env var and rerun.
+
+```bash
+EPS_SDK_DEBUG=1 php app.php
+```
+
+Or in code:
+
+```php
+new EpsClient(..., debug: true);  // CLI: JSON lines on STDERR; web SAPIs: error_log()
+new EpsClient(..., debug: fn (array $event) => $logger->debug('eps', $event)); // your logger
+new EpsClient(..., debug: false); // off, even when EPS_SDK_DEBUG is set
+```
+
+Under a web SAPI the server's `error_log` may prefix each line; the JSON starts
+at the first `{`.
+
+A request line looks like this:
+
+```json
+{"logger":"eps-sdk","ts":"2026-11-23T11:31:25.884Z","event":"request","sdk":"php","sdk_version":"3.1.0","surface":"48eb0cf2","env":"sandbox","call_id":"f020eef5","slug":"bbps-operator-code-circle","attempt":1,"method":"GET","url":"https://staging.eko.in/ekoapi/v3/customer/payment/bbps/recharge/****3210/operator?initiator_id=****1729","headers":{"developer_key":"****wxyz","secret-key":"****","secret-key-timestamp":"1763897485884","content-type":"application/json"},"body":null}
+```
+
+Events: `init` (once per client), `request` and `response` (per attempt),
+`transport_error` (no usable response), `retry`, and `error` (the call threw;
+a validation failure has no `request` before it, so nothing was sent). Lines of
+one call share a `call_id`.
+
+What is masked: `developer_key` shows its last 4 characters and `secret-key` is
+hidden. Aadhaar, PAN, account and mobile numbers show their last 4. OTPs,
+biometrics, names, addresses, e-mails, dates of birth and any field the SDK does
+not recognise print as `****`. Ids, status codes, amounts and the EPS `message`
+print as-is so support can trace the call. Debug mode never changes a call's
+outcome, and costs nothing while off.
+
+> ⚠️ Masking is best-effort. Free text (upstream error pages, messages) is
+> scrubbed but may still contain credentials or personal data, and id and status
+> fields print as-is. Review the output before sharing it, share it only with
+> Eko support, and turn debug mode off when you are done.
+
+The format is identical across all five EPS SDKs; see "Debug mode conformance"
+in [docs/sdk-golden-vector.md](../../docs/sdk-golden-vector.md).
+
 ## Endpoint catalog
 
 The embedded endpoint catalog (slugs, methods, paths, required params) is generated from the

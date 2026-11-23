@@ -28,6 +28,8 @@ final class EpsClient
     private string $baseUrl;
     /** @var array<string, string> format name → delimited PCRE, compiled at construction. */
     private array $formats = [];
+    /** Debug mode, or null when off (see the `$debug` constructor param). */
+    private ?EpsDebug $debugger = null;
 
     public function __construct(
         private string $developerKey,
@@ -56,7 +58,15 @@ final class EpsClient
         private $now = null,
         // Test-only transport injection: fn(array $target, array $curlOptions):
         // array{0: int, 1: string} (status, raw), or throws EpsTransportException.
-        private $transport = null
+        private $transport = null,
+        // Debug mode: log masked request / response / validation / retry
+        // events. `true` writes JSON lines to STDERR (CLI) or error_log()
+        // (other SAPIs), a Closure receives each event as an array, `false`
+        // forces it off. Null: on when the env var EPS_SDK_DEBUG is `1` or
+        // `true`. Credentials and personal data are masked best-effort; review
+        // the output before sharing it with Eko support. See "Debug mode
+        // conformance" in docs/sdk-golden-vector.md.
+        bool|\Closure|null $debug = null
     ) {
         if (!is_finite($this->timeout) || $this->timeout <= 0) {
             throw new \InvalidArgumentException("Invalid timeout: " . var_export($this->timeout, true) . ". Expected a positive number of seconds.");
@@ -96,6 +106,11 @@ final class EpsClient
             if ($env['id'] === $environment) { $this->baseUrl = $env['baseUrl']; break; }
         }
         if (!isset($this->baseUrl)) throw new \InvalidArgumentException("Unknown environment: $environment");
+        // Null when off, or if starting it fails: debug never breaks a client.
+        $this->debugger = EpsDebug::create(
+            $debug, $environment, $this->baseUrl, $this->surface, $this->formats['client-ref'] ?? null,
+            $this->developerKey, (int) round($this->timeout * 1000), $this->retries, $this->autoStatusCheck
+        );
     }
 
     /** secret-key = base64(HMAC-SHA256(timestamp, base64(access_key))). */
@@ -419,15 +434,27 @@ final class EpsClient
      */
     public function call(string $slug, array $params = []): array
     {
+        $trace = $this->debugger?->trace($slug);
+        try {
+            return $this->run($slug, $params, $trace);
+        } catch (\Throwable $e) {
+            $trace?->error($e);
+            throw $e;
+        }
+    }
+
+    /** `call()` without the debug wrapper: validate, send, retry, inquire. */
+    private function run(string $slug, array $params, ?EpsDebug $trace): array
+    {
         $target = $this->resolveTarget($slug, $params);
         $attempts = $target['retrySafe'] ? $this->retries + 1 : 1;
         for ($attempt = 1; ; $attempt++) {
             try {
-                return $this->send($target);
+                return $this->send($target, $attempt, $trace);
             } catch (EpsException $e) {
                 if (!self::isIndeterminate($e)) throw $e;
                 if ($attempt < $attempts) {
-                    $this->backoff($attempt);
+                    $this->backoff($attempt, $trace);
                     continue;
                 }
                 // Never re-send a non-GET: that is how a customer is debited twice.
@@ -453,10 +480,11 @@ final class EpsClient
     }
 
     /** Attempt n sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter. */
-    private function backoff(int $attempt): void
+    private function backoff(int $attempt, ?EpsDebug $trace = null): void
     {
         $capMs = (int) min($this->retryBaseDelay * 1000 * 2 ** ($attempt - 1), self::MAX_RETRY_DELAY_MS);
         $delayMs = $capMs > 0 ? random_int(0, $capMs) : 0;
+        $trace?->retry($attempt, $delayMs);
         if ($delayMs > 0) usleep($delayMs * 1000);
     }
 
@@ -485,13 +513,22 @@ final class EpsClient
 
     /**
      * Sign (fresh timestamp, via curlOptions) and send one attempt; decode per
-     * the contract. The injected `$transport`, when present, stands in for cURL.
+     * the contract. The injected `$transport`, when present, stands in for cURL;
+     * debug hooks sit around both paths alike.
      */
-    private function send(array $target): array
+    private function send(array $target, int $attempt = 1, ?EpsDebug $trace = null): array
     {
         $options = $this->curlOptions($target);
+        $trace?->request($attempt, $target['method'], $target['url'], $options[CURLOPT_HTTPHEADER], $target['body']);
         if ($this->transport !== null) {
-            [$status, $raw] = ($this->transport)($target, $options);
+            try {
+                $result = ($this->transport)($target, $options);
+            } catch (\Throwable $e) {
+                $trace?->transportError($attempt, $e);
+                throw $e;
+            }
+            [$status, $raw] = $result;
+            $trace?->response($attempt, $status, $raw);
             return self::decodeResponse($status, $target['url'], $raw, $target['financial']);
         }
         $ch = curl_init($target['url']);
@@ -502,8 +539,11 @@ final class EpsClient
         $curlError = curl_error($ch);
         curl_close($ch);
         if ($res === false) {
-            throw new EpsTransportException("EPS request to {$target['url']} failed: $curlError");
+            $e = new EpsTransportException("EPS request to {$target['url']} failed: $curlError");
+            $trace?->transportError($attempt, $e);
+            throw $e;
         }
+        $trace?->response($attempt, $status, $res);
         return self::decodeResponse($status, $target['url'], $res, $target['financial']);
     }
 }
