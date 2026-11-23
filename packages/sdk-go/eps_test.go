@@ -856,6 +856,24 @@ func TestFinancialPostUnparseable2xxInquiresAndReturnsIndeterminate(t *testing.T
 	}
 }
 
+func TestFinancialPostNonObjectJSON2xxInquires(t *testing.T) {
+	inquiry := `{"status":0,"data":{"tx_status":"0","tid":"1"}}`
+	for _, body := range []string{`null`, `"ok"`, `5`, `[]`, `[{"status":0}]`} {
+		t.Run(body, func(t *testing.T) {
+			tr := &scripted{steps: []step{withBody(body), withBody(inquiry)}}
+			_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
+			var ind *IndeterminateError
+			var invalid *InvalidResponseError
+			if !errors.As(err, &ind) || ind.Status != 200 || ind.StatusCheck == nil || !errors.As(err, &invalid) {
+				t.Fatalf("err = %v, want *IndeterminateError (200, inquiry run) wrapping *InvalidResponseError", err)
+			}
+			if len(tr.requests) != 2 {
+				t.Errorf("sent %d requests, want 2", len(tr.requests))
+			}
+		})
+	}
+}
+
 func TestNonFinancialPostUnparseable2xxNoInquiry(t *testing.T) {
 	tr := &scripted{steps: []step{withBody("")}}
 	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", panParams)

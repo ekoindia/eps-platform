@@ -598,6 +598,23 @@ final class EpsClientTest extends TestCase
         }
     }
 
+    public function testFinancialPostNonObjectJson2xxInquires(): void
+    {
+        $inquiry = ['status' => 0, 'data' => ['tx_status' => '0', 'tid' => '1']];
+        foreach (['null', '"ok"', '5', '[]', '[{"status":0}]'] as $body) {
+            $t = self::transport([[200, $body], [200, json_encode($inquiry)]]);
+            try {
+                self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
+                $this->fail("expected EpsIndeterminateException for $body");
+            } catch (EpsIndeterminateException $e) {
+                $this->assertSame(200, $e->status, $body);
+                $this->assertSame($inquiry, $e->statusCheck, $body);
+                $this->assertInstanceOf(EpsInvalidResponseException::class, $e->getPrevious(), $body);
+                $this->assertCount(2, $t->requests, $body);
+            }
+        }
+    }
+
     public function testNonFinancialPostUnparseable2xxNoInquiry(): void
     {
         $t = self::transport([[200, '']]);

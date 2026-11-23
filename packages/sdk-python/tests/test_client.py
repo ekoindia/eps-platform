@@ -608,6 +608,19 @@ class RetryAndStatusCheck(unittest.TestCase):
         self.assertEqual(len(t.requests), 2)
         self.assertIn(f"client_ref_id={ref}", t.url(1))
 
+    def test_financial_post_non_object_json_2xx_inquires(self):
+        inquiry = {"status": 0, "data": {"tx_status": "0", "tid": "1"}}
+        for body in (b"null", b'"ok"', b"5", b"[]", b'[{"status":0}]'):
+            with self.subTest(body=body):
+                t = Transport(_response(body), _response(json.dumps(inquiry).encode()))
+                with patched(t):
+                    with self.assertRaises(EpsIndeterminateError) as ctx:
+                        fast().call("dmt-initiate-transfer", TRANSFER)
+                self.assertEqual(ctx.exception.status, 200)
+                self.assertEqual(ctx.exception.status_check, inquiry)
+                self.assertIsInstance(ctx.exception.__cause__, EpsInvalidResponseError)
+                self.assertEqual(len(t.requests), 2)
+
     def test_non_financial_post_unparseable_2xx_no_inquiry(self):
         t = Transport(_response(b""))
         with patched(t):

@@ -120,7 +120,8 @@ public final class EpsClient {
 	}
 
 	/**
-	 * A 2xx response whose body is not JSON (empty, truncated, a proxy's HTML page). EPS may well
+	 * A 2xx response whose body is not a JSON object (empty, truncated, a proxy's HTML page, or
+	 * valid JSON such as {@code null} / {@code []} that is no envelope). EPS may well
 	 * have processed the request, so the outcome is unknown, not decided: a financial call gets
 	 * the status check and a retry-safe one is retried. Still an {@link EpsException}, so existing
 	 * catches keep matching.
@@ -871,7 +872,13 @@ public final class EpsClient {
 		return envelope;
 	}
 
+	/**
+	 * Decode a JSON object envelope, or null for anything else. Gson's Map adapter also accepts an
+	 * array of key/value pairs ({@code []} decodes to an empty map), so only a body that opens with
+	 * {@code &#123;} is decoded: a JSON array, scalar or null is no EPS envelope.
+	 */
 	private static Map<String, Object> decodeOrNull(String raw) {
+		if (raw == null || !raw.stripLeading().startsWith("{")) return null;
 		try {
 			return GSON.fromJson(raw, new TypeToken<Map<String, Object>>() {}.getType());
 		} catch (JsonSyntaxException e) {

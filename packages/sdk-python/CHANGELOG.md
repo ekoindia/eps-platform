@@ -4,7 +4,8 @@
 
 ### Changed
 
-- A 2xx response whose body is not JSON now raises `EpsInvalidResponseError`
+- A 2xx response whose body is not a JSON object (unparseable, or a bare
+  `null` / string / number / array) now raises `EpsInvalidResponseError`
   (still an `EpsError`) and counts as an indeterminate outcome: a financial call
   runs the Transaction Inquiry by `client_ref_id` and raises
   `EpsIndeterminateError`, and a retry-safe call is retried. Previously it was a

@@ -192,8 +192,9 @@ export class EpsHttpError extends EpsError {
 }
 
 /**
- * A 2xx response whose body is not JSON (empty, truncated, an HTML error page
- * from a proxy). EPS may well have processed the request, so this is
+ * A 2xx response whose body is not a JSON object (empty, truncated, an HTML
+ * error page from a proxy, or valid JSON such as `null` / `[]` that is no
+ * envelope). EPS may well have processed the request, so this is
  * indeterminate, not decisive: a `financial` call gets the status inquiry and a
  * `retrySafe` one is retried. Still an `EpsError`, so existing catches hold.
  */
@@ -622,7 +623,13 @@ export class EpsClient {
 		const envelope = decodeJsonOrNull(raw);
 		// A non-2xx envelope is an error, not a result — see docs/sdk-golden-vector.md.
 		if (!res.ok) throw new EpsHttpError(res.status, url, envelope, raw);
-		if (envelope === null)
+		// Valid JSON that is not an object (null, a string, a number, an array)
+		// is no EPS envelope either — as unreadable as a truncated body.
+		if (
+			envelope === null ||
+			typeof envelope !== "object" ||
+			Array.isArray(envelope)
+		)
 			throw new EpsInvalidResponseError(res.status, url, raw);
 		return envelope;
 	}

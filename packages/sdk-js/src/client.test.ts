@@ -787,6 +787,25 @@ describe("retry and status check", () => {
 		);
 	});
 
+	it.each(["null", '"ok"', "5", "[]", '[{"status":0}]'])(
+		"financial POST + 2xx JSON that is not an object (%s): indeterminate, inquires",
+		async (body) => {
+			const inquiry = { status: 0, data: { tx_status: "0", tid: "1" } };
+			const f = vi
+				.fn()
+				.mockResolvedValueOnce(new Response(body, { status: 200 }))
+				.mockResolvedValueOnce(new Response(JSON.stringify(inquiry)));
+			const err = (await make(f)
+				.call("dmt-initiate-transfer", TRANSFER)
+				.catch((e: unknown) => e)) as EpsIndeterminateError;
+			expect(err).toBeInstanceOf(EpsIndeterminateError);
+			expect(err.status).toBe(200);
+			expect(err.statusCheck).toEqual(inquiry);
+			expect(err.cause).toBeInstanceOf(EpsInvalidResponseError);
+			expect(f).toHaveBeenCalledTimes(2);
+		},
+	);
+
 	it("non-financial POST + 2xx that is not JSON: EpsInvalidResponseError, no inquiry", async () => {
 		const f = vi.fn(async () => new Response("", { status: 200 }));
 		const err = await make(f).call("pan-lite", PAN).catch((e: unknown) => e);

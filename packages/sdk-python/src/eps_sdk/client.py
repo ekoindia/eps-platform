@@ -82,7 +82,8 @@ class EpsHttpError(EpsError):
 
 
 class EpsInvalidResponseError(EpsError):
-    """A 2xx response whose body is not JSON (empty, truncated, a proxy's HTML).
+    """A 2xx response whose body is not a JSON object (empty, truncated, a
+    proxy's HTML, or valid JSON such as ``null`` / ``[]`` that is no envelope).
 
     EPS may well have processed the request, so this is indeterminate, not
     decisive: a ``financial`` call gets the status inquiry and a ``retry_safe``
@@ -665,9 +666,14 @@ class EpsClient:
         if not 200 <= status < 300:
             raise EpsHttpError(status, target.url, _decode_json_or_none(raw), raw)
         try:
-            return json.loads(raw)
+            envelope = json.loads(raw)
         except ValueError as exc:
             raise EpsInvalidResponseError(status, target.url, raw) from exc
+        # Valid JSON that is not an object (null, a string, a number, an array)
+        # is no EPS envelope either -- as unreadable as a truncated body.
+        if not isinstance(envelope, dict):
+            raise EpsInvalidResponseError(status, target.url, raw)
+        return envelope
 
 
 def _dump_json(payload: Mapping[str, Any]) -> bytes:

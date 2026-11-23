@@ -917,6 +917,21 @@ class EpsClientTest {
 			assertTrue(t.sent.get(1).request().uri().toString().contains("client_ref_id=" + ref));
 		}
 
+		@org.junit.jupiter.params.ParameterizedTest
+		@org.junit.jupiter.params.provider.ValueSource(strings = {"null", "\"ok\"", "5", "[]", "[{\"status\":0}]"})
+		void financialPostNonObjectJson2xxInquires(String body) {
+			String inquiry = "{\"status\":0,\"data\":{\"tx_status\":\"0\",\"tid\":\"1\"}}";
+			Scripted t = new Scripted(Step.body(body), Step.body(inquiry));
+			EpsClient.EpsIndeterminateException e =
+					assertThrows(
+							EpsClient.EpsIndeterminateException.class,
+							() -> fast(t).call("dmt-initiate-transfer", TRANSFER));
+			assertEquals(200, e.status);
+			assertEquals("0", ((Map<?, ?>) e.statusCheck.get("data")).get("tx_status"));
+			assertTrue(e.getCause() instanceof EpsClient.EpsInvalidResponseException);
+			assertEquals(2, t.sent.size());
+		}
+
 		@Test
 		void nonFinancialPostUnparseable2xxNoInquiry() {
 			Scripted t = new Scripted(Step.body(""));

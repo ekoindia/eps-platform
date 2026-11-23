@@ -178,8 +178,9 @@ func (e *TransportError) Error() string {
 
 func (e *TransportError) Unwrap() error { return e.Err }
 
-// InvalidResponseError is a 2xx response whose body is not JSON (empty,
-// truncated, a proxy's HTML page). EPS may well have processed the request, so
+// InvalidResponseError is a 2xx response whose body is not a JSON object
+// (empty, truncated, a proxy's HTML page, or valid JSON such as null or [] that
+// is no envelope). EPS may well have processed the request, so
 // the outcome is unknown, not decided: a financial call gets a status check and
 // a retry-safe one is retried. Err is the decode error, reachable with
 // errors.As / errors.Is.
@@ -873,6 +874,11 @@ func (c *Client) send(ctx context.Context, target *Target) (map[string]any, erro
 	decodeErr := json.Unmarshal(raw, &envelope)
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return nil, &HTTPError{StatusCode: res.StatusCode, URL: target.URL, Body: envelope, Raw: raw}
+	}
+	// A JSON string, number or array already fails to decode into the map; a
+	// JSON null decodes cleanly to a nil map, but is no envelope either.
+	if decodeErr == nil && envelope == nil {
+		decodeErr = errors.New("body is JSON null, not an object")
 	}
 	if decodeErr != nil {
 		return nil, &InvalidResponseError{StatusCode: res.StatusCode, URL: target.URL, Raw: raw, Err: decodeErr}

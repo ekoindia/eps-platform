@@ -86,7 +86,7 @@ value, the rest raise/throw).
 | 2xx, JSON body                  | return the decoded envelope                                                        |
 | non-2xx, JSON body              | fail with the typed HTTP error carrying `status`, `url`, the decoded `body`, `raw` |
 | non-2xx, non-JSON body          | same, with a null/nil `body`; `raw` keeps the bytes verbatim                       |
-| 2xx, non-JSON body              | fail with the typed invalid-response error (`status`, `url`, `raw`) — **never** a silent `{}`, `[]` or `null`; indeterminate (see below) |
+| 2xx, body not a JSON object (unparseable, or JSON `null` / string / number / array) | fail with the typed invalid-response error (`status`, `url`, `raw`) — **never** a silent `{}`, `[]` or `null`; indeterminate (see below) |
 | no response within the timeout  | fail; default 30s, overridable                                                     |
 | transport failure               | fail, surfacing the language's native transport error                              |
 
@@ -104,7 +104,8 @@ still carried on the error so callers can inspect `status` / `message`.
 | Go     | `*eps.HTTPError`           | plain `error`             | `StatusCode`, `URL`, `Body`, `Raw`  |
 | Java   | `EpsClient.EpsHttpException` | `EpsClient.EpsException` | `status`, `url`, `body`, `raw`      |
 
-A 2xx whose body is not JSON fails with a subclass of the "other client-side
+A 2xx whose body is not a JSON object (unparseable, or valid JSON that is `null`,
+a string, a number or an array) fails with a subclass of the "other client-side
 failure" type, so existing catches still match: `EpsInvalidResponseError` (Node,
 Python), `Eko\Eps\EpsInvalidResponseException` (PHP), `*eps.InvalidResponseError`
 (Go; `Unwrap` gives the decode error), `EpsClient.EpsInvalidResponseException`
@@ -118,7 +119,8 @@ and decoding failures only.
 ### Fixed message strings
 
 - `EPS request to <url> failed with HTTP <status>.`
-- `EPS response from <url> was not valid JSON.`
+- `EPS response from <url> was not valid JSON.` (also used for valid JSON that
+  is not an object; the message is fixed, the case is wider)
 
 Two sanctioned divergences, both long-standing and idiomatic:
 
@@ -203,7 +205,8 @@ Java), `generate_client_ref_id(now_ms)` (Python), `GenerateClientRefID(nowMs)`
 
 An outcome is **indeterminate** when the SDK cannot know whether EPS processed
 the request: a transport failure, the per-attempt timeout, HTTP 429, or any
-5xx, or a 2xx whose body is not JSON (empty, truncated, a proxy's HTML page —
+5xx, or a 2xx whose body is not a JSON object (empty, truncated, a proxy's HTML
+page, a bare `null` or array —
 EPS may have processed the request, and the SDK cannot read whether it did). A
 4xx is a decisive answer and is never retried or inquired. A cancelled context (Go) or an interrupted
 thread (Java) stops everything — no retry, no inquiry.

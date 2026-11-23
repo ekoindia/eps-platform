@@ -355,9 +355,9 @@ final class EpsClient
      * pure function is the seam for the response contract shared by all five
      * SDKs (see docs/sdk-golden-vector.md).
      *
-     * ponytail: the `array` return type cannot represent a valid JSON scalar or
-     * `null`, so those are reported as "not valid JSON". EPS always returns an
-     * object envelope; widen to `mixed` if that ever stops being true.
+     * Only a JSON object is an envelope. A JSON scalar or `null` is reported as
+     * "not valid JSON", and so is a JSON array — `json_decode(…, true)` turns
+     * `[…]` into a PHP array too, hence the leading-`{` check.
      *
      * @throws EpsHttpException On any non-2xx response.
      * @throws EpsInvalidResponseException When a 2xx body is not a JSON object — never a silent [].
@@ -365,7 +365,7 @@ final class EpsClient
     public static function decodeResponse(int $status, string $url, string $raw): array
     {
         $decoded = json_decode($raw, true);
-        $body = is_array($decoded) ? $decoded : null;
+        $body = is_array($decoded) && str_starts_with(ltrim($raw), '{') ? $decoded : null;
         if ($status < 200 || $status >= 300) {
             throw new EpsHttpException($status, $url, $body, $raw);
         }
