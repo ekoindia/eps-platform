@@ -277,6 +277,18 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			});
 			return c.json(contextMcpErrorBody(c.req.path), 500);
 		}
+		// An upstream that never answered (`withTimeout`'s AbortSignal) is a slow
+		// dependency, not our bug: say so with a 504 instead of a vague 502
+		// "Something went wrong". Matched by `name` — a DOMException is not
+		// reliably `instanceof Error`. Prod 2026-11-23: connect-api login hung 30s.
+		if ((err as { name?: unknown } | null)?.name === "TimeoutError") {
+			console.warn("[eps-backend] upstream timeout", { rid: c.get("rid") });
+			err = new AppError(
+				504,
+				"UPSTREAM_TIMEOUT",
+				"The service is taking too long to respond. Please try again in a minute.",
+			);
+		}
 		if (err instanceof AppError) {
 			return c.json(
 				withDiagnostics(
@@ -405,6 +417,15 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			// rather than let unbounded guesses through.
 			await kvOr503(() => kv.incr(failKey, OTP_WINDOW_SEC));
 			await kvOr503(() => kv.incr(ipFailKey, OTP_WINDOW_SEC));
+			// Still counted above: we can't rule out that upstream ever uses a
+			// refusal for a wrong OTP, and the brute-force budget stays fail-closed.
+			if (verified.refused) {
+				throw AppError.fromUpstream(
+					502,
+					"OTP_UPSTREAM_REFUSED",
+					"Couldn't verify your OTP right now. Please request a new OTP and try again. If this keeps happening, contact support.",
+				);
+			}
 			throw new AppError(401, "OTP_INVALID", "Invalid or expired OTP");
 		}
 		// Best-effort cleanup: a valid OTP is already consumed; a stale failKey
