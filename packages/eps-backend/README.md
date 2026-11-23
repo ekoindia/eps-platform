@@ -87,7 +87,7 @@ Two independent clocks run on every connect-api call:
 
 | Hop | Timeout | Set by |
 | --- | --- | --- |
-| eps-backend → connect-api | `CONNECT_API_TIMEOUT_MS` (default 15 s; prod 30 s). One value for **every** connect-api call | env, `src/config.ts` |
+| eps-backend → connect-api | `CONNECT_API_TIMEOUT_MS` (default 15 s; prod 40 s since 2026-11-23). One value for **every** connect-api call | env, `src/config.ts` |
 | connect-api → SimpliBank, `/transactions/do`, `/dojson` | `x-ui-timeout` request header (ms), default 120 s | caller, per request (`connect-api/routes/transactions.js:1328`, `:1531`) |
 | connect-api → SimpliBank, `/transactions/upload`, `/customupload` | `x-ui-timeout` request header (ms), default 240 s | caller, per request (`transactions.js:1233`) |
 | connect-api → SimpliBank, `/authentication/*` (`sendotp`, `login`, `refresh-profile`) | **none**: `verify_otp.js` axios has no timeout and the login profile fetch is a bare `http.request`. `x-ui-timeout` is **ignored** here | n/a |
@@ -102,6 +102,21 @@ SimpliBank login holds connect-api indefinitely, and only our
 Outer ceiling: nginx `proxy_read_timeout 120s` in front of this service
 (`docs/eps-backend-vm-deploy.md`). A request's summed upstream waits must stay
 under it, or the browser gets nginx's non-JSON 504 instead of ours.
+
+Worst case for `/auth/otp/verify` under the `connect` provider is four waits
+in a row: login (`CONNECT_API_TIMEOUT_MS`) → 151 enrich
+(`SIMPLIBANK_API_TIMEOUT_MS`, default 30 s) → refresh-profile
+(`CONNECT_API_TIMEOUT_MS`) → Zoho lead lookup when the profile has no
+`zohoId` (10 s, `DEFAULT_FETCH_TIMEOUT_MS`). The last three are best-effort:
+a timeout there is swallowed, so it only adds waiting.
+
+Prod since 2026-11-23: `CONNECT_API_TIMEOUT_MS` 40 s, `SIMPLIBANK_API_TIMEOUT_MS`
+30 s → 40 + 30 + 40 + 10 = **120 s, exactly nginx's limit**. Only reached when
+every call hangs; request overhead can then tip it into nginx's non-JSON 504.
+Raising either timeout further needs nginx raised too, or the best-effort calls
+capped shorter. (Briefly ran both at 40 s = 130 s; reverted the same day.)
+Baseline that set 40 s (48 h to 2026-11-23): successful logins p50 5.4 s,
+p95 12 s, max 29.5 s.
 
 ### Invariants worth not breaking
 
