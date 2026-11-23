@@ -657,6 +657,21 @@ func TestClientRefIDDiffersBetweenCalls(t *testing.T) {
 	}
 }
 
+func TestBlankRefOnFinancialCallIsRefused(t *testing.T) {
+	for _, blank := range []string{"", "   ", "\t"} {
+		tr := &scripted{steps: []step{okFinancial()}}
+		params := map[string]any{"client_ref_id": blank}
+		for k, v := range transferParams {
+			params[k] = v
+		}
+		_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", params)
+		want := `Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).`
+		if err == nil || err.Error() != want || len(tr.requests) != 0 {
+			t.Errorf("blank %q: err = %v after %d requests, want %q and nothing sent", blank, err, len(tr.requests), want)
+		}
+	}
+}
+
 func TestEmptyClientRefIDCountsAsSupplied(t *testing.T) {
 	tr := &scripted{steps: []step{ok()}}
 	params := map[string]any{"client_ref_id": ""}

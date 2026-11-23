@@ -206,6 +206,15 @@ Fixtures (every suite pins all of them):
 | `get-refund-otp` (POST, omits the param)                 | no `client_ref_id` in the body                       |
 | two successive `pan-lite` calls                          | different refs                                       |
 | `pan-lite` with `client_ref_id: ""`                      | throws `… client_ref_id (expected format client-ref)`, nothing sent |
+| `dmt-initiate-transfer` (financial, no client-ref format) with `client_ref_id` `""`, `"   "` or `"\t"` | throws `Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).`, nothing sent |
+
+A supplied `client_ref_id` is the caller's to own and is never replaced —
+but on a `financial` endpoint a blank (empty or whitespace-only) one is
+refused before sending, because the ref is the only key a lost response can
+be reconciled by. This holds even where the param declares no `client-ref`
+format (`dmt-initiate-transfer`, `dmt-levin-initiate-transfer`,
+`bbps-pay-bill`); where it does, the format check fires first with its own
+message. Non-financial endpoints are unaffected.
 
 Exported generator per language: `generateClientRefId(nowMs)` (Node, PHP,
 Java), `generate_client_ref_id(now_ms)` (Python), `GenerateClientRefID(nowMs)`

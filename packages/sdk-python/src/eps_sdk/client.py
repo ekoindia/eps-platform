@@ -555,6 +555,14 @@ class EpsClient:
             raise EpsError(
                 f'Invalid param values for "{slug}": {", ".join(bad_values)}.'
             )
+        # A financial call's ref is its only reconciliation key after a lost
+        # response, so a blank one is refused (never silently replaced) even on
+        # endpoints whose param declares no client-ref format.
+        if endpoint.get("financial") and client_ref_id is not None and not client_ref_id.strip():
+            raise EpsError(
+                f'Invalid param values for "{slug}": client_ref_id '
+                "(must not be blank on a financial call)."
+            )
 
         # A `type: "file"` param flips the whole request to multipart/form-data.
         file_params = {p["name"] for p in endpoint["params"] if p["type"] == "file"}

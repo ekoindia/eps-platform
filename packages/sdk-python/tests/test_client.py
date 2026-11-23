@@ -471,6 +471,20 @@ class ClientRefId(unittest.TestCase):
             c.call("pan-lite", PAN)
         self.assertNotEqual(t.body(0)["client_ref_id"], t.body(1)["client_ref_id"])
 
+    def test_blank_ref_on_financial_call_is_refused(self):
+        for blank in ("", "   ", "\t"):
+            with self.subTest(blank=blank):
+                t = Transport(_response(OK_FINANCIAL))
+                with patched(t):
+                    with self.assertRaises(EpsError) as ctx:
+                        fast().call("dmt-initiate-transfer", {**TRANSFER, "client_ref_id": blank})
+                self.assertEqual(
+                    str(ctx.exception),
+                    'Invalid param values for "dmt-initiate-transfer": client_ref_id '
+                    "(must not be blank on a financial call).",
+                )
+                self.assertEqual(t.requests, [])
+
     def test_empty_string_counts_as_supplied(self):
         t = Transport(_response(OK))
         with patched(t):

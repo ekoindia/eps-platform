@@ -617,6 +617,19 @@ describe("client_ref_id", () => {
 		expect(bodyOf(f, 0).client_ref_id).not.toBe(bodyOf(f, 1).client_ref_id);
 	});
 
+	it.each(["", "   ", "\t"])(
+		"financial call with a blank supplied client_ref_id (%j) is refused, nothing sent",
+		async (blank) => {
+			const f = vi.fn(async () => okFinancial());
+			await expect(
+				make(f).call("dmt-initiate-transfer", { ...TRANSFER, client_ref_id: blank }),
+			).rejects.toThrow(
+				'Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).',
+			);
+			expect(f).not.toHaveBeenCalled();
+		},
+	);
+
 	it('treats "" as supplied, so it fails the client-ref format', async () => {
 		const f = vi.fn(async () => ok());
 		await expect(

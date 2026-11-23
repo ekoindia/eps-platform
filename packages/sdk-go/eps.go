@@ -707,6 +707,13 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 	if len(badValues) > 0 {
 		return nil, fmt.Errorf("Invalid param values for %q: %s.", slug, strings.Join(badValues, ", "))
 	}
+	// A financial call's ref is its only reconciliation key after a lost
+	// response, so a blank one is refused (never silently replaced) even on
+	// endpoints whose param declares no client-ref format. ("" would also read
+	// as "no ref" on IndeterminateError.)
+	if endpoint.Financial && declaresRef && strings.TrimSpace(clientRefID) == "" {
+		return nil, fmt.Errorf("Invalid param values for %q: client_ref_id (must not be blank on a financial call).", slug)
+	}
 
 	// A type:"file" param flips the whole request to multipart/form-data.
 	fileParams := map[string]bool{}

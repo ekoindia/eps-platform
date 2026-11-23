@@ -747,6 +747,20 @@ class EpsClientTest {
 			assertFalse(t.sent.get(0).json().get("client_ref_id").equals(t.sent.get(1).json().get("client_ref_id")));
 		}
 
+		@org.junit.jupiter.params.ParameterizedTest
+		@org.junit.jupiter.params.provider.ValueSource(strings = {"", "   ", "\t"})
+		void blankRefOnFinancialCallIsRefused(String blank) {
+			Scripted t = new Scripted(Step.body(OK_FINANCIAL));
+			EpsClient.EpsException e =
+					assertThrows(
+							EpsClient.EpsException.class,
+							() -> fast(t).call("dmt-initiate-transfer", with(TRANSFER, "client_ref_id", blank)));
+			assertEquals(
+					"Invalid param values for \"dmt-initiate-transfer\": client_ref_id (must not be blank on a financial call).",
+					e.getMessage());
+			assertEquals(0, t.sent.size());
+		}
+
 		@Test
 		void emptyStringCountsAsSupplied() {
 			Scripted t = new Scripted(Step.ok());

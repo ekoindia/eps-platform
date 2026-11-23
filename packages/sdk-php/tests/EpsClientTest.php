@@ -466,6 +466,23 @@ final class EpsClientTest extends TestCase
         $this->assertNotSame($t->body(0)['client_ref_id'], $t->body(1)['client_ref_id']);
     }
 
+    public function testBlankRefOnFinancialCallIsRefused(): void
+    {
+        foreach (['', '   ', "\t"] as $blank) {
+            $t = self::transport([[200, self::OK_FINANCIAL]]);
+            try {
+                self::fast($t)->call('dmt-initiate-transfer', ['client_ref_id' => $blank] + self::TRANSFER);
+                $this->fail('expected InvalidArgumentException for ' . json_encode($blank));
+            } catch (\InvalidArgumentException $e) {
+                $this->assertSame(
+                    'Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).',
+                    $e->getMessage()
+                );
+                $this->assertSame([], $t->requests);
+            }
+        }
+    }
+
     public function testEmptyClientRefIdCountsAsSupplied(): void
     {
         $t = self::transport([[200, self::OK]]);
