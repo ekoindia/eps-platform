@@ -75,7 +75,30 @@ export interface SdkGuideMeta {
 	fileValues: string[];
 	/** Language-specific gotchas worth calling out on the page. */
 	notes?: string[];
+	/** Debug mode: how to run with the env var, and how to switch it in code. */
+	debug: SdkDebugGuide;
 }
+
+/** Per-language half of the guide's "Debugging" section. */
+export interface SdkDebugGuide {
+	/** A typical run command, prefixed with `EPS_SDK_DEBUG=1` on the page. */
+	run: string;
+	/** Code showing the in-code option (on, custom sink, forced off). */
+	enable: string;
+}
+
+/** One debug `request` line, as every SDK prints it (masked). */
+export const DEBUG_SAMPLE_LINE =
+	'{"logger":"eps-sdk","ts":"2026-11-23T11:31:25.884Z","event":"request","sdk":"js","sdk_version":"3.1.0","surface":"48eb0cf2","env":"sandbox","call_id":"f020eef5","slug":"bbps-operator-code-circle","attempt":1,"method":"GET","url":"https://staging.eko.in/ekoapi/v3/customer/payment/bbps/recharge/****3210/operator?initiator_id=****1729","headers":{"developer_key":"****wxyz","secret-key":"****","secret-key-timestamp":"1763897485884","content-type":"application/json"},"body":null}';
+
+/** The language-neutral facts of debug mode, shown on every guide. */
+export const DEBUG_POINTS: string[] = [
+	"**Events** — `init` once per client; `request` and `response` per attempt; `transport_error` when no usable response came back; `retry`; and `error` when the call throws. A validation failure logs `error` with no `request` before it, so you know nothing was sent. Lines of one call share a `call_id`.",
+	"**What it shows** — the environment (`sandbox` / `production`), the full URL, headers and body sent, the HTTP status and raw EPS response, timings, retries and the automatic status check.",
+	"**What it hides** — `developer_key` shows only its last 4 characters and `secret-key` is never shown. Aadhaar, PAN, account and mobile numbers show their last 4; OTPs, biometrics, names, addresses, e-mails, dates of birth and any field the SDK does not recognise print as `****`. Ids, status codes, amounts and the EPS `message` print as-is so support can trace the call.",
+	"**Safe to leave in code** — off unless you switch it on; while off it costs nothing, and it never changes a call's outcome.",
+	"**Review before sharing** — masking is best-effort: free text such as an upstream error page is scrubbed but may still hold personal data. Share the output only with Eko support, and turn debug mode off when you are done.",
+];
 
 const REPO = "https://github.com/ekoindia/eps-platform/tree/main/packages";
 
@@ -159,6 +182,19 @@ const retryConfig = (
 	},
 ];
 
+/** Shared wording for the debug option (and Go's `NewWithDebug`). */
+const DEBUG_WHEN =
+	"Debug mode: logs each request (full URL, headers, body), response (status, raw body), retry, transport failure and error as masked JSON lines, to share with Eko support. Unset, it follows the env var `EPS_SDK_DEBUG` (`1` or `true` turns it on, no code change). Keys and personal data are masked best-effort; review the output before sharing.";
+
+/** The debug option every client but Go's takes (Go: `eps.NewWithDebug`). */
+const debugConfig = (name: string, type: string, units: string): SdkConfigOption => ({
+	name,
+	type,
+	required: false,
+	units,
+	description: DEBUG_WHEN,
+});
+
 /** Shared wording for the indeterminate-error row; `extra` adds the
  * language-specific ways a call can end there (Go ctx, Java interrupt). */
 const indeterminateWhen = (extra = ""): string =>
@@ -189,6 +225,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		dependencies:
 			"None — standard library only (`node:crypto`, global `fetch`).",
 		sourceUrl: `${REPO}/sdk-js`,
+		debug: {
+			run: "node app.js",
+			enable: "new EpsClient({ ...options, debug: true }); // JSON lines on stderr\nnew EpsClient({ ...options, debug: (event) => logger.debug(event) }); // your logger\nnew EpsClient({ ...options, debug: false }); // off, even when EPS_SDK_DEBUG is set",
+		},
 		config: [
 			...commonConfig(
 				"developerKey",
@@ -220,6 +260,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"number",
 				"milliseconds, default 200",
 				"boolean",
+			),
+			debugConfig(
+				"debug",
+				"boolean | ((event) => void)",
+				"true = stderr, function = your sink, false = off",
 			),
 		],
 		members: [
@@ -322,6 +367,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		dependencies:
 			"None — standard library only (`urllib`, `hmac`, `hashlib`, `mimetypes`).",
 		sourceUrl: `${REPO}/sdk-python`,
+		debug: {
+			run: "python app.py",
+			enable: "EpsClient(..., debug=True)                            # JSON lines on stderr\nEpsClient(..., debug=lambda event: log.debug(event))  # your logger (event is a dict)\nEpsClient(..., debug=False)                           # off, even when EPS_SDK_DEBUG is set",
+		},
 		config: [
 			...commonConfig(
 				"developer_key",
@@ -346,6 +395,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"float",
 				"seconds, default 0.2",
 				"bool",
+			),
+			debugConfig(
+				"debug",
+				"bool | Callable[[dict], None] | None",
+				"True = stderr, callable = your sink, False = off",
 			),
 		],
 		members: [
@@ -453,6 +507,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		minRuntime: "PHP 8.1 or newer",
 		dependencies: "None beyond the `curl` and `json` extensions.",
 		sourceUrl: `${REPO}/sdk-php`,
+		debug: {
+			run: "php app.php",
+			enable: "new EpsClient(..., debug: true);  // CLI: JSON lines on STDERR; web SAPIs: error_log()\nnew EpsClient(..., debug: fn (array $event) => $logger->debug('eps', $event)); // your logger\nnew EpsClient(..., debug: false); // off, even when EPS_SDK_DEBUG is set",
+		},
 		installNotes: [
 			"Published from a read-only mirror (`ekoindia/eps-sdk-php`), subtree-split from the monorepo.",
 		],
@@ -481,6 +539,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"float",
 				"seconds, default 0.2",
 				"bool",
+			),
+			debugConfig(
+				"debug",
+				"bool|\\Closure|null",
+				"true = STDERR (CLI) or error_log, closure = your sink, false = off",
 			),
 		],
 		members: [
@@ -596,6 +659,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		dependencies:
 			"None — `go.mod` has no `require` block and there is no `go.sum`.",
 		sourceUrl: `${REPO}/sdk-go`,
+		debug: {
+			run: "go run .",
+			enable: "client, err := eps.NewWithDebug(cfg, os.Stderr)  // any io.Writer: a file, a log adapter\nclient, err := eps.NewWithDebug(cfg, io.Discard) // off, even when EPS_SDK_DEBUG is set\nclient, err := eps.New(cfg)                      // follows EPS_SDK_DEBUG",
+		},
 		installNotes: [
 			"Published from a read-only mirror (`ekoindia/eps-sdk-go`) as a git tag; there is no separate registry.",
 		],
@@ -633,6 +700,13 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				signature: "eps.New(cfg eps.Config) (*eps.Client, error)",
 				description:
 					"Builds a client. Safe for concurrent use once constructed.",
+			},
+			{
+				kind: "function",
+				name: "eps.NewWithDebug",
+				signature:
+					"eps.NewWithDebug(cfg eps.Config, w io.Writer) (*eps.Client, error)",
+				description: `Like \`eps.New\`, with debug mode written to \`w\` (\`os.Stderr\`, a file…); \`io.Discard\` forces it off, nil follows the env var. ${DEBUG_WHEN}`,
 			},
 			{
 				kind: "method",
@@ -732,6 +806,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		dependencies:
 			"One: Gson, because Java has no JSON parser in the standard library. HTTP uses the JDK's own `java.net.http`.",
 		sourceUrl: `${REPO}/sdk-java`,
+		debug: {
+			run: "java -jar app.jar",
+			enable: "EpsClient.builder()/* … */.debug(true).build(); // JSON lines on System.err\nEpsClient.builder()/* … */.debug(event -> log.debug(\"{}\", event)).build(); // your logger\nEpsClient.builder()/* … */.debug(false).build(); // off, even when EPS_SDK_DEBUG is set",
+		},
 		installNotes: [
 			"Published through JitPack from a git tag — add the JitPack repository alongside Maven Central.",
 			"Gradle: `maven { url 'https://jitpack.io' }`, then `implementation 'com.github.ekoindia:eps-sdk-java:<tag>'`.",
@@ -762,6 +840,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"Duration",
 				"default 200ms",
 				"boolean",
+			),
+			debugConfig(
+				".debug(…)",
+				"boolean | Consumer<Map<String, Object>>",
+				"true = System.err, consumer = your sink, false = off",
 			),
 		],
 		members: [

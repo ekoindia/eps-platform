@@ -57,7 +57,8 @@ const SdkIndexPage = () => {
 					Every SDK embeds the same API surface these docs are built from, so
 					one generic <code>call(slug, params)</code> reaches all{" "}
 					{getDocumentedSpecs().length} endpoints. Each signs your requests,
-					validates params before sending, and reports failures the same way.
+					validates params before sending, reports failures the same way, and can
+					log every call for debugging (set <code>EPS_SDK_DEBUG=1</code>).
 					Pick a language.
 				</p>
 
