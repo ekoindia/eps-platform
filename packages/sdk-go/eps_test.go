@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -732,6 +733,71 @@ func TestCancelledContextStopsRetrying(t *testing.T) {
 	_, err := fastClient(t, tr).Call(ctx, "bbps-get-operators", getParams)
 	if err == nil || len(tr.requests) != 1 {
 		t.Errorf("err = %v after %d requests, want a failure after exactly 1", err, len(tr.requests))
+	}
+}
+
+// hangUntilDone stands in for an EPS that answers after the caller's deadline:
+// each request blocks until its ctx ends. Bodies are recorded so a generated
+// client_ref_id can be compared with the one on the error.
+type hangUntilDone struct{ bodies []string }
+
+func (h *hangUntilDone) RoundTrip(r *http.Request) (*http.Response, error) {
+	body := ""
+	if r.Body != nil {
+		b, _ := io.ReadAll(r.Body)
+		body = string(b)
+	}
+	h.bodies = append(h.bodies, body)
+	<-r.Context().Done()
+	return nil, r.Context().Err()
+}
+
+// callPastDeadline runs one Call whose ctx expires while the request is in flight.
+func callPastDeadline(t *testing.T, slug string, params map[string]any) (*hangUntilDone, error) {
+	t.Helper()
+	h := &hangUntilDone{}
+	client := newTestClient(t, func(c *Config) { c.HTTPClient = &http.Client{Transport: h} })
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	_, err := client.Call(ctx, slug, params)
+	return h, err
+}
+
+func TestFinancialDeadlineKeepsGeneratedRef(t *testing.T) {
+	h, err := callPastDeadline(t, "dmt-initiate-transfer", transferParams)
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) {
+		t.Fatalf("err = %v, want *IndeterminateError", err)
+	}
+	var sent map[string]any
+	if jsonErr := json.Unmarshal([]byte(h.bodies[0]), &sent); jsonErr != nil {
+		t.Fatalf("body is not JSON: %v", jsonErr)
+	}
+	if ref, _ := sent["client_ref_id"].(string); ind.ClientRefID == "" || ind.ClientRefID != ref {
+		t.Errorf("ClientRefID = %q, want the generated ref sent on the wire %q", ind.ClientRefID, ref)
+	}
+	if len(h.bodies) != 1 || ind.StatusCheck != nil || !errors.Is(ind.StatusCheckErr, context.DeadlineExceeded) {
+		t.Errorf("sent %d requests, StatusCheck %v / %v; want 1, no inquiry, StatusCheckErr = DeadlineExceeded",
+			len(h.bodies), ind.StatusCheck, ind.StatusCheckErr)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("errors.Is(err, DeadlineExceeded) = false for %v", err)
+	}
+}
+
+func TestRefundDeadlineKeepsTID(t *testing.T) {
+	h, err := callPastDeadline(t, "initiate-refund", map[string]any{"initiator_id": "9962981729", "tid": "777", "otp": "1"})
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) || ind.TID != "777" || ind.ClientRefID != "" || len(h.bodies) != 1 {
+		t.Errorf("err = %v after %d requests, want *IndeterminateError with TID 777 after 1", err, len(h.bodies))
+	}
+}
+
+func TestNonFinancialDeadlineIsPlainError(t *testing.T) {
+	_, err := callPastDeadline(t, "pan-lite", panParams)
+	var ind *IndeterminateError
+	if err == nil || errors.As(err, &ind) || !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("err = %v, want a plain deadline error", err)
 	}
 }
 

@@ -784,8 +784,9 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 // is followed by a Transaction Inquiry on its client_ref_id and returned as
 // *IndeterminateError. Otherwise a non-2xx response yields *HTTPError, a
 // transport failure *TransportError, and a body that is not JSON is an error,
-// never a silent empty map. A cancelled ctx stops everything: no retry, no
-// inquiry. See docs/sdk-golden-vector.md.
+// never a silent empty map. A done ctx (deadline or cancel) stops retries and
+// the inquiry, but a financial call still returns *IndeterminateError carrying
+// its ref (or TID) so it can be reconciled later. See docs/sdk-golden-vector.md.
 func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (map[string]any, error) {
 	target, err := c.ResolveTarget(slug, params)
 	if err != nil {
@@ -800,10 +801,14 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 		if err == nil {
 			return envelope, nil
 		}
-		if !isIndeterminate(err) || ctx.Err() != nil {
+		if !isIndeterminate(err) {
 			return nil, err
 		}
-		if attempt < attempts {
+		// A done ctx (deadline or cancel) stops retries and the inquiry — both
+		// would fail on it — but a financial call still falls through, so the
+		// caller gets the ref/TID to reconcile by with a fresh ctx.
+		ctxDone := ctx.Err() != nil
+		if attempt < attempts && !ctxDone {
 			if err := c.backoff(ctx, attempt); err != nil {
 				return nil, err
 			}
@@ -840,6 +845,8 @@ func (c *Client) backoff(ctx context.Context, attempt int) error {
 
 // indeterminate runs one inquiry by client_ref_id=<ref>, else tid=<tid>, else
 // none; its own failure is reported, never allowed to mask the original one.
+// When ctx is already done the inquiry is skipped and StatusCheckErr is
+// ctx.Err(): the key is still on the error for a later inquiry.
 func (c *Client) indeterminate(ctx context.Context, target *Target, cause error) *IndeterminateError {
 	result := &IndeterminateError{
 		Slug:        target.Slug,
@@ -853,7 +860,9 @@ func (c *Client) indeterminate(ctx context.Context, target *Target, cause error)
 	} else if target.TID != "" {
 		params = map[string]any{"tid": target.TID}
 	}
-	if params != nil {
+	if params != nil && ctx.Err() != nil {
+		result.StatusCheckErr = ctx.Err()
+	} else if params != nil {
 		if target.InitiatorID != nil {
 			params["initiator_id"] = target.InitiatorID
 		}
