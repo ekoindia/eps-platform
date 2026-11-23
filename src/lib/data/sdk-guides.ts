@@ -287,6 +287,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				fields: "`status`, `url`, `body` (decoded envelope or null), `raw`",
 			},
 			{
+				name: "EpsInvalidResponseError",
+				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsError\`.`,
+				fields: "`status`, `url`, `raw`",
+			},
+			{
 				name: "EpsError",
 				when: `${VALIDATION_WHEN}, or a bad option. Every other SDK error extends it.`,
 			},
@@ -302,13 +307,9 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		notes: [
 			'ESM only (`"type": "module"`). Use `import`, or `await import()` from CommonJS.',
 			"A per-call cancellation signal is not supported yet — `timeoutMs` is the only abort source.",
+			slugPinnedNote("`npm install @ekoindia/eps-sdk@latest`"),
 		],
 	},
-			{
-				name: "EpsInvalidResponseError",
-				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsError\`.`,
-				fields: "`status`, `url`, `raw`",
-			},
 	{
 		lang: "python",
 		slug: "python",
@@ -325,7 +326,6 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			...commonConfig(
 				"developer_key",
 				"access_key",
-			slugPinnedNote("`npm install @ekoindia/eps-sdk@latest`"),
 				"environment",
 				"initiator_id",
 				"user_code",
@@ -420,6 +420,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 					"`.status`, `.url`, `.body` (decoded envelope or None), `.raw` (bytes)",
 			},
 			{
+				name: "EpsInvalidResponseError",
+				when: `${INVALID_RESPONSE_WHEN} Subclasses \`EpsError\`.`,
+				fields: "`.status`, `.url`, `.raw` (bytes)",
+			},
+			{
 				name: "EpsError",
 				when: `${VALIDATION_WHEN}, or bad config. Every other SDK error subclasses it.`,
 			},
@@ -434,6 +439,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		],
 		notes: [
 			"Paths are checked for existence during validation, so a typo fails before the request is signed.",
+			slugPinnedNote("`pip install -U eps-sdk`"),
 		],
 	},
 	{
@@ -442,11 +448,6 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		title: "PHP SDK",
 		summary:
 			"Backend-only PHP client for every EPS API, with HMAC signing, input validation and typed errors built in.",
-			{
-				name: "EpsInvalidResponseError",
-				when: `${INVALID_RESPONSE_WHEN} Subclasses \`EpsError\`.`,
-				fields: "`.status`, `.url`, `.raw` (bytes)",
-			},
 		order: 3,
 		packageName: "ekoindia/eps-sdk",
 		minRuntime: "PHP 8.1 or newer",
@@ -462,7 +463,6 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"$environment",
 				"$initiatorId",
 				"$userCode",
-			slugPinnedNote("`pip install -U eps-sdk`"),
 				"string",
 			),
 			{
@@ -562,6 +562,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 					"`->status`, `->url`, `->body` (decoded envelope or null), `->raw`",
 			},
 			{
+				name: "Eko\\Eps\\EpsInvalidResponseException",
+				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsException\`.`,
+				fields: "`->status`, `->url`, `->raw`",
+			},
+			{
 				name: "Eko\\Eps\\EpsException",
 				when: "Base of every runtime failure above, and thrown as is for a malformed surface asset. Extends `\\RuntimeException`.",
 			},
@@ -576,6 +581,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		],
 		notes: [
 			"Presence is checked with `isset()`, so a param explicitly set to `null` counts as missing — matching every other SDK.",
+			slugPinnedNote("`composer update ekoindia/eps-sdk`"),
 		],
 	},
 	{
@@ -589,11 +595,6 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		minRuntime: "Go 1.22 or newer",
 		dependencies:
 			"None — `go.mod` has no `require` block and there is no `go.sum`.",
-			{
-				name: "Eko\\Eps\\EpsInvalidResponseException",
-				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsException\`.`,
-				fields: "`->status`, `->url`, `->raw`",
-			},
 		sourceUrl: `${REPO}/sdk-go`,
 		installNotes: [
 			"Published from a read-only mirror (`ekoindia/eps-sdk-go`) as a git tag; there is no separate registry.",
@@ -609,7 +610,6 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			),
 			{
 				name: "HTTPClient",
-			slugPinnedNote("`composer update ekoindia/eps-sdk`"),
 				type: "*http.Client",
 				required: false,
 				units: "default: 30s timeout",
@@ -701,6 +701,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				fields: "`StatusCode`, `URL`, `Body` (decoded envelope or nil), `Raw`",
 			},
 			{
+				name: "*eps.InvalidResponseError",
+				when: `${INVALID_RESPONSE_WHEN} Match it with \`errors.As\`.`,
+				fields: "`StatusCode`, `URL`, `Raw`, `Unwrap()` (the decode error)",
+			},
+			{
 				name: "error",
 				when: `${VALIDATION_WHEN}. Validation messages match the other SDKs word for word; runtime errors are lowercase and \`eps:\`-prefixed, per Go convention.`,
 			},
@@ -712,6 +717,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		notes: [
 			"Map keys are sorted before encoding, so query strings and multipart bodies are byte-deterministic.",
 			"The surface is embedded with `go:embed`, so the package needs no network call to resolve a slug.",
+			slugPinnedNote("`go get github.com/ekoindia/eps-sdk-go@latest`"),
 		],
 	},
 	{
@@ -735,11 +741,6 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			...commonConfig(
 				".developerKey(…)",
 				".accessKey(…)",
-			{
-				name: "*eps.InvalidResponseError",
-				when: `${INVALID_RESPONSE_WHEN} Match it with \`errors.As\`.`,
-				fields: "`StatusCode`, `URL`, `Raw`, `Unwrap()` (the decode error)",
-			},
 				".environment(…)",
 				".initiatorId(…)",
 				".userCode(…)",
@@ -752,7 +753,6 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				units: "default: 30s connect + 30s per request",
 				description:
 					"Control timeouts, proxies or redirects by supplying your own client.",
-			slugPinnedNote("`go get github.com/ekoindia/eps-sdk-go@latest`"),
 			},
 			...retryConfig(
 				".retries(…)",
@@ -840,6 +840,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				fields: "`status`, `url`, `body` (decoded envelope or null), `raw`",
 			},
 			{
+				name: "EpsClient.EpsInvalidResponseException",
+				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsException\`.`,
+				fields: "`status`, `url`, `raw`",
+			},
+			{
 				name: "EpsClient.EpsException",
 				when: `${VALIDATION_WHEN}. Base of every other SDK exception. Unchecked — it extends \`RuntimeException\`.`,
 			},
@@ -851,6 +856,9 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		notes: [
 			"Upload parts are sent as `application/octet-stream`; the MIME type is not sniffed.",
 			"Gson is configured with `serializeNulls()` — required for wire conformance, since every other SDK keeps explicit nulls.",
+			slugPinnedNote(
+				"bump `com.github.ekoindia:eps-sdk-java` to the latest tag",
+			),
 		],
 	},
 ];
@@ -867,11 +875,3 @@ export const getSdkGuide = (slug: string): SdkGuideMeta | undefined =>
 /** Every SDK guide slug, in nav order — feeds the SSG prerender list. */
 export const getAllSdkSlugs = (): SdkSlug[] =>
 	[...SDK_GUIDES].sort((a, b) => a.order - b.order).map((g) => g.slug);
-			{
-				name: "EpsClient.EpsInvalidResponseException",
-				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsException\`.`,
-				fields: "`status`, `url`, `raw`",
-			},
-			slugPinnedNote(
-				"bump `com.github.ekoindia:eps-sdk-java` to the latest tag",
-			),
