@@ -567,7 +567,7 @@ written by the text sink and over every callback event, that none of the
 | explicit off option with `EPS_SDK_DEBUG=1`                                | no event                                                        |
 | debug off, `EPS_SDK_DEBUG` unset                                          | no event, nothing written to stderr                            |
 
-Secrets for the byte scan: `abcd1234wxyz`, the full `secret-key`,
+Values for the byte scan: the developer key above, the full `secret-key`,
 `123456789012`, `9876543210`, `000111222333`, `654321`, `k@x.in`,
 `john@example.com`, `Kumar`, `KUMAR_123456789012` (the 4-character `otp` is
 asserted by field, not by scan, so a random `call_id` cannot flake the test).
