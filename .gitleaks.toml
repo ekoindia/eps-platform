@@ -66,3 +66,20 @@ paths = [
 regexes = [
   '''eyJ[A-Za-z0-9_.\-]{10,}''',
 ]
+
+# SDK conformance fixtures from docs/sdk-golden-vector.md: the golden secret-key
+# (HMAC of the dummy access key `TEST_ACCESS_KEY_DO_NOT_USE`) and the fake
+# developer key `abcd1234wxyz` the debug-mode masking fixtures use. Both are
+# published on purpose and authenticate nothing. Exact literals, scoped to the
+# conformance doc and the SDK test suites — anywhere else they still trip.
+[[allowlists]]
+description = "SDK golden-vector and debug-mode fixtures"
+condition = "AND"
+paths = [
+  '''^docs/sdk-golden-vector\.md$''',
+  '''^packages/sdk-[a-z]+/(src/.*\.test\.ts|tests/.*|src/test/.*|.*_test\.go)$''',
+]
+regexes = [
+  '''u30ak/iOGwKCaspqCeiYng8fd98QDx7kF3DBBOadQHk=''',
+  '''abcd1234wxyz''',
+]
