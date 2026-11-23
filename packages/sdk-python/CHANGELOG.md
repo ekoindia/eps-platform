@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Debug mode: `EpsClient(..., debug=True)` (or the env var `EPS_SDK_DEBUG=1`,
+  no code change) logs each request, response, retry, transport failure and
+  error as masked JSON lines on stderr; pass a callable to receive the events
+  instead, or `debug=False` to force it off. Credentials and personal data are
+  masked best-effort — review before sharing with Eko support.
+
 ### Changed
 
 - `auto_status_check=False` now skips only the Transaction Inquiry: an

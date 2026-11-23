@@ -25,7 +25,9 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Union
+
+from .debug import Debug, Trace, file_meta, resolve_sink
 
 __all__ = [
     "EpsClient",
@@ -367,16 +369,24 @@ class Target:
     initiator_id: Any = None
     #: Inquiry key for a financial endpoint with no ref (initiate-refund).
     tid: Optional[str] = None
+    #: Debug-mode metadata of a multipart body (``form-data`` JSON string and
+    #: per-file param / extension / size), captured while it was encoded.
+    multipart_debug: Optional[Dict[str, Any]] = field(
+        default=None, repr=False, compare=False
+    )
 
 
 def _encode_multipart(
     values: Mapping[str, Any], file_params: Iterable[str]
-) -> Tuple[bytes, str]:
+) -> Tuple[bytes, str, Dict[str, Any]]:
     """Build a multipart/form-data body.
 
     One ``form-data`` part holds every non-file value as JSON, followed by a part
     per upload — the order the API documents. ``None`` values are dropped (a form
     field has no null encoding); nulls nested inside a value survive the JSON.
+
+    Returns ``(body, content_type, debug)``: ``debug`` is the metadata debug
+    mode logs, taken from values already in hand (never re-reads a file).
     """
     file_params = set(file_params)
     payload: Dict[str, Any] = {}
@@ -402,8 +412,9 @@ def _encode_multipart(
         chunks.append(f"--{boundary}".encode() + crlf)
         chunks.append(header.encode() + crlf + crlf)
 
+    fields = _dump_json(payload)
     part_header(f'Content-Disposition: form-data; name="{MULTIPART_JSON_FIELD}"')
-    chunks.append(_dump_json(payload) + crlf)
+    chunks.append(fields + crlf)
     for name, filename, content in uploads:
         mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
         chunks.append(f"--{boundary}".encode() + crlf)
@@ -414,7 +425,14 @@ def _encode_multipart(
         chunks.append(f"Content-Type: {mime}".encode() + crlf + crlf)
         chunks.append(bytes(content) + crlf)
     chunks.append(f"--{boundary}--".encode() + crlf)
-    return b"".join(chunks), f"multipart/form-data; boundary={boundary}"
+    debug = {
+        "fields": fields.decode("utf-8"),
+        "files": [
+            file_meta(name, filename, len(content))
+            for name, filename, content in uploads
+        ],
+    }
+    return b"".join(chunks), f"multipart/form-data; boundary={boundary}", debug
 
 
 @dataclass
@@ -449,6 +467,13 @@ class EpsClient:
     now: Callable[[], int] = field(
         default_factory=lambda: (lambda: int(time.time() * 1000))
     )
+    #: Debug mode: log masked request / response / validation / retry events.
+    #: ``True`` writes JSON lines to stderr, a callable receives each event dict,
+    #: ``False`` forces it off. ``None`` (unset): on when the env var
+    #: ``EPS_SDK_DEBUG`` is ``1`` or ``true``. Credentials and personal data are
+    #: masked best-effort; review the output before sharing it with Eko support.
+    #: See "Debug mode conformance" in docs/sdk-golden-vector.md.
+    debug: Union[bool, Callable[[Dict[str, Any]], None], None] = None
     base_url: str = field(init=False)
 
     def __post_init__(self) -> None:
@@ -465,12 +490,42 @@ class EpsClient:
                 f"Invalid retry_base_delay: {self.retry_base_delay}. "
                 "Expected a non-negative number of seconds."
             )
+        if self.debug is not None and not (
+            isinstance(self.debug, bool) or callable(self.debug)
+        ):
+            raise EpsError(
+                f"Invalid debug: {self.debug}. Expected a boolean or a callable."
+            )
         for env in _SURFACE["environments"]:
             if env["id"] == self.environment:
                 self.base_url = env["baseUrl"]
                 break
         else:
             raise EpsError(f'Unknown environment "{self.environment}".')
+        self._debug = self._start_debug()
+
+    def _start_debug(self) -> Optional[Debug]:
+        """Debug mode per the ``debug`` option, else ``EPS_SDK_DEBUG``; None when
+        off or if setting it up fails (debug must never break a client)."""
+        try:
+            resolved = resolve_sink(self.debug, os.environ.get("EPS_SDK_DEBUG"))
+            if resolved is None:
+                return None
+            sink, source = resolved
+            return Debug(
+                sink=sink,
+                source=source,
+                env=self.environment,
+                base_url=self.base_url,
+                surface=_SURFACE,
+                client_ref=_FORMATS.get("client-ref"),
+                developer_key=self.developer_key,
+                timeout_ms=round(self.timeout * 1000),
+                retries=self.retries,
+                auto_status_check=self.auto_status_check,
+            )
+        except Exception:
+            return None
 
     def _endpoint(self, slug: str) -> Dict[str, Any]:
         for endpoint in _SURFACE["endpoints"]:
@@ -593,6 +648,7 @@ class EpsClient:
         url = f"{self.base_url}{path}"
         headers = self.build_headers(multipart)
         body: Optional[bytes] = None
+        multipart_debug: Optional[Dict[str, Any]] = None
         if endpoint["method"] == "GET":
             query = urllib.parse.urlencode(
                 [(k, _to_wire_str(v)) for k, v in rest.items()]
@@ -600,7 +656,7 @@ class EpsClient:
             if query:
                 url += ("&" if "?" in url else "?") + query
         elif multipart:
-            body, content_type = _encode_multipart(rest, file_params)
+            body, content_type, multipart_debug = _encode_multipart(rest, file_params)
             headers["content-type"] = content_type
         else:
             body = _dump_json(rest)
@@ -621,6 +677,7 @@ class EpsClient:
                 if client_ref_id is None and merged.get("tid") is not None
                 else None
             ),
+            multipart_debug=multipart_debug,
         )
 
     def call(self, slug: str, params: Optional[Mapping[str, Any]] = None) -> Any:
@@ -634,18 +691,33 @@ class EpsClient:
         :class:`urllib.error.URLError` on a transport failure. A body that is
         not JSON is an error, never a silent ``{}``. See docs/sdk-golden-vector.md.
         """
+        trace = self._debug.trace(slug) if self._debug is not None else None
+        try:
+            return self._run(slug, params, trace)
+        except Exception as exc:
+            if trace is not None:
+                trace.error(exc)
+            raise
+
+    def _run(
+        self,
+        slug: str,
+        params: Optional[Mapping[str, Any]],
+        trace: Optional[Trace],
+    ) -> Any:
+        """``call()`` without the debug wrapper: validate, send, retry, inquire."""
         target = self.resolve_target(slug, params)
         attempts = self.retries + 1 if target.retry_safe else 1
         attempt = 0
         while True:
             attempt += 1
             try:
-                return self._send(target)
+                return self._send(target, attempt, trace)
             except Exception as exc:
                 if not _is_indeterminate(exc):
                     raise
                 if attempt < attempts:
-                    self._backoff(attempt)
+                    self._backoff(attempt, trace)
                     continue
                 # Never re-send an unsafe call: that is how a customer is
                 # debited twice. Ask EPS what happened instead -- by the ref, or
@@ -654,10 +726,12 @@ class EpsClient:
                     raise self._indeterminate(target, exc) from exc
                 raise
 
-    def _backoff(self, attempt: int) -> None:
+    def _backoff(self, attempt: int, trace: Optional[Trace] = None) -> None:
         """Attempt n sleeps a random slice of min(base * 2**(n-1), 2s) -- full jitter."""
         cap = min(self.retry_base_delay * 2 ** (attempt - 1), _MAX_RETRY_DELAY)
         delay = random.uniform(0, cap)
+        if trace is not None:
+            trace.retry(attempt, round(delay * 1000))
         if delay > 0:
             time.sleep(delay)
 
@@ -690,8 +764,12 @@ class EpsClient:
             target.tid,
         )
 
-    def _send(self, target: Target) -> Any:
-        """Sign (fresh timestamp) and send one attempt; decode per the contract."""
+    def _send(
+        self, target: Target, attempt: int = 1, trace: Optional[Trace] = None
+    ) -> Any:
+        """Sign (fresh timestamp) and send one attempt; decode per the contract.
+        With debug on, ``trace`` logs the request, then its response or
+        transport error; it never changes what is sent or raised."""
         request = urllib.request.Request(
             target.url, data=target.body, method=target.method
         )
@@ -701,15 +779,46 @@ class EpsClient:
         headers.update(self.build_headers(target.multipart))
         for name, value in headers.items():
             request.add_header(name, value)
+        if trace is not None:
+            trace.request(
+                attempt,
+                target.method,
+                target.url,
+                headers,
+                None if target.multipart else target.body,
+                target.multipart_debug,
+            )
+        read_failed = False
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                raw = response.read()
-                status = response.status
+                try:
+                    raw = response.read()
+                    status = response.status
+                except Exception as exc:
+                    if trace is not None:
+                        read_failed = True
+                        trace.transport_error(
+                            attempt, exc, getattr(response, "status", None)
+                        )
+                    raise
         except urllib.error.HTTPError as exc:  # non-2xx: body still worth decoding
-            raw = exc.read()
+            try:
+                raw = exc.read()
+            except Exception as read_exc:
+                if trace is not None:
+                    trace.transport_error(attempt, read_exc, exc.code)
+                raise
+            if trace is not None:
+                trace.response(attempt, exc.code, raw)
             raise EpsHttpError(
                 exc.code, target.url, _decode_json_or_none(raw), raw
             ) from exc
+        except Exception as exc:  # no usable response: URLError, timeout, OSError
+            if trace is not None and not read_failed:
+                trace.transport_error(attempt, exc)
+            raise
+        if trace is not None:
+            trace.response(attempt, status, raw)
         if not 200 <= status < 300:
             raise EpsHttpError(status, target.url, _decode_json_or_none(raw), raw)
         try:

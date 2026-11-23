@@ -253,7 +253,7 @@ class TestMultipart(unittest.TestCase):
         self.assertIn(b"\x89PNG-not-really", target.body)
 
     def test_multipart_omits_null_params_but_keeps_nested_nulls(self):
-        body, _ = _encode_multipart(
+        body, _, _ = _encode_multipart(
             {
                 # A null param has no form encoding, so it is dropped entirely...
                 "extra_note": None,
