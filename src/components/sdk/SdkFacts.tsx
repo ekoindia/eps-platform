@@ -18,7 +18,11 @@ import { CodeCard } from "@/components/docs/CodeCard";
 import { API_ENVIRONMENTS } from "@/lib/data/api-auth";
 import { HTTP_STATUS_CODES } from "@/lib/data/api-error-codes";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
-import type { SdkGuideMeta } from "@/lib/data/sdk-guides";
+import {
+	DEBUG_POINTS,
+	DEBUG_SAMPLE_LINE,
+	type SdkGuideMeta,
+} from "@/lib/data/sdk-guides";
 import { SDK_INSTALL, sdkSampleFor } from "@/lib/docs/code-samples";
 import { ArrowUpRight } from "lucide-react";
 import { type ReactNode, createContext, useContext } from "react";
@@ -37,7 +41,8 @@ export type SdkFactsSection =
 	| "files"
 	| "errors"
 	| "environments"
-	| "notes";
+	| "notes"
+	| "debug";
 
 const Table = ({ head, rows }: { head: string[]; rows: ReactNode[][] }) => (
 	<div className="not-prose my-6 overflow-x-auto rounded-xl border border-border">
@@ -217,6 +222,34 @@ export const SdkFacts = ({ section }: { section: SdkFactsSection }) => {
 						</li>
 					))}
 				</ul>
+			);
+
+		case "debug":
+			return (
+				<>
+					<p>No code change: set the env var and rerun.</p>
+					<div className="not-prose my-4">
+						<CodeCard
+							code={`EPS_SDK_DEBUG=1 ${guide.debug.run}`}
+							language="bash"
+						/>
+					</div>
+					<p>Or switch it in code:</p>
+					<div className="not-prose my-4">
+						<CodeCard code={guide.debug.enable} language={guide.lang} />
+					</div>
+					<p>Each event is one JSON object per line, for example:</p>
+					<div className="not-prose my-4">
+						<CodeCard code={DEBUG_SAMPLE_LINE} language="json" />
+					</div>
+					<ul className="my-6 list-disc space-y-1 pl-5">
+						{DEBUG_POINTS.map((point) => (
+							<li key={point}>
+								<InlineMd text={point} />
+							</li>
+						))}
+					</ul>
+				</>
 			);
 
 		case "files":

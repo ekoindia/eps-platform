@@ -85,3 +85,54 @@ describe("buildSdkSurface", () => {
 			expect(e.retrySafe, e.slug).toBeTypeOf("boolean");
 	});
 });
+
+describe("buildSdkSurface redact (debug-mode masking)", () => {
+	const { safe, last4, text, nest } = surface.redact;
+	const lists = { safe, last4, text, nest };
+
+	it("keeps the four lists disjoint", () => {
+		const seen = new Map<string, string>();
+		for (const [list, names] of Object.entries(lists))
+			for (const name of names) {
+				expect(seen.get(name), `${name} in ${list}`).toBeUndefined();
+				seen.set(name, list);
+			}
+	});
+
+	it("never prints a personal-data field raw", () => {
+		// Token-prefix stems: `recipient_id` is fine, `ip_address` is not.
+		const STEMS = ["aadha", "pan", "mobile", "phone", "otp", "pid", "dob", "name", "address", "email", "vpa", "ip", "lat", "long", "token", "acc"];
+		const ALLOWED = new Set(["account_type", "account_status_code", "otp_ref_id", "otp_expiry_timestamp", "txn_otp_request_id", "phone_operator_code"]);
+		const offenders = safe.filter(
+			(key) =>
+				!ALLOWED.has(key) &&
+				key.split(/[_.]/).some((token) => STEMS.some((stem) => token.startsWith(stem))),
+		);
+		expect(offenders).toEqual([]);
+	});
+
+	it("classifies the identifiers support needs a last-4 hint for", () => {
+		for (const key of ["aadhar", "pan_number", "bank_account", "customer_id", "customer_mobile", "initiator_id"])
+			expect(last4).toContain(key);
+	});
+
+	it("leaves OTPs, biometrics and names to the default full mask", () => {
+		const classified = new Set([...safe, ...last4, ...text, ...nest]);
+		for (const key of ["otp", "otp_verification_token", "piddata", "name", "dob", "email"])
+			expect(classified.has(key), key).toBe(false);
+	});
+
+	it("adds every aadhaar / pan / mobile-format param to last4", () => {
+		for (const e of surface.endpoints)
+			for (const p of e.params)
+				if (p.format && ["aadhaar", "pan", "mobile"].includes(p.format))
+					expect(last4).toContain(p.name.toLowerCase().replace(/^.*[.\]]/, ""));
+	});
+
+	it("stores lowercase, sorted names", () => {
+		for (const names of Object.values(lists)) {
+			expect(names).toEqual([...names].sort());
+			for (const name of names) expect(name).toBe(name.toLowerCase());
+		}
+	});
+});

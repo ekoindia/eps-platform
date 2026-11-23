@@ -3,6 +3,16 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+	Debug,
+	type EpsDebugSink,
+	type MultipartDebug,
+	type Redact,
+	type Trace,
+	fileMeta,
+	resolveSink,
+} from "./debug.js";
+
 export interface SdkParam {
 	name: string;
 	type: string;
@@ -138,7 +148,7 @@ export const MULTIPART_JSON_FIELD = "form-data";
 const buildFormData = (
 	values: Record<string, unknown>,
 	fileParams: Set<string>,
-): FormData => {
+): { form: FormData; debug: MultipartDebug } => {
 	const form = new FormData();
 	const payload: Record<string, unknown> = {};
 	const uploads: Array<[string, Blob, string]> = [];
@@ -157,10 +167,15 @@ const buildFormData = (
 		}
 	}
 	// Envelope first, then the uploads — the order the API documents.
-	form.append(MULTIPART_JSON_FIELD, JSON.stringify(payload));
+	const fields = JSON.stringify(payload);
+	form.append(MULTIPART_JSON_FIELD, fields);
 	for (const [name, blob, filename] of uploads)
 		form.append(name, blob, filename);
-	return form;
+	// Debug metadata from values already in hand: never re-reads a file.
+	const files = uploads.map(([name, blob, filename]) =>
+		fileMeta(name, filename, blob.size),
+	);
+	return { form, debug: { fields, files } };
 };
 
 /**
@@ -192,8 +207,32 @@ export class EpsHttpError extends EpsError {
 }
 
 /**
+ * A 2xx response whose body is not an EPS envelope — a JSON object with a
+ * numeric `status`, plus a numeric `response_status_id` on a financial endpoint
+ * (empty, truncated, an HTML error page from a proxy, valid JSON such as
+ * `null` / `[]`, or an object such as `{}` / a proxy's `{"status":502,…}`). EPS may well have processed the request, so this is
+ * indeterminate, not decisive: a `financial` call gets the status inquiry and a
+ * `retrySafe` one is retried. Still an `EpsError`, so existing catches hold.
+ */
+export class EpsInvalidResponseError extends EpsError {
+	constructor(
+		readonly status: number,
+		readonly url: string,
+		readonly raw: string,
+	) {
+		super(`EPS response from ${url} was not valid JSON.`);
+		this.name = "EpsInvalidResponseError";
+	}
+}
+
+/**
  * A non-GET call on a money-moving endpoint ended without a confirmed outcome
- * (timeout, transport failure, HTTP 429 or 5xx). The SDK never re-sends such a
+ * (timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not an EPS envelope).
+ * Inquiry key: the call's `client_ref_id`, or — on an endpoint that has none,
+ * such as `initiate-refund` — the `tid` it acted on (then `tid` is set and
+ * `clientRefId` is null). Only `tx_status` 4 (refunded) confirms the refund; 3
+ * (refund pending) is also the state before a refund is requested, so it settles
+ * nothing. The SDK never re-sends such a
  * request — that is how a customer gets debited twice — so it inquired by the
  * call's `client_ref_id` instead and reports what it found. `statusCheck` is the
  * Transaction Inquiry envelope (`data.tx_status`: 0 success, 1 fail, 2 awaited,
@@ -202,30 +241,45 @@ export class EpsHttpError extends EpsError {
  * retrying; never assume a timeout meant failure.
  */
 export class EpsIndeterminateError extends EpsError {
-	/** HTTP status of the original attempt, or null for a transport failure. */
+	/** HTTP status of the original attempt (a 2xx when its body was not an EPS envelope),
+	 * or null for a transport failure. */
 	readonly status: number | null;
 	constructor(
 		readonly slug: string,
-		readonly clientRefId: string,
+		/** The call's ref, or null on an endpoint without one (see `tid`). */
+		readonly clientRefId: string | null,
 		cause: unknown,
 		readonly statusCheck: unknown,
 		readonly statusCheckError: unknown,
+		/** The `tid` inquired by when there was no ref, else null. */
+		readonly tid: string | null = null,
 	) {
 		super(
-			`EPS request for "${slug}" with client_ref_id "${clientRefId}" has no confirmed outcome.`,
+			`EPS request for "${slug}" ${
+				clientRefId !== null
+					? `with client_ref_id "${clientRefId}"`
+					: tid !== null
+						? `on tid "${tid}"`
+						: "without a client_ref_id or tid"
+			} has no confirmed outcome.`,
 			{ cause },
 		);
 		this.name = "EpsIndeterminateError";
-		this.status = cause instanceof EpsHttpError ? cause.status : null;
+		this.status =
+			cause instanceof EpsHttpError || cause instanceof EpsInvalidResponseError
+				? cause.status
+				: null;
 	}
 }
 
-/** True when the outcome is unknown: no response, or a 429/5xx that says
- * nothing about whether the request was processed. A 4xx is a decisive no. */
+/** True when the outcome is unknown: no response, a 429/5xx, or a 2xx whose
+ * body could not be read — none says whether the request was processed. A 4xx
+ * is a decisive no. */
 const isIndeterminate = (err: unknown): boolean =>
-	err instanceof EpsHttpError
+	err instanceof EpsInvalidResponseError ||
+	(err instanceof EpsHttpError
 		? err.status === 429 || err.status >= 500
-		: !(err instanceof EpsError);
+		: !(err instanceof EpsError));
 
 /** Decode a response body, or null when it is not JSON — the non-2xx path still
  * wants whatever envelope the server sent. Mirrors `_decode_json_or_none` in
@@ -240,6 +294,12 @@ const decodeJsonOrNull = (raw: string): unknown => {
 	}
 };
 
+/** A "blank" ref: only Unicode White_Space or zero-width characters. One
+ * explicit class shared by all five SDKs (docs/sdk-golden-vector.md), so no
+ * SDK leans on its own trim()'s idea of whitespace. */
+const BLANK_REF =
+	/^[\t\n\v\f\r \u0085\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u2060\u3000\uFEFF]*$/u;
+
 /** Per-attempt budget, matching the 30s every other EPS SDK defaults to. */
 const DEFAULT_TIMEOUT_MS = 30_000;
 /** Extra attempts for a `retrySafe` call that ended indeterminate. */
@@ -252,9 +312,11 @@ const MAX_RETRY_DELAY_MS = 2_000;
 const INQUIRY_SLUG = "transaction-inquiry";
 
 interface Surface {
+	bundleVersion?: string;
 	environments: { id: string; baseUrl: string }[];
 	endpoints: SdkEndpoint[];
 	formats?: Record<string, string>;
+	redact?: Redact;
 }
 
 // The surface is read at runtime from the shipped `data/` asset (not bundled).
@@ -328,10 +390,18 @@ export interface EpsClientOptions {
 	 * min(base × 2^(n-1), 2000). Default 200; 0 retries immediately (tests). */
 	retryBaseDelayMs?: number;
 	/** After an indeterminate failure on a money-moving (`financial`) endpoint,
-	 * look the transaction up by its `client_ref_id` and surface the result on
-	 * `EpsIndeterminateError.statusCheck`. Default true. */
+	 * look the transaction up by its `client_ref_id` (or `tid`) and surface the
+	 * result on `EpsIndeterminateError.statusCheck`. Default true. Off skips only
+	 * the inquiry: the call still throws `EpsIndeterminateError` with the key. */
 	autoStatusCheck?: boolean;
 	now?: () => number;
+	/** Debug mode: log masked request / response / validation / retry events.
+	 * `true` writes JSON lines to stderr, a function receives each event object,
+	 * `false` forces it off. Unset: on when the env var `EPS_SDK_DEBUG` is `1` or
+	 * `true`. Credentials and personal data are masked best-effort; review the
+	 * output before sharing it with Eko support. See "Debug mode conformance" in
+	 * docs/sdk-golden-vector.md. */
+	debug?: boolean | EpsDebugSink;
 }
 
 /** secret-key = base64(HMAC-SHA256(timestamp, base64(access_key))). */
@@ -351,6 +421,7 @@ export class EpsClient {
 	private readonly retryBaseDelayMs: number;
 	private readonly autoStatusCheck: boolean;
 	private readonly now: () => number;
+	private readonly debug: Debug | null;
 
 	constructor(private readonly opts: EpsClientOptions) {
 		// Backend-only guard: access_key must never run in a browser.
@@ -383,11 +454,46 @@ export class EpsClient {
 		this.retryBaseDelayMs = baseDelay;
 		this.autoStatusCheck = opts.autoStatusCheck ?? true;
 		this.now = opts.now ?? Date.now;
+		if (
+			opts.debug !== undefined &&
+			typeof opts.debug !== "boolean" &&
+			typeof opts.debug !== "function"
+		)
+			throw new EpsError(
+				`Invalid debug: ${String(opts.debug)}. Expected a boolean or a function.`,
+			);
+		this.debug = this.startDebug(opts);
+	}
+
+	/** Debug mode per the option, else `EPS_SDK_DEBUG`; null when off or if
+	 * setting it up fails (debug must never break a client). */
+	private startDebug(opts: EpsClientOptions): Debug | null {
+		try {
+			const resolved = resolveSink(opts.debug, process.env["EPS_SDK_DEBUG"]);
+			if (!resolved) return null;
+			return new Debug({
+				...resolved,
+				here,
+				env: opts.environment,
+				baseUrl: this.baseUrl,
+				bundleVersion: SURFACE.bundleVersion,
+				redact: SURFACE.redact,
+				clientRef: FORMATS.get("client-ref"),
+				developerKey: opts.developerKey,
+				timeoutMs: this.timeoutMs,
+				retries: this.retries,
+				autoStatusCheck: this.autoStatusCheck,
+			});
+		} catch {
+			return null;
+		}
 	}
 
 	private endpoint(slug: string): SdkEndpoint {
 		const e = SURFACE.endpoints.find((x) => x.slug === slug);
-		if (!e) throw new EpsError(`Unknown endpoint slug "${slug}".`);
+		if (!e) throw new EpsError(
+				`Unknown endpoint slug "${slug}". Check the spelling, or upgrade the SDK if this API is newer than your installed version (npm install @ekoindia/eps-sdk@latest).`,
+			);
 		return e;
 	}
 
@@ -404,6 +510,21 @@ export class EpsClient {
 		slug: string,
 		params: Record<string, unknown> = {},
 	): Promise<T> {
+		const trace = this.debug?.trace(slug);
+		try {
+			return (await this.run(slug, params, trace)) as T;
+		} catch (err) {
+			trace?.error(err);
+			throw err;
+		}
+	}
+
+	/** `call()` without the debug wrapper: validate, send, retry, inquire. */
+	private async run(
+		slug: string,
+		params: Record<string, unknown>,
+		trace: Trace | undefined,
+	): Promise<unknown> {
 		const { endpoint, merged, clientRefId, ...target } = this.resolve(
 			slug,
 			params,
@@ -411,65 +532,80 @@ export class EpsClient {
 		const attempts = isRetrySafe(endpoint) ? this.retries + 1 : 1;
 		for (let attempt = 1; ; attempt++) {
 			try {
-				return (await this.send(endpoint, target)) as T;
+				return await this.send(endpoint, target, attempt, trace);
 			} catch (err) {
 				if (!isIndeterminate(err)) throw err;
 				if (attempt < attempts) {
-					await this.backoff(attempt);
+					await this.backoff(attempt, trace);
 					continue;
 				}
 				// Never re-send an unsafe call: that is how a customer is debited twice.
-				// Ask EPS what happened to the ref instead, if there is one to ask by.
-				if (
-					this.autoStatusCheck &&
-					endpoint.financial &&
-					clientRefId !== undefined
-				)
+				// Ask EPS what happened instead — by the ref, or by the tid on an
+				// endpoint that has no ref (initiate-refund).
+				if (endpoint.financial) {
+					const tid =
+						clientRefId === undefined && merged["tid"] != null
+							? String(merged["tid"])
+							: null;
 					throw await this.indeterminate(
 						slug,
-						clientRefId,
+						clientRefId ?? null,
+						tid,
 						merged["initiator_id"],
 						err,
 					);
+				}
 				throw err;
 			}
 		}
 	}
 
 	/** Attempt n sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter. */
-	private async backoff(attempt: number): Promise<void> {
+	private async backoff(attempt: number, trace?: Trace): Promise<void> {
 		const cap = Math.min(
 			this.retryBaseDelayMs * 2 ** (attempt - 1),
 			MAX_RETRY_DELAY_MS,
 		);
 		const delay = Math.floor(Math.random() * (cap + 1));
+		trace?.retry(attempt, delay);
 		if (delay > 0) await new Promise((r) => setTimeout(r, delay));
 	}
 
-	/** One inquiry by `client_ref_id=<ref>`; its own failure is reported, never
+	/** One inquiry by `client_ref_id=<ref>`, else `tid=<tid>`, else none — or
+	 * none at all with `autoStatusCheck` off; its own failure is reported, never
 	 * allowed to mask the original one. */
 	private async indeterminate(
 		slug: string,
-		clientRefId: string,
+		clientRefId: string | null,
+		tid: string | null,
 		initiatorId: unknown,
 		cause: unknown,
 	): Promise<EpsIndeterminateError> {
 		let statusCheck: unknown = null;
 		let statusCheckError: unknown = null;
-		try {
-			statusCheck = await this.call(INQUIRY_SLUG, {
-				client_ref_id: clientRefId,
-				...(initiatorId !== undefined && { initiator_id: initiatorId }),
-			});
-		} catch (err) {
-			statusCheckError = err;
-		}
+		const key =
+			clientRefId !== null
+				? { client_ref_id: clientRefId }
+				: tid !== null
+					? { tid }
+					: null;
+		// Off opts out of the inquiry, not of the key: the ref/tid still surfaces.
+		if (key && this.autoStatusCheck)
+			try {
+				statusCheck = await this.call(INQUIRY_SLUG, {
+					...key,
+					...(initiatorId !== undefined && { initiator_id: initiatorId }),
+				});
+			} catch (err) {
+				statusCheckError = err;
+			}
 		return new EpsIndeterminateError(
 			slug,
 			clientRefId,
 			cause,
 			statusCheck,
 			statusCheckError,
+			tid,
 		);
 	}
 
@@ -540,6 +676,13 @@ export class EpsClient {
 			throw new EpsError(
 				`Invalid param values for "${slug}": ${badValues.join(", ")}.`,
 			);
+		// A financial call's ref is its only reconciliation key after a lost
+		// response, so a blank one is refused (never silently replaced) even on
+		// endpoints whose param declares no client-ref format.
+		if (endpoint.financial && clientRefId !== undefined && BLANK_REF.test(clientRefId))
+			throw new EpsError(
+				`Invalid param values for "${slug}": client_ref_id (must not be blank on a financial call).`,
+			);
 		// A `type:"file"` param flips the whole request to multipart/form-data.
 		const fileParams = new Set(
 			endpoint.params.filter((p) => p.type === "file").map((p) => p.name),
@@ -558,23 +701,41 @@ export class EpsClient {
 		}
 		let url = `${this.baseUrl}${path}`;
 		let body: RequestInit["body"];
+		let multipartDebug: MultipartDebug | undefined;
 		if (endpoint.method === "GET") {
 			const query = new URLSearchParams(
 				Object.entries(rest).map(([k, v]) => [k, String(v)]),
 			).toString();
 			if (query) url += (url.includes("?") ? "&" : "?") + query;
 		} else if (multipart) {
-			body = buildFormData(rest, fileParams);
+			const built = buildFormData(rest, fileParams);
+			body = built.form;
+			multipartDebug = built.debug;
 		} else {
 			body = JSON.stringify(rest);
 		}
-		return { endpoint, merged, clientRefId, url, body, multipart };
+		return {
+			endpoint,
+			merged,
+			clientRefId,
+			url,
+			body,
+			multipart,
+			multipartDebug,
+		};
 	}
 
 	/** Sign (fresh timestamp) and send one attempt; decode per the contract. */
 	private async send(
 		endpoint: SdkEndpoint,
-		target: { url: string; body: RequestInit["body"]; multipart: boolean },
+		target: {
+			url: string;
+			body: RequestInit["body"];
+			multipart: boolean;
+			multipartDebug?: MultipartDebug;
+		},
+		attempt = 1,
+		trace?: Trace,
 	): Promise<unknown> {
 		const { url, body, multipart } = target;
 		const timestamp = String(this.now());
@@ -592,13 +753,49 @@ export class EpsClient {
 			signal: AbortSignal.timeout(this.timeoutMs),
 		};
 		if (body !== undefined) init.body = body;
-		const res = await this.fetchFn(url, init);
-		const raw = await res.text();
+		trace?.request(attempt, {
+			method: endpoint.method,
+			url,
+			template: endpoint.path,
+			headers,
+			body,
+			multipart: target.multipartDebug,
+		});
+		let res: Response;
+		try {
+			res = await this.fetchFn(url, init);
+		} catch (err) {
+			trace?.transportError(attempt, err);
+			throw err;
+		}
+		let raw: string;
+		try {
+			raw = await res.text();
+		} catch (err) {
+			trace?.transportError(attempt, err, res.status);
+			throw err;
+		}
+		trace?.response(attempt, res.status, raw);
 		const envelope = decodeJsonOrNull(raw);
 		// A non-2xx envelope is an error, not a result — see docs/sdk-golden-vector.md.
 		if (!res.ok) throw new EpsHttpError(res.status, url, envelope, raw);
-		if (envelope === null)
-			throw new EpsError(`EPS response from ${url} was not valid JSON.`);
+		// Only an EPS envelope — a JSON object with a numeric `status` — is a
+		// result. Anything else (null, a scalar, an array, `{}`, a proxy's error
+		// object) is as unreadable as a truncated body. A financial endpoint also
+		// needs a numeric `response_status_id`, so a proxy's `{"status":502,…}`
+		// cannot pass for a result there (a wrong "no" just costs an inquiry).
+		const fields = envelope as {
+			status?: unknown;
+			response_status_id?: unknown;
+		} | null;
+		if (
+			fields === null ||
+			typeof fields !== "object" ||
+			Array.isArray(fields) ||
+			typeof fields.status !== "number" ||
+			(endpoint.financial && typeof fields.response_status_id !== "number")
+		)
+			throw new EpsInvalidResponseError(res.status, url, raw);
 		return envelope;
 	}
 }

@@ -103,6 +103,16 @@ describe("connect auth provider — verify", () => {
 		});
 	});
 
+	it("marks a 1563 'Invalid Initiator' as refused, not a wrong OTP", async () => {
+		const { provider } = setup({
+			login: vi.fn(async () => ({ otpFailed: true, response_type_id: 1563 })),
+		});
+		expect(await provider.verify({ mobile: "9", otp: "000000" })).toEqual({
+			ok: false,
+			refused: true,
+		});
+	});
+
 	it("returns the classified profile plus upstream tokens on success", async () => {
 		const { provider } = setup({ login: vi.fn(async () => LOGIN_OK) });
 		const r = await provider.verify({ mobile: "9990000001", otp: "123456" });

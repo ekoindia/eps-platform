@@ -43,6 +43,12 @@ If you are triaging a report right now, skip to [Reading an error](#reading-an-e
 - `trace` is omitted entirely when nothing was recorded.
 - `cause` appears only on the unhandled-error branch, and only for a verified
   session.
+- An upstream that never answered is **504 `UPSTREAM_TIMEOUT`**, not the
+  unhandled 502 — route it to whoever owns the slow upstream (the `trace` names
+  the path).
+- On `POST /auth/otp/verify`, **502 `OTP_UPSTREAM_REFUSED`** (`source: "api"`) is
+  connect-api refusing the verification (its 1563 "Invalid Initiator for
+  verification"), not a wrong OTP — forward to the connect-api team.
 
 ### `source` — who owns this failure
 

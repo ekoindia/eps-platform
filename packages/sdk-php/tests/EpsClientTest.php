@@ -4,6 +4,7 @@ use Eko\Eps\EpsClient;
 use Eko\Eps\EpsException;
 use Eko\Eps\EpsHttpException;
 use Eko\Eps\EpsIndeterminateException;
+use Eko\Eps\EpsInvalidResponseException;
 use Eko\Eps\EpsTransportException;
 
 final class EpsClientTest extends TestCase
@@ -50,6 +51,14 @@ final class EpsClientTest extends TestCase
         // dmt-get-sender requires initiator_id and customer_id (user_code is optional).
         $this->expectExceptionMessageMatches('/Missing required params.*initiator_id.*customer_id/');
         $client->resolveTarget('dmt-get-sender', ['user_code' => '20810200']);
+    }
+
+    public function testUnknownSlugHintsAtUpgrade(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/^Unknown endpoint slug: no-such-endpoint\..*composer update ekoindia\/eps-sdk/');
+        $client->resolveTarget('no-such-endpoint', []);
     }
 
     public function testThrowsWhenRequiredParamNull(): void
@@ -311,7 +320,7 @@ final class EpsClientTest extends TestCase
     /** Regression for the old `json_decode($res, true) ?? []`. */
     public function testDecodeResponseThrowsWhenSuccessBodyIsNotJson(): void
     {
-        $this->expectException(EpsException::class);
+        $this->expectException(EpsInvalidResponseException::class);
         $this->expectExceptionMessage('was not valid JSON');
         EpsClient::decodeResponse(200, self::URL, 'not json');
     }
@@ -358,6 +367,8 @@ final class EpsClientTest extends TestCase
     ];
     private const GET_ARGS = ['bbps-get-operators', ['initiator_id' => '9962981729']];
     private const OK = '{"status":0}';
+    /** A financial endpoint's envelope also carries a numeric response_status_id. */
+    private const OK_FINANCIAL = '{"status":0,"response_status_id":0}';
 
     /**
      * Scripted transport standing in for cURL: each step is [status, raw], a
@@ -427,7 +438,7 @@ final class EpsClientTest extends TestCase
 
     public function testClientRefIdSatisfiesRequiredParam(): void
     {
-        $t = self::transport([[200, self::OK]]);
+        $t = self::transport([[200, self::OK_FINANCIAL]]);
         self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
         $this->assertMatchesRegularExpression(self::REF, $t->body()['client_ref_id']);
     }
@@ -453,6 +464,24 @@ final class EpsClientTest extends TestCase
         $client->call('pan-lite', self::PAN);
         $client->call('pan-lite', self::PAN);
         $this->assertNotSame($t->body(0)['client_ref_id'], $t->body(1)['client_ref_id']);
+    }
+
+    public function testBlankRefOnFinancialCallIsRefused(): void
+    {
+        // ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+        foreach (['', '   ', "\t", "\u{00A0}", "\u{2003}", "\u{3000}", "\u{200B}", "\u{FEFF}", " \u{00A0}\t\u{2003}"] as $blank) {
+            $t = self::transport([[200, self::OK_FINANCIAL]]);
+            try {
+                self::fast($t)->call('dmt-initiate-transfer', ['client_ref_id' => $blank] + self::TRANSFER);
+                $this->fail('expected InvalidArgumentException for ' . json_encode($blank));
+            } catch (\InvalidArgumentException $e) {
+                $this->assertSame(
+                    'Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).',
+                    $e->getMessage()
+                );
+                $this->assertSame([], $t->requests);
+            }
+        }
     }
 
     public function testEmptyClientRefIdCountsAsSupplied(): void
@@ -570,6 +599,58 @@ final class EpsClientTest extends TestCase
         }
     }
 
+    public function testFinancialPostUnparseable2xxInquiresAndThrowsIndeterminate(): void
+    {
+        $inquiry = ['status' => 0, 'data' => ['tx_status' => '0', 'tid' => '1']];
+        $t = self::transport([[200, '{"status":0,"da'], [200, json_encode($inquiry)]]);
+        try {
+            self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
+            $this->fail('expected EpsIndeterminateException');
+        } catch (EpsIndeterminateException $e) {
+            $ref = $t->body(0)['client_ref_id'];
+            $this->assertSame($ref, $e->clientRefId);
+            $this->assertSame(200, $e->status);
+            $this->assertSame($inquiry, $e->statusCheck);
+            $this->assertInstanceOf(EpsInvalidResponseException::class, $e->getPrevious());
+            $this->assertSame('{"status":0,"da', $e->getPrevious()->raw);
+            $this->assertCount(2, $t->requests);
+            $this->assertStringContainsString("client_ref_id=$ref", $t->url(1));
+        }
+    }
+
+    public function testFinancialPostNonObjectJson2xxInquires(): void
+    {
+        $inquiry = ['status' => 0, 'data' => ['tx_status' => '0', 'tid' => '1']];
+        foreach (['null', '"ok"', '5', '[]', '[{"status":0}]', '{}', '{"error":"Bad Gateway"}', '{"status":"0"}', '{"status":true}', '{"status":null}', '{"status":502,"error":"Bad Gateway"}', '{"status":0}', '{"status":0,"response_status_id":"0"}'] as $body) {
+            $t = self::transport([[200, $body], [200, json_encode($inquiry)]]);
+            try {
+                self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
+                $this->fail("expected EpsIndeterminateException for $body");
+            } catch (EpsIndeterminateException $e) {
+                $this->assertSame(200, $e->status, $body);
+                $this->assertSame($inquiry, $e->statusCheck, $body);
+                $this->assertInstanceOf(EpsInvalidResponseException::class, $e->getPrevious(), $body);
+                $this->assertCount(2, $t->requests, $body);
+            }
+        }
+    }
+
+    public function testFinancialEnvelopeNeedsResponseStatusIdNonFinancialOnlyStatus(): void
+    {
+        $full = ['status' => 0, 'response_status_id' => 0, 'data' => ['tid' => '1']];
+        $this->assertSame($full, self::fast(self::transport([[200, json_encode($full)]]))->call('dmt-initiate-transfer', self::TRANSFER));
+        // pan-fetch-style success with no response_status_id stays a result off the financial path
+        $this->assertSame(['status' => 0], self::fast(self::transport([[200, self::OK]]))->call('pan-lite', self::PAN));
+        $this->assertSame(['status' => 0], EpsClient::decodeResponse(200, self::URL, self::OK));
+    }
+
+    public function testNonFinancialPostUnparseable2xxNoInquiry(): void
+    {
+        $t = self::transport([[200, '']]);
+        $this->expectException(EpsInvalidResponseException::class);
+        try { self::fast($t)->call('pan-lite', self::PAN); } finally { $this->assertCount(1, $t->requests); }
+    }
+
     public function testFinancialPost4xxIsPlainHttpException(): void
     {
         $t = self::transport([self::http(401)]);
@@ -584,24 +665,39 @@ final class EpsClientTest extends TestCase
         try { self::fast($t)->call('pan-lite', self::PAN); } finally { $this->assertCount(1, $t->requests); }
     }
 
-    public function testFinancialWithoutRefParamNoInquiry(): void
+    public function testFinancialWithoutRefParamInquiresByTid(): void
     {
-        $t = self::transport([self::http(500)]);
-        $this->expectException(EpsHttpException::class);
-        try {
-            self::fast($t)->call('initiate-refund', ['initiator_id' => '9962981729', 'tid' => '1', 'otp' => '1']);
-        } finally {
-            $this->assertCount(1, $t->requests);
+        $inquiry = ['status' => 0, 'data' => ['tx_status' => '4', 'tid' => '777']];
+        foreach ([[self::http(500), EpsHttpException::class], [[200, 'null'], EpsInvalidResponseException::class]] as [$failure, $causeType]) {
+            $t = self::transport([$failure, [200, json_encode($inquiry)]]);
+            try {
+                self::fast($t)->call('initiate-refund', ['initiator_id' => '9962981729', 'tid' => '777', 'otp' => '1']);
+                $this->fail('expected EpsIndeterminateException');
+            } catch (EpsIndeterminateException $e) {
+                $this->assertNull($e->clientRefId);
+                $this->assertSame('777', $e->tid);
+                $this->assertSame($inquiry, $e->statusCheck);
+                $this->assertInstanceOf($causeType, $e->getPrevious());
+                $this->assertSame('EPS request for "initiate-refund" on tid "777" has no confirmed outcome.', $e->getMessage());
+                $this->assertCount(2, $t->requests);
+                $this->assertStringContainsString('tid=777', $t->url(1));
+                $this->assertStringNotContainsString('client_ref_id', $t->url(1));
+            }
         }
     }
 
-    public function testAutoStatusCheckOff(): void
+    public function testAutoStatusCheckOffSkipsOnlyTheInquiry(): void
     {
         $t = self::transport([self::http(500)]);
-        $this->expectException(EpsHttpException::class);
         try {
             self::fast($t, ['autoStatusCheck' => false])->call('dmt-initiate-transfer', self::TRANSFER);
-        } finally {
+            $this->fail('expected EpsIndeterminateException');
+        } catch (EpsIndeterminateException $e) {
+            $this->assertSame($t->body(0)['client_ref_id'], $e->clientRefId);
+            $this->assertSame(500, $e->status);
+            $this->assertNull($e->statusCheck);
+            $this->assertNull($e->statusCheckError);
+            $this->assertInstanceOf(EpsHttpException::class, $e->getPrevious());
             $this->assertCount(1, $t->requests);
         }
     }

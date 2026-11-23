@@ -75,7 +75,30 @@ export interface SdkGuideMeta {
 	fileValues: string[];
 	/** Language-specific gotchas worth calling out on the page. */
 	notes?: string[];
+	/** Debug mode: how to run with the env var, and how to switch it in code. */
+	debug: SdkDebugGuide;
 }
+
+/** Per-language half of the guide's "Debugging" section. */
+export interface SdkDebugGuide {
+	/** A typical run command, prefixed with `EPS_SDK_DEBUG=1` on the page. */
+	run: string;
+	/** Code showing the in-code option (on, custom sink, forced off). */
+	enable: string;
+}
+
+/** One debug `request` line, as every SDK prints it (masked). */
+export const DEBUG_SAMPLE_LINE =
+	'{"logger":"eps-sdk","ts":"2026-11-23T11:31:25.884Z","event":"request","sdk":"js","sdk_version":"3.1.0","surface":"48eb0cf2","env":"sandbox","call_id":"f020eef5","slug":"bbps-operator-code-circle","attempt":1,"method":"GET","url":"https://staging.eko.in/ekoapi/v3/customer/payment/bbps/recharge/****3210/operator?initiator_id=****1729","headers":{"developer_key":"****wxyz","secret-key":"****","secret-key-timestamp":"1763897485884","content-type":"application/json"},"body":null}';
+
+/** The language-neutral facts of debug mode, shown on every guide. */
+export const DEBUG_POINTS: string[] = [
+	"**Events** — `init` once per client; `request` and `response` per attempt; `transport_error` when no usable response came back; `retry`; and `error` when the call throws. A validation failure logs `error` with no `request` before it, so you know nothing was sent. Lines of one call share a `call_id`.",
+	"**What it shows** — the environment (`sandbox` / `production`), the full URL, headers and body sent, the HTTP status and raw EPS response, timings, retries and the automatic status check.",
+	"**What it hides** — `developer_key` shows only its last 4 characters and `secret-key` is never shown. Aadhaar, PAN, account and mobile numbers show their last 4; OTPs, biometrics, names, addresses, e-mails, dates of birth and any field the SDK does not recognise print as `****`. Ids, status codes, amounts and the EPS `message` print as-is so support can trace the call.",
+	"**Safe to leave in code** — off unless you switch it on; while off it costs nothing, and it never changes a call's outcome.",
+	"**Review before sharing** — masking is best-effort: free text such as an upstream error page is scrubbed but may still hold personal data. Share the output only with Eko support, and turn debug mode off when you are done.",
+];
 
 const REPO = "https://github.com/ekoindia/eps-platform/tree/main/packages";
 
@@ -139,7 +162,7 @@ const retryConfig = (
 		required: false,
 		units: "default 2",
 		description:
-			"Extra attempts for a GET whose outcome was indeterminate (timeout, transport failure, HTTP 429/5xx). Non-GET calls are never retried. 0 disables.",
+			"Extra attempts for a call whose outcome was indeterminate (timeout, transport failure, HTTP 429/5xx, a 2xx that is not an EPS envelope) — only on endpoints marked `retrySafe` (idempotent, free, moves no money; plain GETs when the endpoint carries no such flag). Money-moving and paid calls are never re-sent. 0 disables.",
 	},
 	{
 		name: retryBaseDelay,
@@ -155,9 +178,39 @@ const retryConfig = (
 		required: false,
 		units: "default true",
 		description:
-			"After an indeterminate failure on a money-moving endpoint, look the transaction up by its `client_ref_id` and attach the result to the indeterminate error.",
+			"After an indeterminate failure on a money-moving endpoint, look the transaction up by its `client_ref_id` (or the `tid` on `initiate-refund`) and attach the result to the indeterminate error. Turning it off skips only that lookup — the call still fails with the indeterminate error carrying the ref, its inquiry fields empty.",
 	},
 ];
+
+/** Shared wording for the debug option (and Go's `NewWithDebug`). */
+const DEBUG_WHEN =
+	"Debug mode: logs each request (full URL, headers, body), response (status, raw body), retry, transport failure and error as masked JSON lines, to share with Eko support. Unset, it follows the env var `EPS_SDK_DEBUG` (`1` or `true` turns it on, no code change). Keys and personal data are masked best-effort; review the output before sharing.";
+
+/** The debug option every client but Go's takes (Go: `eps.NewWithDebug`). */
+const debugConfig = (name: string, type: string, units: string): SdkConfigOption => ({
+	name,
+	type,
+	required: false,
+	units,
+	description: DEBUG_WHEN,
+});
+
+/** Shared wording for the indeterminate-error row; `extra` adds the
+ * language-specific ways a call can end there (Go ctx, Java interrupt). */
+const indeterminateWhen = (extra = ""): string =>
+	`A money-moving (\`financial\`) call whose outcome is unknown — timeout, transport failure, HTTP 429/5xx, or a 2xx that is not an EPS envelope.${extra} The SDK never re-sends it; it looks the transaction up by its \`client_ref_id\` (or, on an endpoint without one such as \`initiate-refund\`, the \`tid\` it acted on) and attaches the result. With the status check off, or no key to look up by, it skips the lookup and still throws this. For a refund only \`tx_status\` 4 confirms it; 3 settles nothing. Reconcile before retrying.`;
+
+/** Shared wording for the invalid-response-error row. */
+const INVALID_RESPONSE_WHEN =
+	'A 2xx whose body is not an EPS envelope: not JSON, not a JSON object, no numeric `status`, or — on a money-moving endpoint — no numeric `response_status_id` (e.g. a proxy\'s `{"status":502,…}`). Never a silent empty result. On a money-moving call it becomes the cause of the indeterminate error; a `retrySafe` call is retried first.';
+
+/** Validation failures every SDK refuses before signing. */
+const VALIDATION_WHEN =
+	"Unknown slug, missing required param, wrong param type, or an invalid param value — including a blank `client_ref_id` passed to a money-moving call (empty, or only whitespace / zero-width characters), refused before sending";
+
+/** "Unknown endpoint slug" means the installed SDK predates that API. */
+const slugPinnedNote = (upgrade: string): string =>
+	`The slug list is pinned to the SDK release, so a newly launched API fails with "Unknown endpoint slug" until you upgrade (${upgrade}).`;
 
 export const SDK_GUIDES: SdkGuideMeta[] = [
 	{
@@ -172,6 +225,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		dependencies:
 			"None — standard library only (`node:crypto`, global `fetch`).",
 		sourceUrl: `${REPO}/sdk-js`,
+		debug: {
+			run: "node app.js",
+			enable: "new EpsClient({ ...options, debug: true }); // JSON lines on stderr\nnew EpsClient({ ...options, debug: (event) => logger.debug(event) }); // your logger\nnew EpsClient({ ...options, debug: false }); // off, even when EPS_SDK_DEBUG is set",
+		},
 		config: [
 			...commonConfig(
 				"developerKey",
@@ -203,6 +260,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"number",
 				"milliseconds, default 200",
 				"boolean",
+			),
+			debugConfig(
+				"debug",
+				"boolean | ((event) => void)",
+				"true = stderr, function = your sink, false = off",
 			),
 		],
 		members: [
@@ -260,9 +322,9 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		errorTypes: [
 			{
 				name: "EpsIndeterminateError",
-				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				when: indeterminateWhen(),
 				fields:
-					"`slug`, `clientRefId`, `status` (or null), `statusCheck` (inquiry envelope or null), `statusCheckError`, `cause`",
+					"`slug`, `clientRefId` (or null), `tid` (or null), `status` (or null), `statusCheck` (inquiry envelope or null), `statusCheckError`, `cause`",
 			},
 			{
 				name: "EpsHttpError",
@@ -270,12 +332,17 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				fields: "`status`, `url`, `body` (decoded envelope or null), `raw`",
 			},
 			{
+				name: "EpsInvalidResponseError",
+				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsError\`.`,
+				fields: "`status`, `url`, `raw`",
+			},
+			{
 				name: "EpsError",
-				when: "Unknown slug, missing required param, wrong param type, bad option, or a 2xx body that is not JSON. `EpsHttpError` extends it.",
+				when: `${VALIDATION_WHEN}, or a bad option. Every other SDK error extends it.`,
 			},
 			{
 				name: "TimeoutError (DOMException)",
-				when: "The request exceeded `timeoutMs`. Surfaced raw, as Node reports it.",
+				when: "The request exceeded `timeoutMs` on a call that is not money-moving (after any retries). Surfaced raw, as Node reports it.",
 			},
 		],
 		fileValues: [
@@ -285,6 +352,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		notes: [
 			'ESM only (`"type": "module"`). Use `import`, or `await import()` from CommonJS.',
 			"A per-call cancellation signal is not supported yet — `timeoutMs` is the only abort source.",
+			slugPinnedNote("`npm install @ekoindia/eps-sdk@latest`"),
 		],
 	},
 	{
@@ -299,6 +367,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		dependencies:
 			"None — standard library only (`urllib`, `hmac`, `hashlib`, `mimetypes`).",
 		sourceUrl: `${REPO}/sdk-python`,
+		debug: {
+			run: "python app.py",
+			enable: "EpsClient(..., debug=True)                            # JSON lines on stderr\nEpsClient(..., debug=lambda event: log.debug(event))  # your logger (event is a dict)\nEpsClient(..., debug=False)                           # off, even when EPS_SDK_DEBUG is set",
+		},
 		config: [
 			...commonConfig(
 				"developer_key",
@@ -323,6 +395,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"float",
 				"seconds, default 0.2",
 				"bool",
+			),
+			debugConfig(
+				"debug",
+				"bool | Callable[[dict], None] | None",
+				"True = stderr, callable = your sink, False = off",
 			),
 		],
 		members: [
@@ -386,9 +463,9 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		errorTypes: [
 			{
 				name: "EpsIndeterminateError",
-				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				when: indeterminateWhen(),
 				fields:
-					"`slug`, `client_ref_id`, `status` (or None), `status_check`, `status_check_error`, `__cause__`",
+					"`slug`, `client_ref_id` (or None), `tid` (or None), `status` (or None), `status_check`, `status_check_error`, `__cause__`",
 			},
 			{
 				name: "EpsHttpError",
@@ -397,12 +474,17 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 					"`.status`, `.url`, `.body` (decoded envelope or None), `.raw` (bytes)",
 			},
 			{
+				name: "EpsInvalidResponseError",
+				when: `${INVALID_RESPONSE_WHEN} Subclasses \`EpsError\`.`,
+				fields: "`.status`, `.url`, `.raw` (bytes)",
+			},
+			{
 				name: "EpsError",
-				when: "Unknown slug, missing required param, wrong param type, bad config, or a 2xx body that is not JSON. `EpsHttpError` subclasses it.",
+				when: `${VALIDATION_WHEN}, or bad config. Every other SDK error subclasses it.`,
 			},
 			{
 				name: "urllib.error.URLError",
-				when: "Transport failure or timeout. Surfaced raw.",
+				when: "Transport failure or timeout on a call that is not money-moving (after any retries). Surfaced raw.",
 			},
 		],
 		fileValues: [
@@ -411,6 +493,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		],
 		notes: [
 			"Paths are checked for existence during validation, so a typo fails before the request is signed.",
+			slugPinnedNote("`pip install -U eps-sdk`"),
 		],
 	},
 	{
@@ -424,6 +507,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		minRuntime: "PHP 8.1 or newer",
 		dependencies: "None beyond the `curl` and `json` extensions.",
 		sourceUrl: `${REPO}/sdk-php`,
+		debug: {
+			run: "php app.php",
+			enable: "new EpsClient(..., debug: true);  // CLI: JSON lines on STDERR; web SAPIs: error_log()\nnew EpsClient(..., debug: fn (array $event) => $logger->debug('eps', $event)); // your logger\nnew EpsClient(..., debug: false); // off, even when EPS_SDK_DEBUG is set",
+		},
 		installNotes: [
 			"Published from a read-only mirror (`ekoindia/eps-sdk-php`), subtree-split from the monorepo.",
 		],
@@ -452,6 +539,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"float",
 				"seconds, default 0.2",
 				"bool",
+			),
+			debugConfig(
+				"debug",
+				"bool|\\Closure|null",
+				"true = STDERR (CLI) or error_log, closure = your sink, false = off",
 			),
 		],
 		members: [
@@ -518,13 +610,13 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		errorTypes: [
 			{
 				name: "Eko\\Eps\\EpsIndeterminateException",
-				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				when: indeterminateWhen(),
 				fields:
-					"`slug`, `clientRefId`, `status` (or null), `statusCheck`, `statusCheckError`, `getPrevious()`",
+					"`slug`, `clientRefId` (or null), `tid` (or null), `status` (or null), `statusCheck`, `statusCheckError`, `getPrevious()`",
 			},
 			{
 				name: "Eko\\Eps\\EpsTransportException",
-				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on GET; wraps the native error.",
+				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on `retrySafe` endpoints; on a money-moving call it becomes the cause of the indeterminate exception. Wraps the native error.",
 			},
 			{
 				name: "Eko\\Eps\\EpsHttpException",
@@ -533,12 +625,17 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 					"`->status`, `->url`, `->body` (decoded envelope or null), `->raw`",
 			},
 			{
+				name: "Eko\\Eps\\EpsInvalidResponseException",
+				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsException\`.`,
+				fields: "`->status`, `->url`, `->raw`",
+			},
+			{
 				name: "Eko\\Eps\\EpsException",
-				when: "Transport failure, a malformed surface asset, or a 2xx body that is not JSON. Extends `\\RuntimeException`.",
+				when: "Base of every runtime failure above, and thrown as is for a malformed surface asset. Extends `\\RuntimeException`.",
 			},
 			{
 				name: "\\InvalidArgumentException",
-				when: "Unknown environment or slug, missing required param, wrong param type. SPL already has the right class, and it is a `\\LogicException`, so it cannot share a base with the runtime failures.",
+				when: `${VALIDATION_WHEN}; also an unknown environment. SPL already has the right class, and it is a \`\\LogicException\`, so it cannot share a base with the runtime failures.`,
 			},
 		],
 		fileValues: [
@@ -547,6 +644,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		],
 		notes: [
 			"Presence is checked with `isset()`, so a param explicitly set to `null` counts as missing — matching every other SDK.",
+			slugPinnedNote("`composer update ekoindia/eps-sdk`"),
 		],
 	},
 	{
@@ -561,6 +659,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		dependencies:
 			"None — `go.mod` has no `require` block and there is no `go.sum`.",
 		sourceUrl: `${REPO}/sdk-go`,
+		debug: {
+			run: "go run .",
+			enable: "client, err := eps.NewWithDebug(cfg, os.Stderr)  // any io.Writer: a file, a log adapter\nclient, err := eps.NewWithDebug(cfg, io.Discard) // off, even when EPS_SDK_DEBUG is set\nclient, err := eps.New(cfg)                      // follows EPS_SDK_DEBUG",
+		},
 		installNotes: [
 			"Published from a read-only mirror (`ekoindia/eps-sdk-go`) as a git tag; there is no separate registry.",
 		],
@@ -598,6 +700,13 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				signature: "eps.New(cfg eps.Config) (*eps.Client, error)",
 				description:
 					"Builds a client. Safe for concurrent use once constructed.",
+			},
+			{
+				kind: "function",
+				name: "eps.NewWithDebug",
+				signature:
+					"eps.NewWithDebug(cfg eps.Config, w io.Writer) (*eps.Client, error)",
+				description: `Like \`eps.New\`, with debug mode written to \`w\` (\`os.Stderr\`, a file…); \`io.Discard\` forces it off, nil follows the env var. ${DEBUG_WHEN}`,
 			},
 			{
 				kind: "method",
@@ -650,13 +759,15 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		errorTypes: [
 			{
 				name: "*eps.IndeterminateError",
-				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				when: indeterminateWhen(
+					" A `ctx` that ends mid-call (deadline or cancel) lands here too, with no retry or lookup: `StatusCheckErr` is `ctx.Err()` and `errors.Is(err, context.DeadlineExceeded)` still matches.",
+				),
 				fields:
-					"`Slug`, `ClientRefID`, `Status` (0 for transport), `StatusCheck`, `StatusCheckErr`, `Unwrap()`",
+					"`Slug`, `ClientRefID` (or empty), `TID` (or empty), `Status` (0 for transport), `StatusCheck`, `StatusCheckErr`, `Unwrap()`",
 			},
 			{
 				name: "*eps.TransportError",
-				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on GET; wraps the native error.",
+				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on `retrySafe` endpoints; on a money-moving call it becomes the cause of `*eps.IndeterminateError`. Wraps the native error.",
 			},
 			{
 				name: "*eps.HTTPError",
@@ -664,8 +775,13 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				fields: "`StatusCode`, `URL`, `Body` (decoded envelope or nil), `Raw`",
 			},
 			{
+				name: "*eps.InvalidResponseError",
+				when: `${INVALID_RESPONSE_WHEN} Match it with \`errors.As\`.`,
+				fields: "`StatusCode`, `URL`, `Raw`, `Unwrap()` (the decode error)",
+			},
+			{
 				name: "error",
-				when: "Unknown slug, missing required param, wrong param type, a 2xx body that is not JSON, or a transport failure. Messages are lowercase and `eps:`-prefixed, per Go convention.",
+				when: `${VALIDATION_WHEN}. Validation messages match the other SDKs word for word; runtime errors are lowercase and \`eps:\`-prefixed, per Go convention.`,
 			},
 		],
 		fileValues: [
@@ -675,6 +791,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		notes: [
 			"Map keys are sorted before encoding, so query strings and multipart bodies are byte-deterministic.",
 			"The surface is embedded with `go:embed`, so the package needs no network call to resolve a slug.",
+			slugPinnedNote("`go get github.com/ekoindia/eps-sdk-go@latest`"),
 		],
 	},
 	{
@@ -689,6 +806,10 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		dependencies:
 			"One: Gson, because Java has no JSON parser in the standard library. HTTP uses the JDK's own `java.net.http`.",
 		sourceUrl: `${REPO}/sdk-java`,
+		debug: {
+			run: "java -jar app.jar",
+			enable: "EpsClient.builder()/* … */.debug(true).build(); // JSON lines on System.err\nEpsClient.builder()/* … */.debug(event -> log.debug(\"{}\", event)).build(); // your logger\nEpsClient.builder()/* … */.debug(false).build(); // off, even when EPS_SDK_DEBUG is set",
+		},
 		installNotes: [
 			"Published through JitPack from a git tag — add the JitPack repository alongside Maven Central.",
 			"Gradle: `maven { url 'https://jitpack.io' }`, then `implementation 'com.github.ekoindia:eps-sdk-java:<tag>'`.",
@@ -719,6 +840,11 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				"Duration",
 				"default 200ms",
 				"boolean",
+			),
+			debugConfig(
+				".debug(…)",
+				"boolean | Consumer<Map<String, Object>>",
+				"true = System.err, consumer = your sink, false = off",
 			),
 		],
 		members: [
@@ -781,13 +907,15 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		errorTypes: [
 			{
 				name: "EpsClient.EpsIndeterminateException",
-				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				when: indeterminateWhen(
+					" A thread interrupt mid-call lands here too, with no retry or lookup: `statusCheckError` is an `InterruptedException` and the interrupt flag stays set.",
+				),
 				fields:
-					"`slug`, `clientRefId`, `status` (or null), `statusCheck`, `statusCheckError`, `getCause()`",
+					"`slug`, `clientRefId` (or null), `tid` (or null), `status` (or null), `statusCheck`, `statusCheckError`, `getCause()`",
 			},
 			{
 				name: "EpsClient.EpsTransportException",
-				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on GET; wraps the native error.",
+				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on `retrySafe` endpoints; on a money-moving call it becomes the cause of the indeterminate exception. Wraps the native error.",
 			},
 			{
 				name: "EpsClient.EpsHttpException",
@@ -795,8 +923,13 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				fields: "`status`, `url`, `body` (decoded envelope or null), `raw`",
 			},
 			{
+				name: "EpsClient.EpsInvalidResponseException",
+				when: `${INVALID_RESPONSE_WHEN} Extends \`EpsException\`.`,
+				fields: "`status`, `url`, `raw`",
+			},
+			{
 				name: "EpsClient.EpsException",
-				when: "Unknown slug, missing required param, wrong param type, transport failure, or a 2xx body that is not JSON. Unchecked — it extends `RuntimeException`.",
+				when: `${VALIDATION_WHEN}. Base of every other SDK exception. Unchecked — it extends \`RuntimeException\`.`,
 			},
 		],
 		fileValues: [
@@ -806,6 +939,9 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		notes: [
 			"Upload parts are sent as `application/octet-stream`; the MIME type is not sniffed.",
 			"Gson is configured with `serializeNulls()` — required for wire conformance, since every other SDK keeps explicit nulls.",
+			slugPinnedNote(
+				"bump `com.github.ekoindia:eps-sdk-java` to the latest tag",
+			),
 		],
 	},
 ];

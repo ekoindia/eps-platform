@@ -25,7 +25,9 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Union
+
+from .debug import Debug, Trace, file_meta, resolve_sink
 
 __all__ = [
     "EpsClient",
@@ -59,6 +61,12 @@ _INTEGER_RE = re.compile(r"^-?\d+$")
 _BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz"
 #: Spec types whose values are scalars the value checks can stringify.
 _SCALAR_TYPES = frozenset({"string", "number", "integer", "boolean"})
+#: A "blank" ref: only Unicode White_Space or zero-width characters. One explicit
+#: class shared by all five SDKs (docs/sdk-golden-vector.md); str.strip() would
+#: also eat \x1c-\x1f and miss U+FEFF / U+200B.
+_BLANK_REF = re.compile(
+    "[\t\n\x0b\f\r \x85\xa0\u1680\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]*"
+)
 
 
 class EpsError(Exception):
@@ -81,10 +89,33 @@ class EpsHttpError(EpsError):
         self.raw = raw
 
 
+class EpsInvalidResponseError(EpsError):
+    """A 2xx response whose body is not an EPS envelope -- a JSON object with a
+    numeric ``status``, plus a numeric ``response_status_id`` on a financial
+    endpoint (empty, truncated, a proxy's HTML, valid JSON such as ``null`` /
+    ``[]``, or an object such as ``{}`` / a proxy's ``{"status":502,...}``).
+
+    EPS may well have processed the request, so this is indeterminate, not
+    decisive: a ``financial`` call gets the status inquiry and a ``retry_safe``
+    one is retried. Still an ``EpsError``, so existing handlers keep matching.
+    """
+
+    def __init__(self, status: int, url: str, raw: bytes) -> None:
+        super().__init__(f"EPS response from {url} was not valid JSON: {raw[:200]!r}")
+        self.status = status
+        self.url = url
+        self.raw = raw
+
+
 class EpsIndeterminateError(EpsError):
     """A non-GET call on a money-moving endpoint ended without a confirmed outcome.
 
-    Timeout, transport failure, HTTP 429 or 5xx. The SDK never re-sends such a
+    Timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not an EPS envelope.
+    Inquiry key: the call's ``client_ref_id``, or -- on an endpoint that has
+    none, such as ``initiate-refund`` -- the ``tid`` it acted on (then ``tid`` is
+    set and ``client_ref_id`` is None). Only ``tx_status`` 4 (refunded) confirms
+    the refund; 3 (refund pending) is also the state before a refund is
+    requested, so it settles nothing. The SDK never re-sends such a
     request -- that is how a customer gets debited twice -- so it inquired by the
     call's ``client_ref_id`` instead. ``status_check`` is the Transaction Inquiry
     envelope (``data.tx_status``: 0 success, 1 fail, 2 awaited, ...) or ``None``
@@ -96,27 +127,42 @@ class EpsIndeterminateError(EpsError):
     def __init__(
         self,
         slug: str,
-        client_ref_id: str,
+        client_ref_id: Optional[str],
         cause: BaseException,
         status_check: Any,
         status_check_error: Optional[BaseException],
+        tid: Optional[str] = None,
     ) -> None:
-        super().__init__(
-            f'EPS request for "{slug}" with client_ref_id "{client_ref_id}" '
-            "has no confirmed outcome."
-        )
+        if client_ref_id is not None:
+            subject = f'with client_ref_id "{client_ref_id}"'
+        elif tid is not None:
+            subject = f'on tid "{tid}"'
+        else:
+            subject = "without a client_ref_id or tid"
+        super().__init__(f'EPS request for "{slug}" {subject} has no confirmed outcome.')
         self.slug = slug
+        #: The call's ref, or None on an endpoint without one (see ``tid``).
         self.client_ref_id = client_ref_id
-        #: HTTP status of the original attempt, or None for a transport failure.
-        self.status = cause.status if isinstance(cause, EpsHttpError) else None
+        #: The ``tid`` inquired by when there was no ref, else None.
+        self.tid = tid
+        #: HTTP status of the original attempt (a 2xx when its body was not
+        #: JSON), or None for a transport failure.
+        self.status = (
+            cause.status
+            if isinstance(cause, (EpsHttpError, EpsInvalidResponseError))
+            else None
+        )
         self.status_check = status_check
         self.status_check_error = status_check_error
         self.__cause__ = cause
 
 
 def _is_indeterminate(exc: BaseException) -> bool:
-    """True when the outcome is unknown: no response, or a 429/5xx that says
-    nothing about whether the request was processed. A 4xx is a decisive no."""
+    """True when the outcome is unknown: no response, a 429/5xx, or a 2xx whose
+    body could not be read -- none says whether the request was processed. A
+    4xx is a decisive no."""
+    if isinstance(exc, EpsInvalidResponseError):
+        return True
     if isinstance(exc, EpsHttpError):
         return exc.status == 429 or exc.status >= 500
     return not isinstance(exc, EpsError)
@@ -321,16 +367,26 @@ class Target:
     client_ref_id: Optional[str] = None
     #: The initiator the call resolved, reused by the status check.
     initiator_id: Any = None
+    #: Inquiry key for a financial endpoint with no ref (initiate-refund).
+    tid: Optional[str] = None
+    #: Debug-mode metadata of a multipart body (``form-data`` JSON string and
+    #: per-file param / extension / size), captured while it was encoded.
+    multipart_debug: Optional[Dict[str, Any]] = field(
+        default=None, repr=False, compare=False
+    )
 
 
 def _encode_multipart(
     values: Mapping[str, Any], file_params: Iterable[str]
-) -> Tuple[bytes, str]:
+) -> Tuple[bytes, str, Dict[str, Any]]:
     """Build a multipart/form-data body.
 
     One ``form-data`` part holds every non-file value as JSON, followed by a part
     per upload — the order the API documents. ``None`` values are dropped (a form
     field has no null encoding); nulls nested inside a value survive the JSON.
+
+    Returns ``(body, content_type, debug)``: ``debug`` is the metadata debug
+    mode logs, taken from values already in hand (never re-reads a file).
     """
     file_params = set(file_params)
     payload: Dict[str, Any] = {}
@@ -356,8 +412,9 @@ def _encode_multipart(
         chunks.append(f"--{boundary}".encode() + crlf)
         chunks.append(header.encode() + crlf + crlf)
 
+    fields = _dump_json(payload)
     part_header(f'Content-Disposition: form-data; name="{MULTIPART_JSON_FIELD}"')
-    chunks.append(_dump_json(payload) + crlf)
+    chunks.append(fields + crlf)
     for name, filename, content in uploads:
         mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
         chunks.append(f"--{boundary}".encode() + crlf)
@@ -368,7 +425,14 @@ def _encode_multipart(
         chunks.append(f"Content-Type: {mime}".encode() + crlf + crlf)
         chunks.append(bytes(content) + crlf)
     chunks.append(f"--{boundary}--".encode() + crlf)
-    return b"".join(chunks), f"multipart/form-data; boundary={boundary}"
+    debug = {
+        "fields": fields.decode("utf-8"),
+        "files": [
+            file_meta(name, filename, len(content))
+            for name, filename, content in uploads
+        ],
+    }
+    return b"".join(chunks), f"multipart/form-data; boundary={boundary}", debug
 
 
 @dataclass
@@ -395,13 +459,21 @@ class EpsClient:
     #: min(base * 2**(n-1), 2.0). 0 retries immediately (tests).
     retry_base_delay: float = _DEFAULT_RETRY_BASE_DELAY
     #: After an indeterminate failure on a ``financial`` endpoint, look the
-    #: transaction up by its client_ref_id and surface the result on
-    #: ``EpsIndeterminateError.status_check``.
+    #: transaction up by its client_ref_id (or tid) and surface the result on
+    #: ``EpsIndeterminateError.status_check``. Off skips only the inquiry: the
+    #: call still raises ``EpsIndeterminateError`` with the key.
     auto_status_check: bool = True
     #: Test-only clock injection (milliseconds since the epoch).
     now: Callable[[], int] = field(
         default_factory=lambda: (lambda: int(time.time() * 1000))
     )
+    #: Debug mode: log masked request / response / validation / retry events.
+    #: ``True`` writes JSON lines to stderr, a callable receives each event dict,
+    #: ``False`` forces it off. ``None`` (unset): on when the env var
+    #: ``EPS_SDK_DEBUG`` is ``1`` or ``true``. Credentials and personal data are
+    #: masked best-effort; review the output before sharing it with Eko support.
+    #: See "Debug mode conformance" in docs/sdk-golden-vector.md.
+    debug: Union[bool, Callable[[Dict[str, Any]], None], None] = None
     base_url: str = field(init=False)
 
     def __post_init__(self) -> None:
@@ -418,18 +490,51 @@ class EpsClient:
                 f"Invalid retry_base_delay: {self.retry_base_delay}. "
                 "Expected a non-negative number of seconds."
             )
+        if self.debug is not None and not (
+            isinstance(self.debug, bool) or callable(self.debug)
+        ):
+            raise EpsError(
+                f"Invalid debug: {self.debug}. Expected a boolean or a callable."
+            )
         for env in _SURFACE["environments"]:
             if env["id"] == self.environment:
                 self.base_url = env["baseUrl"]
                 break
         else:
             raise EpsError(f'Unknown environment "{self.environment}".')
+        self._debug = self._start_debug()
+
+    def _start_debug(self) -> Optional[Debug]:
+        """Debug mode per the ``debug`` option, else ``EPS_SDK_DEBUG``; None when
+        off or if setting it up fails (debug must never break a client)."""
+        try:
+            resolved = resolve_sink(self.debug, os.environ.get("EPS_SDK_DEBUG"))
+            if resolved is None:
+                return None
+            sink, source = resolved
+            return Debug(
+                sink=sink,
+                source=source,
+                env=self.environment,
+                base_url=self.base_url,
+                surface=_SURFACE,
+                client_ref=_FORMATS.get("client-ref"),
+                developer_key=self.developer_key,
+                timeout_ms=round(self.timeout * 1000),
+                retries=self.retries,
+                auto_status_check=self.auto_status_check,
+            )
+        except Exception:
+            return None
 
     def _endpoint(self, slug: str) -> Dict[str, Any]:
         for endpoint in _SURFACE["endpoints"]:
             if endpoint["slug"] == slug:
                 return endpoint
-        raise EpsError(f'Unknown endpoint slug "{slug}".')
+        raise EpsError(
+            f'Unknown endpoint slug "{slug}". Check the spelling, or upgrade the SDK '
+            "if this API is newer than your installed version (pip install -U eps-sdk)."
+        )
 
     def build_headers(self, multipart: bool = False) -> Dict[str, str]:
         """Signed auth headers. Multipart callers get no ``content-type`` here —
@@ -511,6 +616,18 @@ class EpsClient:
             raise EpsError(
                 f'Invalid param values for "{slug}": {", ".join(bad_values)}.'
             )
+        # A financial call's ref is its only reconciliation key after a lost
+        # response, so a blank one is refused (never silently replaced) even on
+        # endpoints whose param declares no client-ref format.
+        if (
+            endpoint.get("financial")
+            and client_ref_id is not None
+            and _BLANK_REF.fullmatch(client_ref_id)
+        ):
+            raise EpsError(
+                f'Invalid param values for "{slug}": client_ref_id '
+                "(must not be blank on a financial call)."
+            )
 
         # A `type: "file"` param flips the whole request to multipart/form-data.
         file_params = {p["name"] for p in endpoint["params"] if p["type"] == "file"}
@@ -531,6 +648,7 @@ class EpsClient:
         url = f"{self.base_url}{path}"
         headers = self.build_headers(multipart)
         body: Optional[bytes] = None
+        multipart_debug: Optional[Dict[str, Any]] = None
         if endpoint["method"] == "GET":
             query = urllib.parse.urlencode(
                 [(k, _to_wire_str(v)) for k, v in rest.items()]
@@ -538,7 +656,7 @@ class EpsClient:
             if query:
                 url += ("&" if "?" in url else "?") + query
         elif multipart:
-            body, content_type = _encode_multipart(rest, file_params)
+            body, content_type, multipart_debug = _encode_multipart(rest, file_params)
             headers["content-type"] = content_type
         else:
             body = _dump_json(rest)
@@ -554,6 +672,12 @@ class EpsClient:
             retry_safe=bool(endpoint.get("retrySafe", endpoint["method"] == "GET")),
             client_ref_id=client_ref_id,
             initiator_id=merged.get("initiator_id"),
+            tid=(
+                _to_wire_str(merged["tid"])
+                if client_ref_id is None and merged.get("tid") is not None
+                else None
+            ),
+            multipart_debug=multipart_debug,
         )
 
     def call(self, slug: str, params: Optional[Mapping[str, Any]] = None) -> Any:
@@ -567,57 +691,85 @@ class EpsClient:
         :class:`urllib.error.URLError` on a transport failure. A body that is
         not JSON is an error, never a silent ``{}``. See docs/sdk-golden-vector.md.
         """
+        trace = self._debug.trace(slug) if self._debug is not None else None
+        try:
+            return self._run(slug, params, trace)
+        except Exception as exc:
+            if trace is not None:
+                trace.error(exc)
+            raise
+
+    def _run(
+        self,
+        slug: str,
+        params: Optional[Mapping[str, Any]],
+        trace: Optional[Trace],
+    ) -> Any:
+        """``call()`` without the debug wrapper: validate, send, retry, inquire."""
         target = self.resolve_target(slug, params)
         attempts = self.retries + 1 if target.retry_safe else 1
         attempt = 0
         while True:
             attempt += 1
             try:
-                return self._send(target)
+                return self._send(target, attempt, trace)
             except Exception as exc:
                 if not _is_indeterminate(exc):
                     raise
                 if attempt < attempts:
-                    self._backoff(attempt)
+                    self._backoff(attempt, trace)
                     continue
                 # Never re-send an unsafe call: that is how a customer is
-                # debited twice. Ask EPS what happened to the ref instead, if there is
-                # one to ask by.
-                if (
-                    self.auto_status_check
-                    and target.financial
-                    and target.client_ref_id is not None
-                ):
+                # debited twice. Ask EPS what happened instead -- by the ref, or
+                # by the tid on an endpoint that has no ref (initiate-refund).
+                if target.financial:
                     raise self._indeterminate(target, exc) from exc
                 raise
 
-    def _backoff(self, attempt: int) -> None:
+    def _backoff(self, attempt: int, trace: Optional[Trace] = None) -> None:
         """Attempt n sleeps a random slice of min(base * 2**(n-1), 2s) -- full jitter."""
         cap = min(self.retry_base_delay * 2 ** (attempt - 1), _MAX_RETRY_DELAY)
         delay = random.uniform(0, cap)
+        if trace is not None:
+            trace.retry(attempt, round(delay * 1000))
         if delay > 0:
             time.sleep(delay)
 
     def _indeterminate(
         self, target: Target, cause: BaseException
     ) -> EpsIndeterminateError:
-        """One inquiry by ``client_ref_id=<ref>``; its own failure is reported,
-        never allowed to mask the original one."""
+        """One inquiry by ``client_ref_id=<ref>``, else ``tid=<tid>``, else none;
+        its own failure is reported, never allowed to mask the original one."""
         status_check: Any = None
         status_check_error: Optional[BaseException] = None
-        params: Dict[str, Any] = {"client_ref_id": target.client_ref_id}
-        if target.initiator_id is not None:
-            params["initiator_id"] = target.initiator_id
-        try:
-            status_check = self.call(_INQUIRY_SLUG, params)
-        except Exception as exc:  # reported on the error, not raised
-            status_check_error = exc
+        params: Optional[Dict[str, Any]] = (
+            {"client_ref_id": target.client_ref_id}
+            if target.client_ref_id is not None
+            else {"tid": target.tid} if target.tid is not None else None
+        )
+        # Off opts out of the inquiry, not of the key: the ref/tid still surfaces.
+        if params is not None and self.auto_status_check:
+            if target.initiator_id is not None:
+                params["initiator_id"] = target.initiator_id
+            try:
+                status_check = self.call(_INQUIRY_SLUG, params)
+            except Exception as exc:  # reported on the error, not raised
+                status_check_error = exc
         return EpsIndeterminateError(
-            target.slug, str(target.client_ref_id), cause, status_check, status_check_error
+            target.slug,
+            target.client_ref_id,
+            cause,
+            status_check,
+            status_check_error,
+            target.tid,
         )
 
-    def _send(self, target: Target) -> Any:
-        """Sign (fresh timestamp) and send one attempt; decode per the contract."""
+    def _send(
+        self, target: Target, attempt: int = 1, trace: Optional[Trace] = None
+    ) -> Any:
+        """Sign (fresh timestamp) and send one attempt; decode per the contract.
+        With debug on, ``trace`` logs the request, then its response or
+        transport error; it never changes what is sent or raised."""
         request = urllib.request.Request(
             target.url, data=target.body, method=target.method
         )
@@ -627,23 +779,67 @@ class EpsClient:
         headers.update(self.build_headers(target.multipart))
         for name, value in headers.items():
             request.add_header(name, value)
+        if trace is not None:
+            trace.request(
+                attempt,
+                target.method,
+                target.url,
+                headers,
+                None if target.multipart else target.body,
+                target.multipart_debug,
+            )
+        read_failed = False
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                raw = response.read()
-                status = response.status
+                try:
+                    raw = response.read()
+                    status = response.status
+                except Exception as exc:
+                    if trace is not None:
+                        read_failed = True
+                        trace.transport_error(
+                            attempt, exc, getattr(response, "status", None)
+                        )
+                    raise
         except urllib.error.HTTPError as exc:  # non-2xx: body still worth decoding
-            raw = exc.read()
+            try:
+                raw = exc.read()
+            except Exception as read_exc:
+                if trace is not None:
+                    trace.transport_error(attempt, read_exc, exc.code)
+                raise
+            if trace is not None:
+                trace.response(attempt, exc.code, raw)
             raise EpsHttpError(
                 exc.code, target.url, _decode_json_or_none(raw), raw
             ) from exc
+        except Exception as exc:  # no usable response: URLError, timeout, OSError
+            if trace is not None and not read_failed:
+                trace.transport_error(attempt, exc)
+            raise
+        if trace is not None:
+            trace.response(attempt, status, raw)
         if not 200 <= status < 300:
             raise EpsHttpError(status, target.url, _decode_json_or_none(raw), raw)
         try:
-            return json.loads(raw)
+            envelope = json.loads(raw)
         except ValueError as exc:
-            raise EpsError(
-                f"EPS response from {target.url} was not valid JSON: {raw[:200]!r}"
-            ) from exc
+            raise EpsInvalidResponseError(status, target.url, raw) from exc
+        # Only an EPS envelope -- a JSON object with a numeric ``status`` -- is
+        # a result. Anything else (null, a scalar, an array, ``{}``, a proxy's
+        # error object) is as unreadable as a truncated body. bool is an int
+        # subclass, so ``"status": true`` is ruled out explicitly. A financial
+        # endpoint also needs a numeric ``response_status_id``, so a proxy's
+        # ``{"status":502,...}`` cannot pass for a result there (a wrong "no"
+        # just costs an inquiry).
+        def numeric(value: Any) -> bool:
+            return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+        if not isinstance(envelope, dict) or not numeric(envelope.get("status")):
+            raise EpsInvalidResponseError(status, target.url, raw)
+        if target.financial and not numeric(envelope.get("response_status_id")):
+            raise EpsInvalidResponseError(status, target.url, raw)
+        return envelope
 
 
 def _dump_json(payload: Mapping[str, Any]) -> bytes:

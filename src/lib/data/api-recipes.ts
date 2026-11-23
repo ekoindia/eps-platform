@@ -265,7 +265,7 @@ export const ALL_RECIPES: Recipe[] = [
 			{
 				specSlug: "upi-cash-withdrawal",
 				purpose:
-					"Validate the amount first (₹100–₹5,000, multiples of ₹100, no paise), then send it with the retailer's live GPS fix. Render `qr_string` as `data:image/png;base64,…` for the customer to scan from a second device, and persist `tid`. A QR means no money has moved yet. Never show a QR twice or re-initiate against the same `tid`. On a timeout with no `tid`, the customer never saw a QR: wait out its ~60 s validity and start a new transaction.",
+					"Validate the amount first (₹200–₹5,000, multiples of ₹100, no paise), then send it with the retailer's live GPS fix. Render `qr_string` as `data:image/png;base64,…` for the customer to scan from a second device, and persist `tid`. A QR means no money has moved yet. Never show a QR twice or re-initiate against the same `tid`. On a timeout with no `tid`, the customer never saw a QR: wait out its ~60 s validity and start a new transaction.",
 				branches: [
 					{
 						onResponseTypeId: 99012,

@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { PRERENDER_ROUTES } from "../../../ssg/routes";
 import { buildNavTree, RESERVED_SLUGS } from "./docs-registry";
-import { SDK_GUIDES, getAllSdkSlugs, getSdkGuide, sdkGuideHref } from "./sdk-guides";
+import {
+	SDK_GUIDES,
+	getAllSdkSlugs,
+	getSdkGuide,
+	sdkGuideHref,
+} from "./sdk-guides";
 import { SDK_INSTALL, SDK_LANGS } from "../docs/code-samples";
 import { SEARCH_INDEX } from "../search-index";
 
@@ -17,7 +22,9 @@ describe("SDK guides", () => {
 
 	it("has unique slugs and orders", () => {
 		expect(new Set(getAllSdkSlugs()).size).toBe(SDK_GUIDES.length);
-		expect(new Set(SDK_GUIDES.map((g) => g.order)).size).toBe(SDK_GUIDES.length);
+		expect(new Set(SDK_GUIDES.map((g) => g.order)).size).toBe(
+			SDK_GUIDES.length,
+		);
 	});
 
 	it("reserves the `sdk` docs slug so no guide or endpoint can shadow it", () => {
@@ -66,6 +73,17 @@ describe("SDK guides", () => {
 				g.errorTypes.some((e) => /http/i.test(e.name)),
 				g.slug,
 			).toBe(true);
+			// …a 2xx that is not an EPS envelope with a typed invalid-response
+			// error, and an indeterminate error keyed by ref or tid.
+			expect(
+				g.errorTypes.some((e) => /InvalidResponse/.test(e.name)),
+				g.slug,
+			).toBe(true);
+			const indeterminate = g.errorTypes.find((e) =>
+				/Indeterminate/.test(e.name),
+			);
+			expect(indeterminate?.fields, g.slug).toMatch(/client_?ref_?id/i);
+			expect(indeterminate?.fields, g.slug).toMatch(/`tid`/i);
 		}
 	});
 });

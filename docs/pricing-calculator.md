@@ -142,7 +142,7 @@ Commission products keyed on **transaction amount** (not monthly volume):
   (₹5/₹10 + GST — informational cost, never netted into earnings).
 - `UPI_CASH_WITHDRAWAL_SLABS` — UPI Cash Withdrawal has the same commercials as
   AePS cashout, so these are **derived** from `AEPS_CASHOUT_SLABS` cut to the
-  UPI range (`UPI_CW_MIN`–`UPI_CW_MAX`, ₹100–₹5,000): 0.40% ≤ ₹3,000; ₹13 flat
+  UPI range (`UPI_CW_MIN`–`UPI_CW_MAX`, ₹200–₹5,000): 0.40% ≤ ₹3,000; ₹13 flat
   ₹3,001–₹5,000. Never copy the numbers — an AePS rate change must flow through.
   UPI Cash Withdrawal is its own family (`"UPI"`), so it carries its own
   `BC_SETUP_FEE`. It is a hand-listed section (like AePS) in

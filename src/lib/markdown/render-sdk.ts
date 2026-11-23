@@ -16,6 +16,8 @@ import { API_ENVIRONMENTS } from "@/lib/data/api-auth";
 import { HTTP_STATUS_CODES } from "@/lib/data/api-error-codes";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import {
+	DEBUG_POINTS,
+	DEBUG_SAMPLE_LINE,
 	SDK_GUIDES,
 	type SdkGuideMeta,
 	sdkGuideHref,
@@ -114,6 +116,17 @@ const environmentsBlock = (): string =>
 		]),
 	);
 
+const debugBlock = (guide: SdkGuideMeta): string =>
+	joinBlocks([
+		"No code change: set the env var and rerun.",
+		fence("bash", `EPS_SDK_DEBUG=1 ${guide.debug.run}`),
+		"Or switch it in code:",
+		fence(FENCE[guide.lang] ?? "text", guide.debug.enable),
+		"Each event is one JSON object per line, for example:",
+		fence("json", DEBUG_SAMPLE_LINE),
+		bulletList(DEBUG_POINTS),
+	]);
+
 /** Every section `<SdkFacts>` supports, and its markdown form. */
 const SECTIONS: Record<string, (guide: SdkGuideMeta) => string> = {
 	install: installBlock,
@@ -124,6 +137,7 @@ const SECTIONS: Record<string, (guide: SdkGuideMeta) => string> = {
 	errors: errorsBlock,
 	environments: () => environmentsBlock(),
 	notes: (g) => (g.notes?.length ? bulletList(g.notes) : ""),
+	debug: debugBlock,
 };
 
 const SDK_FACTS_TAG = /<SdkFacts\s+section="([^"]+)"\s*\/>/g;
@@ -227,6 +241,7 @@ export function renderSdkIndexMarkdown(): string {
 			"**Routes the params** — path tokens, query string, JSON body, or `multipart/form-data` for file-upload endpoints.",
 			"**Fails loudly** — a non-2xx response raises a typed HTTP error carrying the decoded envelope; a non-JSON body raises rather than returning an empty result.",
 			"**Times out** — 30 seconds by default in every language, overridable.",
+			"**Debug mode** — set `EPS_SDK_DEBUG=1` (or the client's debug option) to log every request, response, retry and error as masked JSON lines to share with Eko support.",
 		]),
 		h2("Environments"),
 		environmentsBlock(),

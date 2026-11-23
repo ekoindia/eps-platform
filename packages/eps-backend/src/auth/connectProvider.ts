@@ -15,6 +15,13 @@ import type { AuthProvider, UpstreamSession } from "./provider";
 const REFRESH_SKEW_MS = 60_000;
 
 /**
+ * connect-api login `response_type_id` for "Invalid Initiator for
+ * verification": arrives with `otpFailed: true`, but it is upstream refusing
+ * the verification, not a wrong OTP (prod 2026-11-23, every login refused).
+ */
+const INVALID_INITIATOR = 1563;
+
+/**
  * How recently a profile refresh counts as "already done" for
  * `refreshEntitlements`.
  *
@@ -224,7 +231,11 @@ export function createConnectAuthProvider(
 			const env = await connect.login({ mobile, otp, xRealIp });
 			// A wrong OTP comes back as HTTP 200 with this flag. Reading the status
 			// code alone would mint a session for any six digits.
-			if (env.otpFailed) return { ok: false };
+			if (env.otpFailed) {
+				return env.response_type_id === INVALID_INITIATOR
+					? { ok: false, refused: true }
+					: { ok: false };
+			}
 
 			const profile = await enrich(
 				mapConnectLogin(env, orgId, cfg.eko.devAllowAnyUserType),

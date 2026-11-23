@@ -170,6 +170,39 @@ describe("connect provider — session minting", () => {
 		expect(res.status).toBe(401);
 		expect(await kv.get("otp:fail:9990000001")).toBe("1");
 	});
+
+	it("reports an upstream refusal (1563) as OTP_UPSTREAM_REFUSED, still counted", async () => {
+		const { app, kv } = setup({
+			verify: vi.fn(async () => ({
+				ok: false as const,
+				refused: true as const,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", verifyReq());
+		expect(res.status).toBe(502);
+		const b = (await res.json()) as { error: { code: string; source: string } };
+		expect(b.error.code).toBe("OTP_UPSTREAM_REFUSED");
+		expect(b.error.source).toBe("api");
+		expect(cookies(res)).toEqual([]);
+		expect(await kv.get("otp:fail:9990000001")).toBe("1");
+		expect(await kv.get("otp:verify:ip:unknown")).toBe("1");
+	});
+
+	it("answers 504 UPSTREAM_TIMEOUT when the upstream login times out", async () => {
+		const { app } = setup({
+			verify: vi.fn(async () => {
+				throw new DOMException(
+					"The operation was aborted due to timeout",
+					"TimeoutError",
+				);
+			}),
+		});
+		const res = await app.request("/auth/otp/verify", verifyReq());
+		expect(res.status).toBe(504);
+		const b = (await res.json()) as { error: { code: string } };
+		expect(b.error.code).toBe("UPSTREAM_TIMEOUT");
+		expect(cookies(res)).toEqual([]);
+	});
 });
 
 describe("connect provider — refresh", () => {

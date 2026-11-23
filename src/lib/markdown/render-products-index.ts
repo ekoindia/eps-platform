@@ -247,7 +247,7 @@ const aepsPricing = (fmt: MarkdownFormat): string =>
 const upiCashWithdrawalPricing = (fmt: MarkdownFormat): string =>
 	[
 		cashoutSlabs(UPI_CASH_WITHDRAWAL_SLABS, fmt),
-		"Same commercials as AePS cash withdrawal; withdrawals are ₹100–₹5,000 in multiples of ₹100.",
+		"Same commercials as AePS cash withdrawal; withdrawals are ₹200–₹5,000 in multiples of ₹100.",
 	].join("\n\n");
 
 /** Both-mode commission for one BBPS category, e.g. "₹0.72" or "slab: rate; …". */

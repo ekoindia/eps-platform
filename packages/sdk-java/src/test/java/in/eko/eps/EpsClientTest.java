@@ -165,7 +165,8 @@ class EpsClientTest {
 			EpsClient.EpsException e =
 					assertThrows(
 							EpsClient.EpsException.class, () -> client().resolveTarget("no-such-endpoint", null));
-			assertTrue(e.getMessage().contains("Unknown endpoint slug"));
+			assertTrue(e.getMessage().startsWith("Unknown endpoint slug"));
+			assertTrue(e.getMessage().contains("upgrade the SDK"));
 		}
 	}
 
@@ -467,9 +468,10 @@ class EpsClientTest {
 
 		@Test
 		void handleResponseThrowsWhenSuccessBodyIsNotJson() {
-			EpsClient.EpsException e =
+			EpsClient.EpsInvalidResponseException e =
 					assertThrows(
-							EpsClient.EpsException.class, () -> EpsClient.handleResponse(200, URL, "not json"));
+							EpsClient.EpsInvalidResponseException.class,
+							() -> EpsClient.handleResponse(200, URL, "not json"));
 			assertEquals("EPS response from " + URL + " was not valid JSON.", e.getMessage());
 		}
 	}
@@ -495,9 +497,11 @@ class EpsClientTest {
 					"otp_ref_id", "ref1");
 	private static final Map<String, Object> GET = Map.of("initiator_id", "9962981729");
 	private static final String OK = "{\"status\":0}";
+	/** A financial endpoint's envelope also carries a numeric response_status_id. */
+	private static final String OK_FINANCIAL = "{\"status\":0,\"response_status_id\":0}";
 
 	/** One scripted outcome: a response, or an I/O failure to throw. */
-	private record Step(int status, String body, IOException failure) {
+	private record Step(int status, String body, Exception failure) {
 		static Step ok() {
 			return new Step(200, OK, null);
 		}
@@ -508,6 +512,11 @@ class EpsClientTest {
 
 		static Step transportFailure() {
 			return new Step(0, null, new IOException("Connection refused"));
+		}
+
+		/** What HttpClient.send throws when the calling thread is interrupted mid-request. */
+		static Step interrupted() {
+			return new Step(0, null, new InterruptedException());
 		}
 
 		static Step body(String json) {
@@ -536,10 +545,11 @@ class EpsClientTest {
 
 		@Override
 		public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler)
-				throws IOException {
+				throws IOException, InterruptedException {
 			sent.add(new Sent(request, drain(request)));
 			Step step = steps.size() > 1 ? steps.remove(0) : steps.get(0);
-			if (step.failure() != null) throw step.failure();
+			if (step.failure() instanceof InterruptedException ie) throw ie;
+			if (step.failure() instanceof IOException io) throw io;
 			return response(request, step.status(), step.body());
 		}
 
@@ -709,7 +719,7 @@ class EpsClientTest {
 
 		@Test
 		void satisfiesARequiredClientRefId() {
-			Scripted t = new Scripted(Step.ok());
+			Scripted t = new Scripted(Step.body(OK_FINANCIAL));
 			fast(t).call("dmt-initiate-transfer", TRANSFER);
 			assertTrue(REF.matcher((String) t.sent.get(0).json().get("client_ref_id")).matches());
 		}
@@ -735,6 +745,22 @@ class EpsClientTest {
 			c.call("pan-lite", PAN);
 			c.call("pan-lite", PAN);
 			assertFalse(t.sent.get(0).json().get("client_ref_id").equals(t.sent.get(1).json().get("client_ref_id")));
+		}
+
+		@org.junit.jupiter.params.ParameterizedTest
+		// ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+		@org.junit.jupiter.params.provider.ValueSource(
+				strings = {"", "   ", "\t", "\u00A0", "\u2003", "\u3000", "\u200B", "\uFEFF", " \u00A0\t\u2003"})
+		void blankRefOnFinancialCallIsRefused(String blank) {
+			Scripted t = new Scripted(Step.body(OK_FINANCIAL));
+			EpsClient.EpsException e =
+					assertThrows(
+							EpsClient.EpsException.class,
+							() -> fast(t).call("dmt-initiate-transfer", with(TRANSFER, "client_ref_id", blank)));
+			assertEquals(
+					"Invalid param values for \"dmt-initiate-transfer\": client_ref_id (must not be blank on a financial call).",
+					e.getMessage());
+			assertEquals(0, t.sent.size());
 		}
 
 		@Test
@@ -898,6 +924,115 @@ class EpsClientTest {
 		}
 
 		@Test
+		void financialPostUnparseable2xxInquiresAndThrowsIndeterminate() {
+			String inquiry = "{\"status\":0,\"data\":{\"tx_status\":\"0\",\"tid\":\"1\"}}";
+			Scripted t = new Scripted(Step.body("{\"status\":0,\"da"), Step.body(inquiry));
+			EpsClient.EpsIndeterminateException e =
+					assertThrows(
+							EpsClient.EpsIndeterminateException.class,
+							() -> fast(t).call("dmt-initiate-transfer", TRANSFER));
+			String ref = (String) t.sent.get(0).json().get("client_ref_id");
+			assertEquals(ref, e.clientRefId);
+			assertEquals(200, e.status);
+			assertEquals("0", ((Map<?, ?>) e.statusCheck.get("data")).get("tx_status"));
+			assertTrue(e.getCause() instanceof EpsClient.EpsInvalidResponseException);
+			assertEquals("{\"status\":0,\"da", ((EpsClient.EpsInvalidResponseException) e.getCause()).raw);
+			assertEquals(2, t.sent.size());
+			assertTrue(t.sent.get(1).request().uri().toString().contains("client_ref_id=" + ref));
+		}
+
+		@org.junit.jupiter.params.ParameterizedTest
+		@org.junit.jupiter.params.provider.ValueSource(
+				strings = {
+					"null", "\"ok\"", "5", "[]", "[{\"status\":0}]",
+					"{}", "{\"error\":\"Bad Gateway\"}", "{\"status\":\"0\"}", "{\"status\":true}", "{\"status\":null}",
+					"{\"status\":502,\"error\":\"Bad Gateway\"}", "{\"status\":0}",
+					"{\"status\":0,\"response_status_id\":\"0\"}"
+				})
+		void financialPostNonObjectJson2xxInquires(String body) {
+			String inquiry = "{\"status\":0,\"data\":{\"tx_status\":\"0\",\"tid\":\"1\"}}";
+			Scripted t = new Scripted(Step.body(body), Step.body(inquiry));
+			EpsClient.EpsIndeterminateException e =
+					assertThrows(
+							EpsClient.EpsIndeterminateException.class,
+							() -> fast(t).call("dmt-initiate-transfer", TRANSFER));
+			assertEquals(200, e.status);
+			assertEquals("0", ((Map<?, ?>) e.statusCheck.get("data")).get("tx_status"));
+			assertTrue(e.getCause() instanceof EpsClient.EpsInvalidResponseException);
+			assertEquals(2, t.sent.size());
+		}
+
+		@Test
+		void financialEnvelopeNeedsResponseStatusIdNonFinancialOnlyStatus() {
+			Map<String, Object> got =
+					fast(new Scripted(Step.body("{\"status\":0,\"response_status_id\":0,\"data\":{\"tid\":\"1\"}}")))
+							.call("dmt-initiate-transfer", TRANSFER);
+			assertEquals(0.0, got.get("response_status_id"));
+			// pan-fetch-style success with no response_status_id stays a result off the financial path
+			assertEquals(0.0, fast(new Scripted(Step.ok())).call("pan-lite", PAN).get("status"));
+		}
+
+		@Test
+		void nonFinancialPostUnparseable2xxNoInquiry() {
+			Scripted t = new Scripted(Step.body(""));
+			assertThrows(EpsClient.EpsInvalidResponseException.class, () -> fast(t).call("pan-lite", PAN));
+			assertEquals(1, t.sent.size());
+		}
+
+		@Test
+		void financialPostInterruptedKeepsGeneratedRef() {
+			Scripted t = new Scripted(Step.interrupted(), Step.ok());
+			try {
+				EpsClient.EpsIndeterminateException e =
+						assertThrows(
+								EpsClient.EpsIndeterminateException.class,
+								() -> fast(t).call("dmt-initiate-transfer", TRANSFER));
+				assertEquals(t.sent.get(0).json().get("client_ref_id"), e.clientRefId);
+				assertNull(e.tid);
+				assertNull(e.statusCheck);
+				assertTrue(e.statusCheckError instanceof InterruptedException);
+				assertTrue(e.getCause().getCause() instanceof InterruptedException);
+				assertEquals(1, t.sent.size()); // no inquiry
+				assertTrue(Thread.currentThread().isInterrupted()); // flag preserved for the caller
+			} finally {
+				Thread.interrupted();
+			}
+		}
+
+		@Test
+		void refundInterruptedKeepsTid() {
+			Scripted t = new Scripted(Step.interrupted(), Step.ok());
+			try {
+				EpsClient.EpsIndeterminateException e =
+						assertThrows(
+								EpsClient.EpsIndeterminateException.class,
+								() ->
+										fast(t).call(
+												"initiate-refund",
+												Map.of("initiator_id", "9962981729", "tid", "777", "otp", "1")));
+				assertNull(e.clientRefId);
+				assertEquals("777", e.tid);
+				assertEquals(1, t.sent.size());
+			} finally {
+				Thread.interrupted();
+			}
+		}
+
+		@Test
+		void nonFinancialInterruptedIsPlainException() {
+			Scripted t = new Scripted(Step.interrupted());
+			try {
+				EpsClient.EpsException e =
+						assertThrows(EpsClient.EpsException.class, () -> fast(t).call("pan-lite", PAN));
+				assertFalse(e instanceof EpsClient.EpsIndeterminateException);
+				assertTrue(e.getCause() instanceof InterruptedException);
+				assertEquals(1, t.sent.size());
+			} finally {
+				Thread.interrupted();
+			}
+		}
+
+		@Test
 		void financialPost4xxIsPlainHttpException() {
 			Scripted t = new Scripted(Step.http(401));
 			assertThrows(
@@ -913,24 +1048,59 @@ class EpsClientTest {
 		}
 
 		@Test
-		void financialWithoutRefParamNoInquiry() {
+		void financialWithoutRefParamInquiresByTid() {
+			String inquiry = "{\"status\":0,\"data\":{\"tx_status\":\"4\",\"tid\":\"777\"}}";
+			Map<Step, Class<?>> cases =
+					Map.of(Step.http(500), EpsClient.EpsHttpException.class, Step.body("null"), EpsClient.EpsInvalidResponseException.class);
+			for (Map.Entry<Step, Class<?>> c : cases.entrySet()) {
+				Scripted t = new Scripted(c.getKey(), Step.body(inquiry));
+				EpsClient.EpsIndeterminateException e =
+						assertThrows(
+								EpsClient.EpsIndeterminateException.class,
+								() ->
+										fast(t).call(
+												"initiate-refund",
+												Map.of("initiator_id", "9962981729", "tid", "777", "otp", "1")));
+				assertNull(e.clientRefId);
+				assertEquals("777", e.tid);
+				assertEquals("4", ((Map<?, ?>) e.statusCheck.get("data")).get("tx_status"));
+				assertTrue(c.getValue().isInstance(e.getCause()), c.getValue().getName());
+				assertEquals("EPS request for \"initiate-refund\" on tid \"777\" has no confirmed outcome.", e.getMessage());
+				assertEquals(2, t.sent.size());
+				String uri = t.sent.get(1).request().uri().toString();
+				assertTrue(uri.contains("tid=777"), uri);
+				assertFalse(uri.contains("client_ref_id"), uri);
+			}
+		}
+
+		@Test
+		void autoStatusCheckOffSkipsOnlyTheInquiry() {
 			Scripted t = new Scripted(Step.http(500));
-			assertThrows(
-					EpsClient.EpsHttpException.class,
-					() ->
-							fast(t).call(
-									"initiate-refund",
-									Map.of("initiator_id", "9962981729", "tid", "1", "otp", "1")));
+			EpsClient.EpsIndeterminateException e =
+					assertThrows(
+							EpsClient.EpsIndeterminateException.class,
+							() -> fast(t, b -> b.autoStatusCheck(false)).call("dmt-initiate-transfer", TRANSFER));
+			assertEquals(t.sent.get(0).json().get("client_ref_id"), e.clientRefId);
+			assertEquals(500, e.status);
+			assertNull(e.statusCheck);
+			assertNull(e.statusCheckError);
+			assertTrue(e.getCause() instanceof EpsClient.EpsHttpException);
 			assertEquals(1, t.sent.size());
 		}
 
 		@Test
-		void autoStatusCheckOff() {
-			Scripted t = new Scripted(Step.http(500));
-			assertThrows(
-					EpsClient.EpsHttpException.class,
-					() -> fast(t, b -> b.autoStatusCheck(false)).call("dmt-initiate-transfer", TRANSFER));
-			assertEquals(1, t.sent.size());
+		void autoStatusCheckOffInterruptedKeepsGeneratedRef() {
+			Scripted t = new Scripted(Step.interrupted());
+			try {
+				EpsClient.EpsIndeterminateException e =
+						assertThrows(
+								EpsClient.EpsIndeterminateException.class,
+								() -> fast(t, b -> b.autoStatusCheck(false)).call("dmt-initiate-transfer", TRANSFER));
+				assertEquals(t.sent.get(0).json().get("client_ref_id"), e.clientRefId);
+				assertEquals(1, t.sent.size());
+			} finally {
+				Thread.interrupted();
+			}
 		}
 
 		@Test
@@ -997,6 +1167,541 @@ class EpsClientTest {
 			assertEquals("not one of: a", EpsClient.valueProblem(EpsClient.param("string", "date", List.of("a"), null, null, null), "b", formats));
 			assertEquals("expected format date", EpsClient.valueProblem(EpsClient.param("string", "date", null, null, null, 1), "x", formats));
 			assertNull(EpsClient.valueProblem(EpsClient.param("object", null, null, null, null, 1), Map.of("a", 1), formats));
+		}
+	}
+
+	/**
+	 * Debug mode: port of {@code packages/sdk-js/src/debug.test.ts} plus the fixture table in
+	 * "Debug mode conformance" (docs/sdk-golden-vector.md).
+	 */
+	@Nested
+	@DisplayName("debug mode")
+	class Debug {
+		private static final String DEV = "abcd1234wxyz";
+		private static final String SECRET = EpsClient.sign(ACCESS_KEY, Long.toString(FIXED_MS));
+		private static final List<String> SECRETS =
+				List.of(
+						DEV,
+						SECRET,
+						"123456789012",
+						"9876543210",
+						"000111222333",
+						"654321",
+						"k@x.in",
+						"john@example.com",
+						"Kumar",
+						"KUMAR_123456789012");
+		/** Event output as the text sink writes it: no HTML escaping, so "=" stays scannable. */
+		private static final Gson OUT = new com.google.gson.GsonBuilder().disableHtmlEscaping().serializeNulls().create();
+		private static final Map<String, Object> PAN_LITE =
+				Map.of("pan_number", "ABCDE1234F", "name", "Kumar", "dob", "1990-01-01");
+		private static final Map<String, Object> BBPS = Map.of("customer_mobile", "9876543210");
+
+		private final List<Map<String, Object>> events = new ArrayList<>();
+
+		@org.junit.jupiter.api.BeforeEach
+		void noEnv() {
+			EpsDebug.env = name -> null;
+		}
+
+		@org.junit.jupiter.api.AfterEach
+		void restoreEnv() {
+			EpsDebug.env = System::getenv;
+		}
+
+		private EpsClient.Builder base(Scripted t) {
+			return EpsClient.builder()
+					.developerKey(DEV)
+					.accessKey(ACCESS_KEY)
+					.environment("sandbox")
+					.initiatorId("9962981729")
+					.httpClient(t)
+					.retryBaseDelay(Duration.ZERO);
+		}
+
+		private EpsClient make(Scripted t, java.util.function.UnaryOperator<EpsClient.Builder> tweak) {
+			EpsClient c = tweak.apply(base(t).debug(events::add)).build();
+			c.now = () -> FIXED_MS;
+			return c;
+		}
+
+		private EpsClient make(Scripted t) {
+			return make(t, b -> b);
+		}
+
+		private static String okJson(String extra) {
+			return "{\"status\":0,\"response_status_id\":0" + (extra.isEmpty() ? "" : "," + extra) + "}";
+		}
+
+		private List<Map<String, Object>> ofType(String type) {
+			return events.stream().filter(e -> type.equals(e.get("event"))).toList();
+		}
+
+		private List<Object> names() {
+			return events.stream().map(e -> e.get("event")).toList();
+		}
+
+		@SuppressWarnings("unchecked")
+		private static Map<String, Object> obj(Object o) {
+			return (Map<String, Object>) o;
+		}
+
+		private void assertNoSecrets(String all) {
+			for (String secret : SECRETS) assertFalse(all.contains(secret), secret + " leaked: " + all);
+		}
+
+		private void assertNoSecrets() {
+			assertNoSecrets(OUT.toJson(events));
+		}
+
+		private static String captureStderr(Runnable r) {
+			java.io.PrintStream saved = System.err;
+			var buf = new java.io.ByteArrayOutputStream();
+			System.setErr(new java.io.PrintStream(buf, true, StandardCharsets.UTF_8));
+			try {
+				r.run();
+			} finally {
+				System.setErr(saved);
+			}
+			return buf.toString(StandardCharsets.UTF_8);
+		}
+
+		// ── switch ──────────────────────────────────────────────────────────────
+
+		@Test
+		void offByDefaultWritesNothing() {
+			String err =
+					captureStderr(
+							() -> {
+								EpsClient c = base(new Scripted(Step.ok())).build();
+								c.now = () -> FIXED_MS;
+								c.call("bbps-operator-code-circle", BBPS);
+							});
+			assertEquals("", err);
+		}
+
+		@Test
+		void envWritesOneJsonObjectPerLineToStderr() {
+			for (String flag : List.of(" TRUE ", "1")) {
+				EpsDebug.env = name -> "EPS_SDK_DEBUG".equals(name) ? flag : null;
+				String err =
+						captureStderr(
+								() -> {
+									EpsClient c = base(new Scripted(Step.ok())).build();
+									c.now = () -> FIXED_MS;
+									c.call("bbps-operator-code-circle", BBPS);
+								});
+				String[] lines = err.split(System.lineSeparator());
+				assertEquals(3, lines.length, err); // init, request, response
+				assertTrue(err.endsWith(System.lineSeparator()));
+				for (String line : lines) {
+					assertTrue(line.startsWith("{\"logger\":\"eps-sdk\""), line);
+					GSON.fromJson(line, Map.class);
+				}
+				Map<String, Object> init = obj(GSON.fromJson(lines[0], Map.class));
+				assertAll(
+						() -> assertEquals("init", init.get("event")),
+						() -> assertEquals("env", init.get("source")),
+						() -> assertEquals("****wxyz", init.get("developer_key")),
+						() -> assertEquals("sandbox", init.get("env")),
+						() -> assertEquals("java", init.get("sdk")),
+						() -> assertEquals(30000.0, init.get("timeout_ms")),
+						() -> assertEquals(2.0, init.get("retries")),
+						() -> assertEquals(true, init.get("auto_status_check")),
+						() -> assertTrue(((String) init.get("runtime")).startsWith("java ")),
+						// No jar manifest under test: the documented fallback.
+						() -> assertEquals("unknown", init.get("sdk_version")),
+						() -> assertTrue(Pattern.matches("^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$", (String) init.get("ts"))));
+				assertNoSecrets(err);
+			}
+		}
+
+		@Test
+		void explicitFalseBeatsEnv() {
+			EpsDebug.env = name -> "1";
+			String err =
+					captureStderr(
+							() -> {
+								EpsClient c = base(new Scripted(Step.ok())).debug(false).build();
+								c.now = () -> FIXED_MS;
+								c.call("bbps-operator-code-circle", BBPS);
+							});
+			assertEquals("", err);
+		}
+
+		@Test
+		void explicitTrueWritesToStderrWithSourceOption() {
+			String err = captureStderr(() -> base(new Scripted(Step.ok())).debug(true).build());
+			assertTrue(err.contains("\"source\":\"option\""), err);
+		}
+
+		@Test
+		void rejectsANullSink() {
+			EpsClient.EpsException e =
+					assertThrows(
+							EpsClient.EpsException.class,
+							() -> base(new Scripted(Step.ok())).debug((java.util.function.Consumer<Map<String, Object>>) null).build());
+			assertTrue(e.getMessage().startsWith("Invalid debug"), e.getMessage());
+		}
+
+		// ── events ──────────────────────────────────────────────────────────────
+
+		@Test
+		void masksGetUrlAndHeadersInKeyOrder() {
+			make(new Scripted(Step.ok())).call("bbps-operator-code-circle", BBPS);
+			assertEquals(List.of("init", "request", "response"), names());
+			Map<String, Object> request = events.get(1);
+			Map<String, Object> response = events.get(2);
+			assertEquals(
+					List.of("logger", "ts", "event", "sdk", "sdk_version", "surface", "env", "call_id", "slug"),
+					new ArrayList<>(request.keySet()).subList(0, 9));
+			assertTrue(Pattern.matches("^[0-9a-f]{8}$", (String) request.get("call_id")));
+			assertEquals(request.get("call_id"), response.get("call_id"));
+			assertEquals(
+					"https://staging.eko.in/ekoapi/v3/customer/payment/bbps/recharge/****3210/operator?initiator_id=****1729",
+					request.get("url"));
+			assertEquals(
+					"{\"developer_key\":\"****wxyz\",\"secret-key\":\"****\",\"secret-key-timestamp\":\""
+							+ FIXED_MS + "\",\"content-type\":\"application/json\"}",
+					OUT.toJson(request.get("headers")));
+			assertTrue(request.containsKey("body"));
+			assertNull(request.get("body"));
+			assertEquals(200, response.get("status"));
+			assertEquals("{\"status\":0}", OUT.toJson(response.get("body")));
+			assertTrue(response.get("ms") instanceof Long);
+			assertNoSecrets();
+		}
+
+		@Test
+		void masksJsonBodyAndResponseByKeyClass() {
+			String response =
+					"{\"message\":\"sent to k@x.in, ref 9876543210\",\"data\":{\"tid\":\"2611230001\",\"name\":\"Kumar\","
+							+ "\"email\":\"k@x.in\",\"dob\":\"1990-01-01\",\"photo\":\"" + "A".repeat(5000) + "\","
+							+ "\"reference_id\":\"123456789012\",\"john@example.com\":\"x\",\"123456789012\":\"y\"},"
+							+ "\"otp_code\":{\"reference_id\":\"r1\"},\"foo\":[{\"tid\":\"t1\"}]}";
+			Map<String, Object> params = new LinkedHashMap<>(PAN_LITE);
+			params.put("AADHAR", "123456789012");
+			params.put("otp_code", "654321");
+			params.put("otp", "7777"); // 4 chars: asserted by field
+			params.put("foo_bar", "x");
+			params.put(
+					"entries",
+					List.of(map("reference_id", "r1", "bank_account", "000111222333", "ifsc", "SBIN0000001")));
+			make(new Scripted(Step.body(okJson(response.substring(1, response.length() - 1))))).call("pan-lite", params);
+			Map<String, Object> body = obj(ofType("request").get(0).get("body"));
+			assertAll(
+					() -> assertEquals("****234F", body.get("pan_number")),
+					() -> assertEquals("****", body.get("name")),
+					() -> assertEquals("****", body.get("dob")),
+					() -> assertEquals("****9012", body.get("AADHAR")),
+					() -> assertEquals("****", body.get("otp_code")),
+					() -> assertEquals("****", body.get("otp")),
+					() -> assertEquals("****", body.get("foo_bar")),
+					() -> assertEquals("****1729", body.get("initiator_id")),
+					() ->
+							assertEquals(
+									"[{\"reference_id\":\"r1\",\"bank_account\":\"****2333\",\"ifsc\":\"SBIN0000001\"}]",
+									OUT.toJson(body.get("entries"))),
+					() -> assertTrue(REF.matcher((String) body.get("client_ref_id")).matches()));
+			Map<String, Object> res = obj(ofType("response").get(0).get("body"));
+			assertAll(
+					() -> assertEquals("sent to ****@****, ref ****3210", res.get("message")),
+					() ->
+							assertEquals(
+									"{\"tid\":\"2611230001\",\"name\":\"****\",\"email\":\"****\",\"dob\":\"****\","
+											+ "\"photo\":\"****\",\"reference_id\":\"****\",\"#1\":\"****\",\"#2\":\"****\"}",
+									OUT.toJson(res.get("data"))),
+					() -> assertEquals("****", res.get("otp_code")),
+					() -> assertEquals("****", res.get("foo")),
+					// numbers stay numbers, never 0.0
+					() -> assertEquals("0", res.get("status").toString()));
+			assertNoSecrets();
+		}
+
+		@Test
+		void masksAClientRefIdFailingTheFormatInUrlAndEcho() {
+			make(new Scripted(Step.body(okJson("\"data\":{\"client_ref_id\":\"KUMAR 123456789012\"}"))))
+					.call(
+							"bbps-fetch-bill",
+							map(
+									"phone_operator_code", "1",
+									"utility_acc_no", "000111222333",
+									"confirmation_mobile_no", "9876543210",
+									"sender_name", "Kumar",
+									"category", 1,
+									"client_ref_id", "KUMAR 123456789012",
+									"source_ip", "10.0.0.1"));
+			String url = (String) ofType("request").get(0).get("url");
+			assertTrue(url.contains("client_ref_id=****&"), url);
+			assertTrue(url.contains("utility_acc_no=****2333"), url);
+			assertTrue(url.contains("phone_operator_code=1"), url);
+			assertEquals("****", obj(obj(ofType("response").get(0).get("body")).get("data")).get("client_ref_id"));
+			assertNoSecrets();
+		}
+
+		@Test
+		void scrubsAndCapsANonJsonErrorPageAndTheErrorMessage() {
+			String page =
+					"<html><title>502 Bad Gateway</title>" + "x".repeat(600) + " 123456789012 "
+							+ EpsDebug.encodeUriComponent("Kumar Abhi") + " " + DEV + "</html>";
+			String echoFirst = "<html>123456789012 Kumar%20Abhi Kumar+Abhi " + DEV + "</html>";
+			Map<String, Object> params = new LinkedHashMap<>(PAN_LITE);
+			params.put("name", "Kumar Abhi");
+			params.put("AADHAR", "123456789012");
+			EpsClient c = make(new Scripted(new Step(502, echoFirst + page, null)));
+			EpsClient.EpsHttpException e =
+					assertThrows(EpsClient.EpsHttpException.class, () -> c.call("pan-lite", params));
+			assertEquals(502, e.status);
+			Map<String, Object> response = ofType("response").get(0);
+			String body = (String) response.get("body");
+			assertEquals(502, response.get("status"));
+			assertTrue(body.startsWith("<html>****9012 **** **** ****</html>"), body);
+			assertTrue(Pattern.compile("…\\(\\+\\d+ chars\\)$").matcher(body).find(), body);
+			String capped = body.replaceAll("…\\(\\+\\d+ chars\\)$", "");
+			assertEquals(512, capped.codePointCount(0, capped.length()));
+			assertEquals("EpsHttpException", ofType("error").get(0).get("error"));
+			assertNoSecrets();
+		}
+
+		@Test
+		void logsAMultipartBodyAsMaskedFieldsPlusFileMetadata(@org.junit.jupiter.api.io.TempDir Path dir)
+				throws IOException {
+			Path pan = dir.resolve("KUMAR_123456789012.JPG");
+			java.nio.file.Files.writeString(pan, "12345");
+			Map<String, Object> params = new LinkedHashMap<>();
+			params.put("user_code", "20810200");
+			params.put("modelname", "MANTRA");
+			params.put("devicenumber", "D1");
+			params.put("account", "000111222333");
+			params.put("ifsc", "SBIN0000001");
+			params.put("shop_type", "1");
+			params.put("office_address", Map.of("line", "Kumar House"));
+			params.put("address_as_per_proof", Map.of("line", "Kumar House"));
+			params.put("aadhar", "123456789012");
+			params.put("pan_card", pan.toString());
+			params.put("aadhar_front", new EpsClient.EpsFile("front.PNG", "abc".getBytes(StandardCharsets.UTF_8)));
+			params.put("aadhar_back", new EpsClient.EpsFile("blob", "abcd".getBytes(StandardCharsets.UTF_8)));
+			params.put("latlong", "28.6,77.2");
+			Scripted t = new Scripted(Step.ok());
+			make(t).call("activate-aeps-fingpay", params);
+			Map<String, Object> request = ofType("request").get(0);
+			assertTrue(
+					((String) request.get("url")).contains("/admin/network/agent/20810200/aeps-fingpay/activate"),
+					(String) request.get("url"));
+			Map<String, Object> fields = obj(obj(request.get("body")).get("fields"));
+			assertAll(
+					() -> assertEquals("****2333", fields.get("account")),
+					() -> assertEquals("****9012", fields.get("aadhar")),
+					() -> assertEquals("MANTRA", fields.get("modelname")),
+					() -> assertEquals("****", fields.get("office_address")),
+					() -> assertEquals("****", fields.get("latlong")));
+			assertEquals(
+					Set.of(
+							map("param", "pan_card", "ext", "jpg", "bytes", 5),
+							map("param", "aadhar_front", "ext", "png", "bytes", 3),
+							map("param", "aadhar_back", "ext", null, "bytes", 4)),
+					Set.copyOf((List<?>) obj(request.get("body")).get("files")));
+			assertNoSecrets();
+			// The wire is untouched: the file still went up.
+			assertTrue(t.sent.get(0).body().contains("12345"));
+		}
+
+		@Test
+		void logsAPreSendFailureAsASingleErrorEvent() {
+			Scripted t = new Scripted(Step.ok());
+			EpsClient c = make(t);
+			EpsClient.EpsException unknown =
+					assertThrows(EpsClient.EpsException.class, () -> c.call("no-such-slug", null));
+			assertTrue(unknown.getMessage().startsWith("Unknown endpoint"));
+			EpsClient.EpsException missing =
+					assertThrows(EpsClient.EpsException.class, () -> c.call("pan-lite", map("name", "Kumar")));
+			assertTrue(missing.getMessage().startsWith("Missing"));
+			assertEquals(List.of("init", "error", "error"), names());
+			assertEquals("EpsException", events.get(1).get("error"));
+			assertEquals("no-such-slug", events.get(1).get("slug"));
+			assertEquals(0, t.sent.size());
+		}
+
+		@Test
+		void logsATransportFailureThenTheError() {
+			EpsClient c =
+					make(
+							new Scripted(new Step(0, null, new IOException("fetch failed for " + DEV + " 9876543210"))),
+							b -> b.retries(0));
+			assertThrows(EpsClient.EpsTransportException.class, () -> c.call("bbps-operator-code-circle", BBPS));
+			assertEquals(List.of("init", "request", "transport_error", "error"), names());
+			Map<String, Object> te = ofType("transport_error").get(0);
+			assertAll(
+					() -> assertEquals(1, te.get("attempt")),
+					() -> assertEquals("IOException", te.get("error")),
+					() -> assertEquals("fetch failed for **** ****3210", te.get("message")),
+					() -> assertTrue(te.get("ms") instanceof Long),
+					() -> assertFalse(te.containsKey("status")));
+			assertEquals("EpsTransportException", ofType("error").get(0).get("error"));
+			assertNoSecrets();
+		}
+
+		@Test
+		void logsEachRetryWithItsDelay() {
+			make(new Scripted(new Step(503, "busy", null), Step.ok()), b -> b.retries(1))
+					.call("bbps-operator-code-circle", BBPS);
+			assertEquals(
+					List.of(
+							java.util.Arrays.asList("init", null),
+							List.of("request", 1),
+							List.of("response", 1),
+							List.of("retry", 1),
+							List.of("request", 2),
+							List.of("response", 2)),
+					events.stream().map(e -> java.util.Arrays.asList(e.get("event"), e.get("attempt"))).toList());
+			assertEquals(0L, ofType("retry").get(0).get("delay_ms"));
+		}
+
+		@Test
+		void logsTheStatusCheckInquiryUnderItsOwnCallId() {
+			EpsClient c =
+					make(new Scripted(new Step(503, "busy", null), Step.body(okJson("\"data\":{\"tx_status\":0}"))));
+			assertThrows(EpsClient.EpsIndeterminateException.class, () -> c.call("dmt-initiate-transfer", transfer()));
+			assertEquals(
+					List.of("dmt-initiate-transfer", "transaction-inquiry"),
+					ofType("request").stream().map(e -> e.get("slug")).toList());
+			List<Map<String, Object>> errors = ofType("error");
+			Map<String, Object> last = errors.get(errors.size() - 1);
+			assertEquals("EpsIndeterminateException", last.get("error"));
+			assertEquals("ref123", last.get("client_ref_id"));
+			assertEquals(
+					2,
+					events.stream().map(e -> e.get("call_id")).filter(java.util.Objects::nonNull).distinct().count());
+		}
+
+		@Test
+		void boundsDeepAndHugeBodies() {
+			String deep = "\"data\":" + "{\"data\":".repeat(11) + "\"leaf\"" + "}".repeat(11);
+			make(new Scripted(Step.body(okJson(deep)))).call("bbps-operator-code-circle", BBPS);
+			String out = OUT.toJson(ofType("response").get(0).get("body"));
+			assertTrue(out.contains("\"****\""), out);
+			assertFalse(out.contains("leaf"), out);
+
+			events.clear();
+			StringBuilder big = new StringBuilder("\"data\":[");
+			for (int i = 0; i < 3000; i++) {
+				if (i > 0) big.append(',');
+				String tid = "t" + i;
+				big.append("{\"tid\":\"").append(tid).append("0".repeat(50 - tid.length())).append("\"}");
+			}
+			big.append(']');
+			make(new Scripted(Step.body(okJson(big.toString())))).call("bbps-operator-code-circle", BBPS);
+			assertTrue(
+					Pattern.matches("^\\[\\d+ bytes omitted\\]$", (String) ofType("response").get(0).get("body")));
+		}
+
+		// ── isolation ───────────────────────────────────────────────────────────
+
+		private Map<String, Object> transfer() {
+			return map(
+					"recipient_id", 1,
+					"amount", 100,
+					"customer_id", "9876543210",
+					"otp", "4321",
+					"otp_ref_id", "ref1",
+					"client_ref_id", "ref123");
+		}
+
+		/** The call's outcome (value or error class, message, status check) plus the request count. */
+		private List<Object> outcome(
+				java.util.function.UnaryOperator<EpsClient.Builder> debug,
+				Scripted t,
+				String slug,
+				Map<String, Object> params) {
+			EpsClient c = debug.apply(base(t)).build();
+			c.now = () -> FIXED_MS;
+			try {
+				return List.of("ok", c.call(slug, params), t.sent.size());
+			} catch (EpsClient.EpsException e) {
+				Object check = e instanceof EpsClient.EpsIndeterminateException i ? i.statusCheck : null;
+				return java.util.Arrays.asList(e.getClass().getSimpleName(), e.getMessage(), check, t.sent.size());
+			}
+		}
+
+		@Test
+		void aThrowingSinkLeavesEveryOutcomeUnchanged() {
+			java.util.function.UnaryOperator<EpsClient.Builder> off = b -> b.debug(false);
+			java.util.function.UnaryOperator<EpsClient.Builder> throwing =
+					b ->
+							b.debug(
+									e -> {
+										throw new IllegalStateException("sink exploded");
+									});
+			List<java.util.function.Supplier<Scripted>> transports =
+					List.of(
+							() -> new Scripted(Step.ok()),
+							() -> new Scripted(Step.body(okJson("\"data\":{\"tid\":\"1\"}"))),
+							() ->
+									new Scripted(
+											new Step(503, "busy", null), Step.body(okJson("\"data\":{\"tx_status\":0}"))));
+			List<String> slugs = List.of("pan-lite", "dmt-initiate-transfer", "dmt-initiate-transfer");
+			List<Map<String, Object>> params = List.of(map("name", "x"), transfer(), transfer());
+			for (int i = 0; i < 3; i++) {
+				List<Object> a = outcome(off, transports.get(i).get(), slugs.get(i), params.get(i));
+				List<Object> b = outcome(throwing, transports.get(i).get(), slugs.get(i), params.get(i));
+				assertEquals(a, b, slugs.get(i));
+			}
+		}
+
+		@Test
+		void anEmptyDeveloperKeyIsNeverAKnownValue() {
+			EpsClient c = base(new Scripted(Step.ok())).developerKey("").debug(events::add).build();
+			c.now = () -> FIXED_MS;
+			c.call("bbps-operator-code-circle", BBPS);
+			assertEquals("{\"status\":0}", OUT.toJson(ofType("response").get(0).get("body")));
+		}
+
+		@Test
+		void anEmptyBodyIsTextNotNull() {
+			EpsClient c = make(new Scripted(new Step(200, "", null)), b -> b.retries(0));
+			assertThrows(
+					EpsClient.EpsInvalidResponseException.class, () -> c.call("bbps-operator-code-circle", BBPS));
+			assertEquals("", ofType("response").get(0).get("body"));
+		}
+
+		// ── URL alignment ───────────────────────────────────────────────────────
+
+		private final EpsDebug.Masker masker =
+				new EpsDebug.Masker(
+						Map.of("safe", List.of("tid", "user_code"), "last4", List.of("customer_id")), null);
+		private static final String BASE = "https://h/v3";
+
+		private String url(String u) {
+			return masker.url(u, BASE, "/x/{customer_id}/y", List.of(), new ArrayList<>());
+		}
+
+		@Test
+		void urlMasksPathParamsAndQueryValuesByClass() {
+			assertEquals(BASE + "/x/****3210/y?tid=1&#1=****", url(BASE + "/x/9876543210/y?tid=1&k%40x=2"));
+		}
+
+		@Test
+		void urlKeepsAnEncodedSlashInsideItsSegment() {
+			assertEquals(BASE + "/x/****3210/y", url(BASE + "/x/98765%2F43210/y"));
+		}
+
+		@Test
+		void urlMasksASafeQueryValueThatIsNotSafeShaped() {
+			assertEquals(BASE + "/x/****/y?tid=****", url(BASE + "/x/1/y?tid=KUMAR%20123456789012"));
+			assertEquals(BASE + "/x/****/y?tid=****", url(BASE + "/x/1/y?tid=KUMAR+123456789012"));
+		}
+
+		@Test
+		void urlFailsClosed() {
+			for (String u :
+					List.of(
+							"https://evil/v3/x/1/y", // another base
+							BASE + "/z/1/y", // a different literal segment
+							BASE + "/x/1/y/z", // an extra segment
+							BASE + "/x/%E0%A4%A/y", // a malformed escape
+							BASE + "/x/%E0%A4/y")) { // invalid UTF-8
+				assertEquals("[unavailable]", url(u), u);
+			}
 		}
 	}
 }

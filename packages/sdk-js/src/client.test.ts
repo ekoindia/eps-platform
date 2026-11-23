@@ -6,6 +6,7 @@ import {
 	EpsError,
 	EpsHttpError,
 	EpsIndeterminateError,
+	EpsInvalidResponseError,
 	MULTIPART_JSON_FIELD,
 	generateClientRefId,
 	signSecretKey,
@@ -101,6 +102,17 @@ describe("EpsClient.call", () => {
 		).rejects.toThrow(/missing required params.*customer_id/i);
 		// nothing is signed or sent when validation fails
 		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("rejects an unknown slug with a spelling/upgrade hint", async () => {
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+		});
+		await expect(client.call("no-such-endpoint", {})).rejects.toThrow(
+			/^Unknown endpoint slug "no-such-endpoint"\..*npm install @ekoindia\/eps-sdk@latest/,
+		);
 	});
 
 	it("injects client-level initiatorId/userCode into every call", async () => {
@@ -512,6 +524,11 @@ describe("EpsClient timeout", () => {
 // ── Shared fixtures for the three suites below (docs/sdk-golden-vector.md) ──
 
 const ok = () => new Response(JSON.stringify({ status: 0 }), { status: 200 });
+/** A financial endpoint's envelope also carries a numeric response_status_id. */
+const okFinancial = () =>
+	new Response(JSON.stringify({ status: 0, response_status_id: 0 }), {
+		status: 200,
+	});
 const http = (status: number) =>
 	new Response(JSON.stringify({ status: 1 }), { status });
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -572,7 +589,7 @@ describe("client_ref_id", () => {
 	});
 
 	it("satisfies an endpoint that requires client_ref_id", async () => {
-		const f = vi.fn(async () => ok());
+		const f = vi.fn(async () => okFinancial());
 		await make(f).call("dmt-initiate-transfer", TRANSFER);
 		expect(bodyOf(f).client_ref_id).toMatch(REF);
 	});
@@ -599,6 +616,20 @@ describe("client_ref_id", () => {
 		await client.call("pan-lite", PAN);
 		expect(bodyOf(f, 0).client_ref_id).not.toBe(bodyOf(f, 1).client_ref_id);
 	});
+
+	// ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+	it.each(["", "   ", "\t", "\u00A0", "\u2003", "\u3000", "\u200B", "\uFEFF", " \u00A0\t\u2003"])(
+		"financial call with a blank supplied client_ref_id (%j) is refused, nothing sent",
+		async (blank) => {
+			const f = vi.fn(async () => okFinancial());
+			await expect(
+				make(f).call("dmt-initiate-transfer", { ...TRANSFER, client_ref_id: blank }),
+			).rejects.toThrow(
+				'Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).',
+			);
+			expect(f).not.toHaveBeenCalled();
+		},
+	);
 
 	it('treats "" as supplied, so it fails the client-ref format', async () => {
 		const f = vi.fn(async () => ok());
@@ -754,6 +785,81 @@ describe("retry and status check", () => {
 		expect(f).toHaveBeenCalledTimes(1 + 3);
 	});
 
+	it("financial POST + 2xx that is not JSON: indeterminate, inquires by client_ref_id", async () => {
+		const inquiry = { status: 0, data: { tx_status: "0", tid: "1" } };
+		const f = vi
+			.fn()
+			.mockResolvedValueOnce(new Response("{\"status\":0,\"da", { status: 200 }))
+			.mockResolvedValueOnce(new Response(JSON.stringify(inquiry)));
+		const err = (await make(f)
+			.call("dmt-initiate-transfer", TRANSFER)
+			.catch((e: unknown) => e)) as EpsIndeterminateError;
+		expect(err).toBeInstanceOf(EpsIndeterminateError);
+		expect(err.clientRefId).toBe(bodyOf(f, 0).client_ref_id);
+		expect(err.status).toBe(200);
+		expect(err.statusCheck).toEqual(inquiry);
+		expect(err.cause).toBeInstanceOf(EpsInvalidResponseError);
+		expect((err.cause as EpsInvalidResponseError).raw).toBe('{"status":0,"da');
+		expect(f).toHaveBeenCalledTimes(2);
+		expect(new URL(urlOf(f, 1)).searchParams.get("client_ref_id")).toBe(
+			err.clientRefId,
+		);
+	});
+
+	it.each([
+		"null",
+		'"ok"',
+		"5",
+		"[]",
+		'[{"status":0}]',
+		"{}",
+		'{"error":"Bad Gateway"}',
+		'{"status":"0"}',
+		'{"status":true}',
+		'{"status":null}',
+		'{"status":502,"error":"Bad Gateway"}',
+		'{"status":0}',
+		'{"status":0,"response_status_id":"0"}',
+	])(
+		"financial POST + 2xx JSON that is not an EPS envelope (%s): indeterminate, inquires",
+		async (body) => {
+			const inquiry = { status: 0, data: { tx_status: "0", tid: "1" } };
+			const f = vi
+				.fn()
+				.mockResolvedValueOnce(new Response(body, { status: 200 }))
+				.mockResolvedValueOnce(new Response(JSON.stringify(inquiry)));
+			const err = (await make(f)
+				.call("dmt-initiate-transfer", TRANSFER)
+				.catch((e: unknown) => e)) as EpsIndeterminateError;
+			expect(err).toBeInstanceOf(EpsIndeterminateError);
+			expect(err.status).toBe(200);
+			expect(err.statusCheck).toEqual(inquiry);
+			expect(err.cause).toBeInstanceOf(EpsInvalidResponseError);
+			expect(f).toHaveBeenCalledTimes(2);
+		},
+	);
+
+	it("financial envelope needs response_status_id; non-financial needs only status", async () => {
+		const full = { status: 0, response_status_id: 0, data: { tid: "1" } };
+		const fin = vi.fn(async () => new Response(JSON.stringify(full)));
+		await expect(
+			make(fin).call("dmt-initiate-transfer", TRANSFER),
+		).resolves.toEqual(full);
+		// pan-fetch-style success with no response_status_id stays a result off the financial path
+		const plain = vi.fn(async () => ok());
+		await expect(make(plain).call("pan-lite", PAN)).resolves.toEqual({
+			status: 0,
+		});
+	});
+
+	it("non-financial POST + 2xx that is not JSON: EpsInvalidResponseError, no inquiry", async () => {
+		const f = vi.fn(async () => new Response("", { status: 200 }));
+		const err = await make(f).call("pan-lite", PAN).catch((e: unknown) => e);
+		expect(err).toBeInstanceOf(EpsInvalidResponseError);
+		expect(err).toBeInstanceOf(EpsError);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
 	it("financial POST + decisive 4xx: plain EpsHttpError, no inquiry", async () => {
 		const f = vi.fn(async () => http(401));
 		await expect(
@@ -770,26 +876,51 @@ describe("retry and status check", () => {
 		expect(f).toHaveBeenCalledTimes(1);
 	});
 
-	it("financial endpoint without a client_ref_id param (initiate-refund): no inquiry", async () => {
-		const f = vi.fn(async () => http(500));
-		await expect(
-			make(f).call("initiate-refund", {
-				initiator_id: "9962981729",
-				tid: "1",
-				otp: "1",
-			}),
-		).rejects.toBeInstanceOf(EpsHttpError);
-		expect(f).toHaveBeenCalledTimes(1);
-	});
+	it.each([
+		["HTTP 500", () => http(500), EpsHttpError],
+		["non-object 2xx", () => new Response("null", { status: 200 }), EpsInvalidResponseError],
+	] as const)(
+		"financial endpoint without a client_ref_id param (initiate-refund) + %s: indeterminate, inquires by tid",
+		async (_l, fail, causeType) => {
+			const inquiry = { status: 0, data: { tx_status: "4", tid: "777" } };
+			const f = vi
+				.fn()
+				.mockResolvedValueOnce(fail())
+				.mockResolvedValueOnce(new Response(JSON.stringify(inquiry)));
+			const err = (await make(f)
+				.call("initiate-refund", {
+					initiator_id: "9962981729",
+					tid: "777",
+					otp: "1",
+				})
+				.catch((e: unknown) => e)) as EpsIndeterminateError;
+			expect(err).toBeInstanceOf(EpsIndeterminateError);
+			expect(err.clientRefId).toBeNull();
+			expect(err.tid).toBe("777");
+			expect(err.statusCheck).toEqual(inquiry);
+			expect(err.cause).toBeInstanceOf(causeType);
+			expect(err.message).toBe(
+				'EPS request for "initiate-refund" on tid "777" has no confirmed outcome.',
+			);
+			expect(f).toHaveBeenCalledTimes(2);
+			const q = new URL(urlOf(f, 1)).searchParams;
+			expect(q.get("tid")).toBe("777");
+			expect(q.has("client_ref_id")).toBe(false);
+			expect(q.get("initiator_id")).toBe("9962981729");
+		},
+	);
 
-	it("autoStatusCheck: false → no inquiry", async () => {
+	it("autoStatusCheck: false skips only the inquiry — still indeterminate, with the generated ref", async () => {
 		const f = vi.fn(async () => http(500));
-		await expect(
-			make(f, { autoStatusCheck: false }).call(
-				"dmt-initiate-transfer",
-				TRANSFER,
-			),
-		).rejects.toBeInstanceOf(EpsHttpError);
+		const err = (await make(f, { autoStatusCheck: false })
+			.call("dmt-initiate-transfer", TRANSFER)
+			.catch((e: unknown) => e)) as EpsIndeterminateError;
+		expect(err).toBeInstanceOf(EpsIndeterminateError);
+		expect(err.clientRefId).toBe(bodyOf(f, 0).client_ref_id);
+		expect(err.status).toBe(500);
+		expect(err.statusCheck).toBeNull();
+		expect(err.statusCheckError).toBeNull();
+		expect(err.cause).toBeInstanceOf(EpsHttpError);
 		expect(f).toHaveBeenCalledTimes(1);
 	});
 

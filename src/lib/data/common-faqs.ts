@@ -226,8 +226,9 @@ export const GLOBAL_REFERENCE_FAQS: FAQ[] = [
 	...SECURITY_FAQS,
 	{
 		q: "How do I report an integration issue?",
-		a: 'Share the complete request and response so we can debug in one round trip:\n\n- The full `curl` (including headers)\n- The response body, verbatim\n- The timestamp of the call\n- Your `initiator_id`, `user_code` and `client_ref_id`\n\nIssues raised with these details are resolved **much** faster than "the API is failing".',
+		a: 'Share the complete request and response so we can debug in one round trip:\n\n- The full `curl` (including headers)\n- The response body, verbatim\n- The timestamp of the call\n- Your `initiator_id`, `user_code` and `client_ref_id`\n\nUsing an EPS SDK? Rerun the failing call with `EPS_SDK_DEBUG=1` set and send the debug output instead: it carries the environment, the exact request and the raw EPS response, with keys and personal data masked (review it before sharing).\n\nIssues raised with these details are resolved **much** faster than "the API is failing".',
 		tag: "support",
+		links: [{ label: "SDK debug mode", href: "/docs/sdk/nodejs#debugging" }],
 	},
 	{
 		q: "Are there any common integration gotchas to know?",

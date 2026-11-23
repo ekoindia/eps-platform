@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -176,7 +177,7 @@ func TestUnknownEnvironmentRejected(t *testing.T) {
 
 func TestUnknownSlugRejected(t *testing.T) {
 	_, err := newTestClient(t).ResolveTarget("no-such-endpoint", nil)
-	wantErr(t, err, "Unknown endpoint slug")
+	wantErr(t, err, "Unknown endpoint slug", "upgrade the SDK")
 }
 
 func TestGetPutsNonPathParamsInQueryStringNoBody(t *testing.T) {
@@ -527,6 +528,9 @@ func httpStep(s int) step    { return step{status: s, body: `{"status":1}`} }
 func transportFail() step    { return step{err: errors.New("dial tcp: connection refused")} }
 func withBody(b string) step { return step{status: 200, body: b} }
 
+// okFinancial: a financial endpoint's envelope also carries a numeric response_status_id.
+func okFinancial() step { return step{status: 200, body: `{"status":0,"response_status_id":0}`} }
+
 // scripted replays steps in order (the last one repeats) and records every
 // request with its body already read, so URLs, bodies and headers can be
 // asserted after the fact.
@@ -620,7 +624,7 @@ func TestClientRefIDSuppliedValueKept(t *testing.T) {
 }
 
 func TestClientRefIDSatisfiesRequiredParam(t *testing.T) {
-	tr := &scripted{steps: []step{ok()}}
+	tr := &scripted{steps: []step{okFinancial()}}
 	mustCall(t, fastClient(t, tr), "dmt-initiate-transfer", transferParams)
 	if ref, _ := tr.body(t, 0)["client_ref_id"].(string); !refRe.MatchString(ref) {
 		t.Errorf("client_ref_id = %q, want a generated ref", ref)
@@ -650,6 +654,22 @@ func TestClientRefIDDiffersBetweenCalls(t *testing.T) {
 	mustCall(t, client, "pan-lite", panParams)
 	if tr.body(t, 0)["client_ref_id"] == tr.body(t, 1)["client_ref_id"] {
 		t.Error("successive calls reused a client_ref_id")
+	}
+}
+
+func TestBlankRefOnFinancialCallIsRefused(t *testing.T) {
+	// ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+	for _, blank := range []string{"", "   ", "\t", "\u00a0", "\u2003", "\u3000", "\u200b", "\ufeff", " \u00a0\t\u2003"} {
+		tr := &scripted{steps: []step{okFinancial()}}
+		params := map[string]any{"client_ref_id": blank}
+		for k, v := range transferParams {
+			params[k] = v
+		}
+		_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", params)
+		want := `Invalid param values for "dmt-initiate-transfer": client_ref_id (must not be blank on a financial call).`
+		if err == nil || err.Error() != want || len(tr.requests) != 0 {
+			t.Errorf("blank %q: err = %v after %d requests, want %q and nothing sent", blank, err, len(tr.requests), want)
+		}
 	}
 }
 
@@ -732,6 +752,71 @@ func TestCancelledContextStopsRetrying(t *testing.T) {
 	_, err := fastClient(t, tr).Call(ctx, "bbps-get-operators", getParams)
 	if err == nil || len(tr.requests) != 1 {
 		t.Errorf("err = %v after %d requests, want a failure after exactly 1", err, len(tr.requests))
+	}
+}
+
+// hangUntilDone stands in for an EPS that answers after the caller's deadline:
+// each request blocks until its ctx ends. Bodies are recorded so a generated
+// client_ref_id can be compared with the one on the error.
+type hangUntilDone struct{ bodies []string }
+
+func (h *hangUntilDone) RoundTrip(r *http.Request) (*http.Response, error) {
+	body := ""
+	if r.Body != nil {
+		b, _ := io.ReadAll(r.Body)
+		body = string(b)
+	}
+	h.bodies = append(h.bodies, body)
+	<-r.Context().Done()
+	return nil, r.Context().Err()
+}
+
+// callPastDeadline runs one Call whose ctx expires while the request is in flight.
+func callPastDeadline(t *testing.T, slug string, params map[string]any) (*hangUntilDone, error) {
+	t.Helper()
+	h := &hangUntilDone{}
+	client := newTestClient(t, func(c *Config) { c.HTTPClient = &http.Client{Transport: h} })
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	_, err := client.Call(ctx, slug, params)
+	return h, err
+}
+
+func TestFinancialDeadlineKeepsGeneratedRef(t *testing.T) {
+	h, err := callPastDeadline(t, "dmt-initiate-transfer", transferParams)
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) {
+		t.Fatalf("err = %v, want *IndeterminateError", err)
+	}
+	var sent map[string]any
+	if jsonErr := json.Unmarshal([]byte(h.bodies[0]), &sent); jsonErr != nil {
+		t.Fatalf("body is not JSON: %v", jsonErr)
+	}
+	if ref, _ := sent["client_ref_id"].(string); ind.ClientRefID == "" || ind.ClientRefID != ref {
+		t.Errorf("ClientRefID = %q, want the generated ref sent on the wire %q", ind.ClientRefID, ref)
+	}
+	if len(h.bodies) != 1 || ind.StatusCheck != nil || !errors.Is(ind.StatusCheckErr, context.DeadlineExceeded) {
+		t.Errorf("sent %d requests, StatusCheck %v / %v; want 1, no inquiry, StatusCheckErr = DeadlineExceeded",
+			len(h.bodies), ind.StatusCheck, ind.StatusCheckErr)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("errors.Is(err, DeadlineExceeded) = false for %v", err)
+	}
+}
+
+func TestRefundDeadlineKeepsTID(t *testing.T) {
+	h, err := callPastDeadline(t, "initiate-refund", map[string]any{"initiator_id": "9962981729", "tid": "777", "otp": "1"})
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) || ind.TID != "777" || ind.ClientRefID != "" || len(h.bodies) != 1 {
+		t.Errorf("err = %v after %d requests, want *IndeterminateError with TID 777 after 1", err, len(h.bodies))
+	}
+}
+
+func TestNonFinancialDeadlineIsPlainError(t *testing.T) {
+	_, err := callPastDeadline(t, "pan-lite", panParams)
+	var ind *IndeterminateError
+	if err == nil || errors.As(err, &ind) || !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("err = %v, want a plain deadline error", err)
 	}
 }
 
@@ -835,6 +920,71 @@ func TestFailingInquiryLandsOnStatusCheckErr(t *testing.T) {
 	}
 }
 
+func TestFinancialPostUnparseable2xxInquiresAndReturnsIndeterminate(t *testing.T) {
+	inquiry := `{"status":0,"data":{"tx_status":"0","tid":"1"}}`
+	tr := &scripted{steps: []step{withBody(`{"status":0,"da`), withBody(inquiry)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) {
+		t.Fatalf("err = %v, want *IndeterminateError", err)
+	}
+	ref := tr.body(t, 0)["client_ref_id"].(string)
+	if ind.ClientRefID != ref || ind.Status != 200 || ind.StatusCheck["data"].(map[string]any)["tx_status"] != "0" {
+		t.Errorf("IndeterminateError = %+v, want ref %q / 200 / the inquiry envelope", ind, ref)
+	}
+	var invalid *InvalidResponseError
+	if !errors.As(err, &invalid) || string(invalid.Raw) != `{"status":0,"da` {
+		t.Errorf("errors.As(*InvalidResponseError) through Unwrap failed: %v", err)
+	}
+	if len(tr.requests) != 2 || tr.requests[1].URL.Query().Get("client_ref_id") != ref {
+		t.Errorf("sent %d requests, want 2 with an inquiry by %q", len(tr.requests), ref)
+	}
+}
+
+func TestFinancialPostNonObjectJSON2xxInquires(t *testing.T) {
+	inquiry := `{"status":0,"data":{"tx_status":"0","tid":"1"}}`
+	for _, body := range []string{`null`, `"ok"`, `5`, `[]`, `[{"status":0}]`,
+		`{}`, `{"error":"Bad Gateway"}`, `{"status":"0"}`, `{"status":true}`, `{"status":null}`,
+		`{"status":502,"error":"Bad Gateway"}`, `{"status":0}`, `{"status":0,"response_status_id":"0"}`} {
+		t.Run(body, func(t *testing.T) {
+			tr := &scripted{steps: []step{withBody(body), withBody(inquiry)}}
+			_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
+			var ind *IndeterminateError
+			var invalid *InvalidResponseError
+			if !errors.As(err, &ind) || ind.Status != 200 || ind.StatusCheck == nil || !errors.As(err, &invalid) {
+				t.Fatalf("err = %v, want *IndeterminateError (200, inquiry run) wrapping *InvalidResponseError", err)
+			}
+			if len(tr.requests) != 2 {
+				t.Errorf("sent %d requests, want 2", len(tr.requests))
+			}
+		})
+	}
+}
+
+func TestFinancialEnvelopeNeedsResponseStatusIDNonFinancialOnlyStatus(t *testing.T) {
+	full := `{"status":0,"response_status_id":0,"data":{"tid":"1"}}`
+	got, err := fastClient(t, &scripted{steps: []step{withBody(full)}}).
+		Call(context.Background(), "dmt-initiate-transfer", transferParams)
+	if err != nil || got["response_status_id"] != float64(0) {
+		t.Errorf("financial full envelope: got %v, err %v; want it returned", got, err)
+	}
+	// pan-fetch-style success with no response_status_id stays a result off the financial path
+	got, err = fastClient(t, &scripted{steps: []step{ok()}}).
+		Call(context.Background(), "pan-lite", panParams)
+	if err != nil || got["status"] != float64(0) {
+		t.Errorf("non-financial status-only: got %v, err %v; want it returned", got, err)
+	}
+}
+
+func TestNonFinancialPostUnparseable2xxNoInquiry(t *testing.T) {
+	tr := &scripted{steps: []step{withBody("")}}
+	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", panParams)
+	var invalid *InvalidResponseError
+	if !errors.As(err, &invalid) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want *InvalidResponseError after 1", err, len(tr.requests))
+	}
+}
+
 func TestFinancialPost4xxIsPlainHTTPError(t *testing.T) {
 	tr := &scripted{steps: []step{httpStep(401)}}
 	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
@@ -853,24 +1003,49 @@ func TestNonFinancialPost5xxNoInquiry(t *testing.T) {
 	}
 }
 
-func TestFinancialWithoutRefParamNoInquiry(t *testing.T) {
-	tr := &scripted{steps: []step{httpStep(500)}}
-	_, err := fastClient(t, tr).Call(context.Background(), "initiate-refund",
-		map[string]any{"initiator_id": "9962981729", "tid": "1", "otp": "1"})
-	var ind *IndeterminateError
-	if errors.As(err, &ind) || len(tr.requests) != 1 {
-		t.Errorf("err = %v after %d requests, want plain *HTTPError after 1", err, len(tr.requests))
+func TestFinancialWithoutRefParamInquiresByTID(t *testing.T) {
+	inquiry := `{"status":0,"data":{"tx_status":"4","tid":"777"}}`
+	for name, failure := range map[string]step{"HTTP 500": httpStep(500), "null 2xx": withBody(`null`)} {
+		t.Run(name, func(t *testing.T) {
+			tr := &scripted{steps: []step{failure, withBody(inquiry)}}
+			_, err := fastClient(t, tr).Call(context.Background(), "initiate-refund",
+				map[string]any{"initiator_id": "9962981729", "tid": "777", "otp": "1"})
+			var ind *IndeterminateError
+			if !errors.As(err, &ind) {
+				t.Fatalf("err = %v, want *IndeterminateError", err)
+			}
+			if ind.ClientRefID != "" || ind.TID != "777" || ind.StatusCheck == nil || ind.StatusCheckErr != nil {
+				t.Errorf("IndeterminateError = %+v, want TID 777, no ref, the inquiry envelope", ind)
+			}
+			want := `eps: request for "initiate-refund" on tid "777" has no confirmed outcome`
+			if err.Error() != want {
+				t.Errorf("Error() = %q, want %q", err.Error(), want)
+			}
+			if len(tr.requests) != 2 {
+				t.Fatalf("sent %d requests, want 2", len(tr.requests))
+			}
+			q := tr.requests[1].URL.Query()
+			if q.Get("tid") != "777" || q.Has("client_ref_id") || q.Get("initiator_id") != "9962981729" {
+				t.Errorf("inquiry url = %s, want tid=777 and no client_ref_id", tr.requests[1].URL)
+			}
+		})
 	}
 }
 
-func TestAutoStatusCheckOff(t *testing.T) {
+func TestAutoStatusCheckOffSkipsOnlyTheInquiry(t *testing.T) {
 	tr := &scripted{steps: []step{httpStep(500)}}
 	off := false
 	_, err := fastClient(t, tr, func(c *Config) { c.AutoStatusCheck = &off }).
 		Call(context.Background(), "dmt-initiate-transfer", transferParams)
 	var ind *IndeterminateError
-	if errors.As(err, &ind) || len(tr.requests) != 1 {
-		t.Errorf("err = %v after %d requests, want plain *HTTPError after 1", err, len(tr.requests))
+	if !errors.As(err, &ind) {
+		t.Fatalf("err = %v, want *IndeterminateError (off skips only the inquiry)", err)
+	}
+	ref, _ := tr.body(t, 0)["client_ref_id"].(string)
+	if ind.ClientRefID == "" || ind.ClientRefID != ref || ind.Status != 500 ||
+		ind.StatusCheck != nil || ind.StatusCheckErr != nil || len(tr.requests) != 1 {
+		t.Errorf("IndeterminateError = %+v after %d requests, want generated ref %q, 500, no inquiry, after 1",
+			ind, len(tr.requests), ref)
 	}
 }
 

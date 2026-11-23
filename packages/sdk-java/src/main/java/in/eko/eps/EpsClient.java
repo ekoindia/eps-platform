@@ -75,6 +75,14 @@ public final class EpsClient {
 	 */
 	private static final Gson GSON = new com.google.gson.GsonBuilder().serializeNulls().create();
 	private static final SecureRandom RANDOM = new SecureRandom();
+	/**
+	 * A "blank" ref: only Unicode White_Space or zero-width characters. One explicit class shared by
+	 * all five SDKs (docs/sdk-golden-vector.md) — {@link String#isBlank()} misses U+00A0, U+2007 and
+	 * U+202F (no-break spaces are not {@code Character.isWhitespace}).
+	 */
+	private static final Pattern BLANK_REF =
+			Pattern.compile(
+					"[\\t\\n\\x0B\\f\\r \\x{85}\\x{A0}\\x{1680}\\x{2000}-\\x{200D}\\x{2028}\\x{2029}\\x{202F}\\x{205F}\\x{2060}\\x{3000}\\x{FEFF}]*");
 
 	/** Client-side failure: unknown slug, missing param, bad type, bad config. */
 	public static class EpsException extends RuntimeException {
@@ -120,8 +128,34 @@ public final class EpsClient {
 	}
 
 	/**
+	 * A 2xx response whose body is not an EPS envelope — a JSON object with a numeric {@code status},
+	 * plus a numeric {@code response_status_id} on a financial endpoint (empty, truncated, a proxy's
+	 * HTML page, valid JSON such as {@code null} / {@code []}, or an object such as {@code {}} / a
+	 * proxy's {@code {"status":502,…}}). EPS may well
+	 * have processed the request, so the outcome is unknown, not decided: a financial call gets
+	 * the status check and a retry-safe one is retried. Still an {@link EpsException}, so existing
+	 * catches keep matching.
+	 */
+	public static final class EpsInvalidResponseException extends EpsException {
+		public final int status;
+		public final String url;
+		public final String raw;
+
+		EpsInvalidResponseException(int status, String url, String raw) {
+			super("EPS response from " + url + " was not valid JSON.");
+			this.status = status;
+			this.url = url;
+			this.raw = raw;
+		}
+	}
+
+	/**
 	 * A non-GET call on a money-moving endpoint ended without a confirmed outcome (timeout,
-	 * transport failure, HTTP 429 or 5xx). The SDK never re-sends such a request — that is how a
+	 * transport failure, HTTP 429 or 5xx, or a 2xx that was not an EPS envelope). Inquiry key: the call's {@code
+	 * client_ref_id}, or — on an endpoint that has none, such as {@code initiate-refund} — the {@code
+	 * tid} it acted on (then {@link #tid} is set and {@link #clientRefId} is null). Only {@code
+	 * tx_status} 4 (refunded) confirms the refund; 3 (refund pending) is also the state before a
+	 * refund is requested, so it settles nothing. The SDK never re-sends such a request — that is how a
 	 * customer gets debited twice — so it inquired by the call's {@code client_ref_id} instead and
 	 * reports what it found. {@link #statusCheck} is the Transaction Inquiry envelope ({@code
 	 * data.tx_status}: "0" success, "1" fail, "2" awaited, …) or null when the inquiry itself
@@ -130,8 +164,11 @@ public final class EpsClient {
 	 */
 	public static final class EpsIndeterminateException extends EpsException {
 		public final String slug;
+		/** The call's ref, or null on an endpoint without one (see {@link #tid}). */
 		public final String clientRefId;
-		/** HTTP status of the original attempt, or null for a transport failure. */
+		/** The {@code tid} inquired by when there was no ref, else null. */
+		public final String tid;
+		/** HTTP status of the original attempt (a 2xx when its body was not an EPS envelope), or null for a transport failure. */
 		public final Integer status;
 		public final Map<String, Object> statusCheck;
 		public final Throwable statusCheckError;
@@ -141,26 +178,34 @@ public final class EpsClient {
 				String clientRefId,
 				Throwable cause,
 				Map<String, Object> statusCheck,
-				Throwable statusCheckError) {
+				Throwable statusCheckError,
+				String tid) {
 			super(
-					"EPS request for \"" + slug + "\" with client_ref_id \"" + clientRefId
-							+ "\" has no confirmed outcome.",
+					"EPS request for \"" + slug + "\" "
+							+ (clientRefId != null
+									? "with client_ref_id \"" + clientRefId + "\""
+									: tid != null ? "on tid \"" + tid + "\"" : "without a client_ref_id or tid")
+							+ " has no confirmed outcome.",
 					cause);
 			this.slug = slug;
 			this.clientRefId = clientRefId;
-			this.status = cause instanceof EpsHttpException h ? h.status : null;
+			this.tid = tid;
+			this.status =
+					cause instanceof EpsHttpException h
+							? Integer.valueOf(h.status)
+							: cause instanceof EpsInvalidResponseException i ? Integer.valueOf(i.status) : null;
 			this.statusCheck = statusCheck;
 			this.statusCheckError = statusCheckError;
 		}
 	}
 
 	/**
-	 * True when the outcome is unknown: no response, or a 429/5xx that says nothing about whether
-	 * the request was processed. A 4xx is a decisive no, and so is a 2xx that failed to decode.
+	 * True when the outcome is unknown: no response, a 429/5xx, or a 2xx whose body could not be
+	 * read — none says whether the request was processed. A 4xx is a decisive no.
 	 */
 	private static boolean isIndeterminate(EpsException e) {
 		if (e instanceof EpsHttpException h) return h.status == 429 || h.status >= 500;
-		return e instanceof EpsTransportException;
+		return e instanceof EpsTransportException || e instanceof EpsInvalidResponseException;
 	}
 
 	/** An in-memory upload, for callers that do not have the bytes on disk. */
@@ -213,8 +258,13 @@ public final class EpsClient {
 
 	private record Environment(String id, String baseUrl) {}
 
+	/** {@code redact}: the debug masker's key lists ({@code safe}, {@code last4}, {@code text}, {@code nest}). */
 	private record Surface(
-			List<Environment> environments, List<Endpoint> endpoints, Map<String, String> formats) {}
+			String bundleVersion,
+			List<Environment> environments,
+			List<Endpoint> endpoints,
+			Map<String, String> formats,
+			Map<String, List<String>> redact) {}
 
 	/**
 	 * The baked API surface, loaded once from the classpath. Generated by {@code
@@ -276,6 +326,8 @@ public final class EpsClient {
 	private final boolean autoStatusCheck;
 	/** Test-only clock injection (ms since the epoch); not part of the public surface. */
 	java.util.function.LongSupplier now = System::currentTimeMillis;
+	/** Debug events, or null when debug mode is off. */
+	private final EpsDebug debug;
 
 	private EpsClient(Builder builder) {
 		this.developerKey = builder.developerKey;
@@ -305,6 +357,21 @@ public final class EpsClient {
 						.orElseThrow(
 								() -> new EpsException("Unknown environment \"" + builder.environment + "\"."))
 						.baseUrl();
+		if (builder.debugSet && builder.debug == null) {
+			throw new EpsException("Invalid debug: null. Expected a boolean or a sink.");
+		}
+		this.debug =
+				EpsDebug.start(
+						builder.debug,
+						builder.environment,
+						baseUrl,
+						SURFACE.bundleVersion(),
+						SURFACE.redact(),
+						FORMATS.get("client-ref"),
+						developerKey,
+						DEFAULT_TIMEOUT.toMillis(),
+						retries,
+						autoStatusCheck);
 	}
 
 	public static Builder builder() {
@@ -326,6 +393,9 @@ public final class EpsClient {
 		private int retries = DEFAULT_RETRIES;
 		private Duration retryBaseDelay = DEFAULT_RETRY_BASE_DELAY;
 		private boolean autoStatusCheck = true;
+		/** Unset (null, unless {@link #debugSet}), a Boolean, or a sink. */
+		private Object debug;
+		private boolean debugSet;
 
 		public Builder developerKey(String v) {
 			this.developerKey = v;
@@ -380,11 +450,36 @@ public final class EpsClient {
 
 		/**
 		 * After an indeterminate failure on a money-moving endpoint, look the transaction up by its
-		 * {@code client_ref_id} and surface the result on {@link EpsIndeterminateException#statusCheck}.
-		 * Default true.
+		 * {@code client_ref_id} (or {@code tid}) and surface the result on {@link
+		 * EpsIndeterminateException#statusCheck}. Default true. Off skips only the inquiry: the call
+		 * still throws {@link EpsIndeterminateException} carrying the ref/tid to reconcile by.
 		 */
 		public Builder autoStatusCheck(boolean v) {
 			this.autoStatusCheck = v;
+			return this;
+		}
+
+		/**
+		 * Debug mode: log masked request / response / validation / retry events as one JSON object per
+		 * line on {@code System.err} ({@code true}), or force it off ({@code false}). Unset: on when
+		 * the env var {@code EPS_SDK_DEBUG} is {@code 1} or {@code true}. Credentials and personal data
+		 * are masked best-effort; review the output before sharing it with Eko support. See "Debug mode
+		 * conformance" in docs/sdk-golden-vector.md.
+		 */
+		public Builder debug(boolean on) {
+			this.debug = on;
+			this.debugSet = true;
+			return this;
+		}
+
+		/**
+		 * Debug mode with a callback sink: receives each masked event as a fresh ordered map,
+		 * synchronously on the calling thread. Keep it fast and never call the client from it; an
+		 * exception it throws is swallowed. A null sink is rejected at {@link #build()}.
+		 */
+		public Builder debug(java.util.function.Consumer<Map<String, Object>> sink) {
+			this.debug = sink;
+			this.debugSet = true;
 			return this;
 		}
 
@@ -531,7 +626,8 @@ public final class EpsClient {
 		return SURFACE.endpoints().stream()
 				.filter(e -> e.slug().equals(slug))
 				.findFirst()
-				.orElseThrow(() -> new EpsException("Unknown endpoint slug \"" + slug + "\"."));
+				.orElseThrow(() -> new EpsException("Unknown endpoint slug \"" + slug + "\". Check the spelling, or upgrade the SDK"
+						+ " if this API is newer than your installed version (bump com.github.ekoindia:eps-sdk-java to the latest tag)."));
 	}
 
 	/**
@@ -555,6 +651,19 @@ public final class EpsClient {
 	 */
 	static byte[] encodeMultipart(
 			Map<String, Object> values, Set<String> fileParams, String boundary) {
+		return encodeMultipart(values, fileParams, boundary, null);
+	}
+
+	/**
+	 * As {@link #encodeMultipart(Map, Set, String)}; {@code meta}, when given, receives the debug
+	 * metadata (the form-data JSON and each upload's param, extension and size) from the values
+	 * already in hand — never re-reading a file.
+	 */
+	static byte[] encodeMultipart(
+			Map<String, Object> values,
+			Set<String> fileParams,
+			String boundary,
+			java.util.function.Consumer<EpsDebug.Multipart> meta) {
 		Map<String, Object> payload = new TreeMap<>();
 		List<EpsFile> uploads = new ArrayList<>();
 		List<String> uploadFields = new ArrayList<>();
@@ -570,13 +679,26 @@ public final class EpsClient {
 			uploads.add(toFile(entry.getKey(), value));
 		}
 
+		String fields = GSON.toJson(payload);
+		if (meta != null) {
+			List<Map<String, Object>> files = new ArrayList<>();
+			for (int i = 0; i < uploads.size(); i++) {
+				EpsFile file = uploads.get(i);
+				files.add(
+						EpsDebug.fileMeta(
+								uploadFields.get(i),
+								file.name(),
+								file.content() == null ? null : file.content().length));
+			}
+			meta.accept(new EpsDebug.Multipart(fields, files));
+		}
 		var out = new java.io.ByteArrayOutputStream();
 		try {
 			out.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
 			out.write(
 					("Content-Disposition: form-data; name=\"" + MULTIPART_JSON_FIELD + "\"\r\n\r\n")
 							.getBytes(StandardCharsets.UTF_8));
-			out.write(GSON.toJson(payload).getBytes(StandardCharsets.UTF_8));
+			out.write(fields.getBytes(StandardCharsets.UTF_8));
 			out.write("\r\n".getBytes(StandardCharsets.UTF_8));
 			for (int i = 0; i < uploads.size(); i++) {
 				EpsFile file = uploads.get(i);
@@ -619,6 +741,13 @@ public final class EpsClient {
 	 *     anything is signed or sent.
 	 */
 	public Target resolveTarget(String slug, Map<String, Object> params) {
+		return resolve(slug, params).target();
+	}
+
+	/** A resolved target plus what debug mode logs about it: the path template, multipart metadata. */
+	private record Resolved(Target target, String template, EpsDebug.Multipart multipart) {}
+
+	private Resolved resolve(String slug, Map<String, Object> params) {
 		Endpoint endpoint = endpointFor(slug);
 
 		// Client-level defaults first; an explicit per-call value wins, including an
@@ -675,6 +804,14 @@ public final class EpsClient {
 			throw new EpsException(
 					"Invalid param values for \"" + slug + "\": " + String.join(", ", badValues) + ".");
 		}
+		// A financial call's ref is its only reconciliation key after a lost response, so a blank one
+		// is refused (never silently replaced) even on endpoints whose param declares no client-ref
+		// format.
+		if (endpoint.financial() && clientRefId != null && BLANK_REF.matcher(clientRefId).matches()) {
+			throw new EpsException(
+					"Invalid param values for \"" + slug
+							+ "\": client_ref_id (must not be blank on a financial call).");
+		}
 
 		// A type:"file" param flips the whole request to multipart/form-data.
 		Set<String> fileParams = new HashSet<>();
@@ -698,6 +835,7 @@ public final class EpsClient {
 		String url = baseUrl + path;
 		Map<String, String> headers = buildHeaders(multipart);
 		byte[] body = null;
+		EpsDebug.Multipart[] multipartDebug = {null};
 		if ("GET".equals(endpoint.method())) {
 			StringBuilder query = new StringBuilder();
 			for (Map.Entry<String, Object> entry : rest.entrySet()) {
@@ -707,21 +845,26 @@ public final class EpsClient {
 			if (query.length() > 0) url += (url.contains("?") ? "&" : "?") + query;
 		} else if (multipart) {
 			String boundary = "----EpsSdkBoundary" + new java.math.BigInteger(128, RANDOM).toString(16);
-			body = encodeMultipart(rest, fileParams, boundary);
+			body =
+					encodeMultipart(
+							rest, fileParams, boundary, debug == null ? null : m -> multipartDebug[0] = m);
 			headers.put("content-type", "multipart/form-data; boundary=" + boundary);
 		} else {
 			body = GSON.toJson(rest).getBytes(StandardCharsets.UTF_8);
 		}
-		return new Target(
-				endpoint.method(),
-				url,
-				body,
-				headers,
-				multipart,
-				slug,
-				endpoint.financial(),
-				clientRefId,
-				merged.get("initiator_id"));
+		return new Resolved(
+				new Target(
+						endpoint.method(),
+						url,
+						body,
+						headers,
+						multipart,
+						slug,
+						endpoint.financial(),
+						clientRefId,
+						merged.get("initiator_id")),
+				endpoint.path(),
+				multipartDebug[0]);
 	}
 
 	private static String encode(String value) {
@@ -735,40 +878,63 @@ public final class EpsClient {
 	 * retrySafe} endpoint whose outcome is indeterminate is retried; any other never is — on a
 	 * {@code financial} endpoint it is
 	 * followed by a Transaction Inquiry on its {@code client_ref_id} and thrown as {@link
-	 * EpsIndeterminateException}. An interrupted thread stops everything: no retry, no inquiry. See
+	 * EpsIndeterminateException}. An interrupted thread stops retries and the inquiry, but a
+	 * financial call still throws {@link EpsIndeterminateException} carrying its ref/tid. See
 	 * docs/sdk-golden-vector.md.
 	 *
 	 * @throws EpsIndeterminateException when a financial non-GET call has no confirmed outcome
 	 * @throws EpsHttpException on any other non-2xx response; the envelope is on {@code body}
 	 * @throws EpsTransportException on a transport failure that was not retried
-	 * @throws EpsException on a 2xx body that is not JSON — never a silent empty map
+	 * @throws EpsInvalidResponseException on a 2xx body that is not an EPS envelope (when not inquired) —
+	 *     never a silent empty map
 	 */
 	public Map<String, Object> call(String slug, Map<String, Object> params) {
-		Target target = resolveTarget(slug, params);
+		EpsDebug.Trace trace = debug == null ? null : debug.trace(slug);
+		try {
+			return run(slug, params, trace);
+		} catch (RuntimeException e) {
+			if (trace != null) trace.error(e);
+			throw e;
+		}
+	}
+
+	/** {@link #call} without the debug wrapper: validate, send, retry, inquire. */
+	private Map<String, Object> run(String slug, Map<String, Object> params, EpsDebug.Trace trace) {
+		Resolved resolved = resolve(slug, params);
+		Target target = resolved.target();
+		if (trace != null) trace.target(resolved.template(), resolved.multipart());
 		int attempts = endpointFor(slug).isRetrySafe() ? retries + 1 : 1;
+		// Inquiry key on a financial endpoint with no ref (initiate-refund). Client defaults
+		// never set tid, so the caller's params hold the resolved value.
+		Object rawTid = params == null ? null : params.get("tid");
+		String tid = target.clientRefId() == null && rawTid != null ? wireString(rawTid) : null;
 		for (int attempt = 1; ; attempt++) {
 			try {
-				return send(target);
+				return send(target, attempt, trace);
 			} catch (EpsException e) {
-				if (!isIndeterminate(e) || Thread.currentThread().isInterrupted()) throw e;
-				if (attempt < attempts) {
-					backoff(attempt);
+				// An interrupt mid-send leaves the outcome as unknown as a timeout. It stops
+				// retries and the inquiry, but a financial call still falls through, so the
+				// caller gets the ref/tid to reconcile by.
+				boolean interrupted = Thread.currentThread().isInterrupted();
+				if (!isIndeterminate(e) && !(e.getCause() instanceof InterruptedException)) throw e;
+				if (attempt < attempts && !interrupted) {
+					backoff(attempt, trace);
 					continue;
 				}
 				// Never re-send an unsafe call: that is how a customer is debited twice. Ask
-				// EPS what happened to the ref instead, if there is one to ask by.
-				if (autoStatusCheck && target.financial() && target.clientRefId() != null) {
-					throw indeterminate(target, e);
-				}
+				// EPS what happened instead — by the ref, or by the tid on an endpoint that
+				// has no ref (initiate-refund).
+				if (target.financial()) throw indeterminate(target, tid, e);
 				throw e;
 			}
 		}
 	}
 
 	/** Attempt n sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter. */
-	private void backoff(int attempt) {
+	private void backoff(int attempt, EpsDebug.Trace trace) {
 		long cap = Math.min(retryBaseDelay.toMillis() << (attempt - 1), MAX_RETRY_DELAY_MS);
 		long delay = cap > 0 ? ThreadLocalRandom.current().nextLong(cap + 1) : 0;
+		if (trace != null) trace.retry(attempt, delay);
 		if (delay == 0) return;
 		try {
 			Thread.sleep(delay);
@@ -779,22 +945,31 @@ public final class EpsClient {
 	}
 
 	/**
-	 * One inquiry by {@code client_ref_id=<ref>}; its own failure is reported, never allowed to mask
-	 * the original one.
+	 * One inquiry by {@code client_ref_id=<ref>}, else {@code tid=<tid>}, else none — or none at all
+	 * with {@code autoStatusCheck} off; its own failure is reported, never allowed to mask the
+	 * original one.
 	 */
-	private EpsIndeterminateException indeterminate(Target target, EpsException cause) {
-		Map<String, Object> params = new LinkedHashMap<>();
-		params.put("client_ref_id", target.clientRefId());
-		if (target.initiatorId() != null) params.put("initiator_id", target.initiatorId());
+	private EpsIndeterminateException indeterminate(Target target, String tid, EpsException cause) {
 		Map<String, Object> statusCheck = null;
 		Throwable statusCheckError = null;
-		try {
-			statusCheck = call(INQUIRY_SLUG, params);
-		} catch (RuntimeException e) {
-			statusCheckError = e;
+		if (!autoStatusCheck) {
+			// Opted out of the inquiry, not of the key: the ref/tid still reaches the caller.
+		} else if (Thread.currentThread().isInterrupted()) {
+			// The inquiry would be interrupted too; the key stays on the error for later.
+			statusCheckError = new InterruptedException("EPS status check skipped: thread interrupted");
+		} else if (target.clientRefId() != null || tid != null) {
+			Map<String, Object> params = new LinkedHashMap<>();
+			if (target.clientRefId() != null) params.put("client_ref_id", target.clientRefId());
+			else params.put("tid", tid);
+			if (target.initiatorId() != null) params.put("initiator_id", target.initiatorId());
+			try {
+				statusCheck = call(INQUIRY_SLUG, params);
+			} catch (RuntimeException e) {
+				statusCheckError = e;
+			}
 		}
 		return new EpsIndeterminateException(
-				target.slug(), target.clientRefId(), cause, statusCheck, statusCheckError);
+				target.slug(), target.clientRefId(), cause, statusCheck, statusCheckError, tid);
 	}
 
 	/**
@@ -802,7 +977,7 @@ public final class EpsClient {
 	 * content-type, with its boundary, is kept from the target; every other header is re-signed so
 	 * a retry never reuses a stale {@code secret-key-timestamp}.
 	 */
-	private Map<String, Object> send(Target target) {
+	private Map<String, Object> send(Target target, int attempt, EpsDebug.Trace trace) {
 		HttpRequest.Builder request =
 				HttpRequest.newBuilder(URI.create(target.url())).timeout(DEFAULT_TIMEOUT);
 		Map<String, String> headers = new LinkedHashMap<>(target.headers());
@@ -814,18 +989,23 @@ public final class EpsClient {
 						? HttpRequest.BodyPublishers.noBody()
 						: HttpRequest.BodyPublishers.ofByteArray(target.body()));
 
+		if (trace != null)
+			trace.request(attempt, target.method(), target.url(), headers, target.body());
 		HttpResponse<String> response;
 		try {
 			response = http.send(request.build(), HttpResponse.BodyHandlers.ofString());
 		} catch (IOException e) {
+			if (trace != null) trace.transportError(attempt, e);
 			throw new EpsTransportException(
 					"EPS request to " + target.url() + " failed: " + e.getMessage(), e);
 		} catch (InterruptedException e) {
+			if (trace != null) trace.transportError(attempt, e);
 			Thread.currentThread().interrupt();
 			throw new EpsException("EPS request to " + target.url() + " was interrupted", e);
 		}
 
-		return handleResponse(response.statusCode(), target.url(), response.body());
+		if (trace != null) trace.response(attempt, response.statusCode(), response.body());
+		return handleResponse(response.statusCode(), target.url(), response.body(), target.financial());
 	}
 
 	/**
@@ -834,20 +1014,40 @@ public final class EpsClient {
 	 * stubbing the abstract {@link HttpClient}.
 	 *
 	 * @throws EpsHttpException on any non-2xx response; the decoded envelope is on {@code body}.
-	 * @throws EpsException when a 2xx body is not JSON — never a silent empty map.
+	 * @throws EpsInvalidResponseException when a 2xx body is not an EPS envelope (a JSON object with
+	 *     a numeric {@code status}) — never a silent empty map.
 	 */
 	static Map<String, Object> handleResponse(int status, String url, String raw) {
+		return handleResponse(status, url, raw, false);
+	}
+
+	/**
+	 * As {@link #handleResponse(int, String, String)}; a {@code financial} endpoint's envelope must
+	 * also carry a numeric {@code response_status_id}, so a proxy's {@code {"status":502,…}} cannot
+	 * pass for a result (a wrong "no" there just costs an inquiry).
+	 */
+	static Map<String, Object> handleResponse(int status, String url, String raw, boolean financial) {
 		Map<String, Object> envelope = decodeOrNull(raw);
 		if (status < 200 || status >= 300) {
 			throw new EpsHttpException(status, url, envelope, raw);
 		}
-		if (envelope == null) {
-			throw new EpsException("EPS response from " + url + " was not valid JSON.");
+		// Only an EPS envelope — an object with a numeric status — is a result; {} or a proxy's
+		// error object is as unreadable as a truncated body.
+		if (envelope == null
+				|| !(envelope.get("status") instanceof Number)
+				|| (financial && !(envelope.get("response_status_id") instanceof Number))) {
+			throw new EpsInvalidResponseException(status, url, raw);
 		}
 		return envelope;
 	}
 
+	/**
+	 * Decode a JSON object envelope, or null for anything else. Gson's Map adapter also accepts an
+	 * array of key/value pairs ({@code []} decodes to an empty map), so only a body that opens with
+	 * {@code &#123;} is decoded: a JSON array, scalar or null is no EPS envelope.
+	 */
 	private static Map<String, Object> decodeOrNull(String raw) {
+		if (raw == null || !raw.stripLeading().startsWith("{")) return null;
 		try {
 			return GSON.fromJson(raw, new TypeToken<Map<String, Object>>() {}.getType());
 		} catch (JsonSyntaxException e) {

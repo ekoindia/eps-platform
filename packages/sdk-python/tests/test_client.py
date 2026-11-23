@@ -95,7 +95,7 @@ class TestSigning(unittest.TestCase):
             EpsClient("dev123", ACCESS_KEY, "moon")
 
     def test_unknown_slug_rejected(self):
-        with self.assertRaisesRegex(EpsError, "Unknown endpoint slug"):
+        with self.assertRaisesRegex(EpsError, r"Unknown endpoint slug .*upgrade the SDK"):
             client().resolve_target("no-such-endpoint", {})
 
 
@@ -253,7 +253,7 @@ class TestMultipart(unittest.TestCase):
         self.assertIn(b"\x89PNG-not-really", target.body)
 
     def test_multipart_omits_null_params_but_keeps_nested_nulls(self):
-        body, _ = _encode_multipart(
+        body, _, _ = _encode_multipart(
             {
                 # A null param has no form encoding, so it is dropped entirely...
                 "extra_note": None,
@@ -349,7 +349,7 @@ class ResponseContract(unittest.TestCase):
 import re
 import socket
 
-from eps_sdk import EpsIndeterminateError, generate_client_ref_id
+from eps_sdk import EpsIndeterminateError, EpsInvalidResponseError, generate_client_ref_id
 from eps_sdk.client import _base36, value_problem
 
 REF = re.compile(r"^[0-9a-z]{15}$")
@@ -421,6 +421,8 @@ def fast(**kwargs):
 
 
 OK = b'{"status":0}'
+#: A financial endpoint's envelope also carries a numeric response_status_id.
+OK_FINANCIAL = b'{"status":0,"response_status_id":0}'
 
 
 class ClientRefId(unittest.TestCase):
@@ -444,7 +446,7 @@ class ClientRefId(unittest.TestCase):
         self.assertEqual(t.body()["client_ref_id"], "MY-REF_1")
 
     def test_satisfies_a_required_client_ref_id(self):
-        t = Transport(_response(OK))
+        t = Transport(_response(OK_FINANCIAL))
         with patched(t):
             fast().call("dmt-initiate-transfer", TRANSFER)
         self.assertRegex(t.body()["client_ref_id"], REF)
@@ -468,6 +470,23 @@ class ClientRefId(unittest.TestCase):
             c.call("pan-lite", PAN)
             c.call("pan-lite", PAN)
         self.assertNotEqual(t.body(0)["client_ref_id"], t.body(1)["client_ref_id"])
+
+    def test_blank_ref_on_financial_call_is_refused(self):
+        # ASCII and Unicode whitespace (NBSP, em space, ideographic space) and zero-width characters.
+        for blank in (
+            "", "   ", "\t", "\u00a0", "\u2003", "\u3000", "\u200b", "\ufeff", " \u00a0\t\u2003",
+        ):
+            with self.subTest(blank=blank):
+                t = Transport(_response(OK_FINANCIAL))
+                with patched(t):
+                    with self.assertRaises(EpsError) as ctx:
+                        fast().call("dmt-initiate-transfer", {**TRANSFER, "client_ref_id": blank})
+                self.assertEqual(
+                    str(ctx.exception),
+                    'Invalid param values for "dmt-initiate-transfer": client_ref_id '
+                    "(must not be blank on a financial call).",
+                )
+                self.assertEqual(t.requests, [])
 
     def test_empty_string_counts_as_supplied(self):
         t = Transport(_response(OK))
@@ -592,6 +611,56 @@ class RetryAndStatusCheck(unittest.TestCase):
         self.assertEqual(e.__cause__.status, 500)
         self.assertEqual(len(t.requests), 1 + 3)
 
+    def test_financial_post_unparseable_2xx_inquires_and_raises_indeterminate(self):
+        inquiry = {"status": 0, "data": {"tx_status": "0", "tid": "1"}}
+        t = Transport(_response(b'{"status":0,"da'), _response(json.dumps(inquiry).encode()))
+        with patched(t):
+            with self.assertRaises(EpsIndeterminateError) as ctx:
+                fast().call("dmt-initiate-transfer", TRANSFER)
+        e = ctx.exception
+        ref = t.body(0)["client_ref_id"]
+        self.assertEqual(e.client_ref_id, ref)
+        self.assertEqual(e.status, 200)
+        self.assertEqual(e.status_check, inquiry)
+        self.assertIsInstance(e.__cause__, EpsInvalidResponseError)
+        self.assertEqual(e.__cause__.raw, b'{"status":0,"da')
+        self.assertEqual(len(t.requests), 2)
+        self.assertIn(f"client_ref_id={ref}", t.url(1))
+
+    def test_financial_post_non_object_json_2xx_inquires(self):
+        inquiry = {"status": 0, "data": {"tx_status": "0", "tid": "1"}}
+        for body in (
+            b"null", b'"ok"', b"5", b"[]", b'[{"status":0}]',
+            b"{}", b'{"error":"Bad Gateway"}', b'{"status":"0"}',
+            b'{"status":true}', b'{"status":null}',
+            b'{"status":502,"error":"Bad Gateway"}', b'{"status":0}',
+            b'{"status":0,"response_status_id":"0"}',
+        ):
+            with self.subTest(body=body):
+                t = Transport(_response(body), _response(json.dumps(inquiry).encode()))
+                with patched(t):
+                    with self.assertRaises(EpsIndeterminateError) as ctx:
+                        fast().call("dmt-initiate-transfer", TRANSFER)
+                self.assertEqual(ctx.exception.status, 200)
+                self.assertEqual(ctx.exception.status_check, inquiry)
+                self.assertIsInstance(ctx.exception.__cause__, EpsInvalidResponseError)
+                self.assertEqual(len(t.requests), 2)
+
+    def test_financial_envelope_needs_response_status_id_non_financial_only_status(self):
+        full = {"status": 0, "response_status_id": 0, "data": {"tid": "1"}}
+        with patched(Transport(_response(json.dumps(full).encode()))):
+            self.assertEqual(fast().call("dmt-initiate-transfer", TRANSFER), full)
+        # pan-fetch-style success with no response_status_id stays a result off the financial path
+        with patched(Transport(_response(OK))):
+            self.assertEqual(fast().call("pan-lite", PAN), {"status": 0})
+
+    def test_non_financial_post_unparseable_2xx_no_inquiry(self):
+        t = Transport(_response(b""))
+        with patched(t):
+            with self.assertRaises(EpsInvalidResponseError):
+                fast().call("pan-lite", PAN)
+        self.assertEqual(len(t.requests), 1)
+
     def test_financial_post_4xx_is_plain_http_error(self):
         t = Transport(_http(401))
         with patched(t):
@@ -606,20 +675,45 @@ class RetryAndStatusCheck(unittest.TestCase):
                 fast().call("pan-lite", PAN)
         self.assertEqual(len(t.requests), 1)
 
-    def test_financial_without_ref_param_no_inquiry(self):
-        t = Transport(_http(500))
-        with patched(t):
-            with self.assertRaises(EpsHttpError):
-                fast().call(
-                    "initiate-refund", {"initiator_id": "9962981729", "tid": "1", "otp": "1"}
+    def test_financial_without_ref_param_inquires_by_tid(self):
+        inquiry = {"status": 0, "data": {"tx_status": "4", "tid": "777"}}
+        for failure, cause_type in (
+            (_http(500), EpsHttpError),
+            (_response(b"null"), EpsInvalidResponseError),
+        ):
+            with self.subTest(cause=cause_type.__name__):
+                t = Transport(failure, _response(json.dumps(inquiry).encode()))
+                with patched(t):
+                    with self.assertRaises(EpsIndeterminateError) as ctx:
+                        fast().call(
+                            "initiate-refund",
+                            {"initiator_id": "9962981729", "tid": "777", "otp": "1"},
+                        )
+                e = ctx.exception
+                self.assertIsNone(e.client_ref_id)
+                self.assertEqual(e.tid, "777")
+                self.assertEqual(e.status_check, inquiry)
+                self.assertIsInstance(e.__cause__, cause_type)
+                self.assertEqual(
+                    str(e),
+                    'EPS request for "initiate-refund" on tid "777" has no confirmed outcome.',
                 )
-        self.assertEqual(len(t.requests), 1)
+                self.assertEqual(len(t.requests), 2)
+                query = urllib.parse.parse_qs(urllib.parse.urlsplit(t.url(1)).query)
+                self.assertEqual(query["tid"], ["777"])
+                self.assertNotIn("client_ref_id", query)
 
-    def test_auto_status_check_off(self):
+    def test_auto_status_check_off_skips_only_the_inquiry(self):
         t = Transport(_http(500))
         with patched(t):
-            with self.assertRaises(EpsHttpError):
+            with self.assertRaises(EpsIndeterminateError) as ctx:
                 fast(auto_status_check=False).call("dmt-initiate-transfer", TRANSFER)
+        e = ctx.exception
+        self.assertEqual(e.client_ref_id, t.body(0)["client_ref_id"])
+        self.assertEqual(e.status, 500)
+        self.assertIsNone(e.status_check)
+        self.assertIsNone(e.status_check_error)
+        self.assertIsInstance(e.__cause__, EpsHttpError)
         self.assertEqual(len(t.requests), 1)
 
     def test_rejects_bad_knobs_at_construction(self):

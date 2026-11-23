@@ -81,6 +81,43 @@ under either provider, because both ultimately read the same interaction 151.
 Only login is delegated, so a connect-api outage cannot break an established
 session's profile view.
 
+### Timeouts across the connect-api hop
+
+Two independent clocks run on every connect-api call:
+
+| Hop | Timeout | Set by |
+| --- | --- | --- |
+| eps-backend → connect-api | `CONNECT_API_TIMEOUT_MS` (default 15 s; prod 40 s since 2026-11-23). One value for **every** connect-api call | env, `src/config.ts` |
+| connect-api → SimpliBank, `/transactions/do`, `/dojson` | `x-ui-timeout` request header (ms), default 120 s | caller, per request (`connect-api/routes/transactions.js:1328`, `:1531`) |
+| connect-api → SimpliBank, `/transactions/upload`, `/customupload` | `x-ui-timeout` request header (ms), default 240 s | caller, per request (`transactions.js:1233`) |
+| connect-api → SimpliBank, `/authentication/*` (`sendotp`, `login`, `refresh-profile`) | **none**: `verify_otp.js` axios has no timeout and the login profile fetch is a bare `http.request`. `x-ui-timeout` is **ignored** here | n/a |
+
+So `x-ui-timeout` can lower or raise connect-api's own wait on transaction calls
+(keep it below `CONNECT_API_TIMEOUT_MS`, or our abort fires first and
+connect-api finishes a call nobody reads). It cannot bound login: a hung
+SimpliBank login holds connect-api indefinitely, and only our
+`CONNECT_API_TIMEOUT_MS` ends it (504 `UPSTREAM_TIMEOUT`). eps-backend sends no
+`x-ui-timeout` today.
+
+Outer ceiling: nginx `proxy_read_timeout 120s` in front of this service
+(`docs/eps-backend-vm-deploy.md`). A request's summed upstream waits must stay
+under it, or the browser gets nginx's non-JSON 504 instead of ours.
+
+Worst case for `/auth/otp/verify` under the `connect` provider is four waits
+in a row: login (`CONNECT_API_TIMEOUT_MS`) → 151 enrich
+(`SIMPLIBANK_API_TIMEOUT_MS`, default 30 s) → refresh-profile
+(`CONNECT_API_TIMEOUT_MS`) → Zoho lead lookup when the profile has no
+`zohoId` (10 s, `DEFAULT_FETCH_TIMEOUT_MS`). The last three are best-effort:
+a timeout there is swallowed, so it only adds waiting.
+
+Prod since 2026-11-23: `CONNECT_API_TIMEOUT_MS` 40 s, `SIMPLIBANK_API_TIMEOUT_MS`
+30 s → 40 + 30 + 40 + 10 = **120 s, exactly nginx's limit**. Only reached when
+every call hangs; request overhead can then tip it into nginx's non-JSON 504.
+Raising either timeout further needs nginx raised too, or the best-effort calls
+capped shorter. (Briefly ran both at 40 s = 130 s; reverted the same day.)
+Baseline that set 40 s (48 h to 2026-11-23): successful logins p50 5.4 s,
+p95 12 s, max 29.5 s.
+
 ### Invariants worth not breaking
 
 - **Rate limiting stays here.** connect-api has none on `/sendotp` or `/login`.
@@ -523,6 +560,13 @@ logging them would be a log-flood vector).
 post-success counter cleanup is best-effort. (The post-verify session-issuance
 `kv.set` now returns **503 `STORE_UNAVAILABLE`** on a KV outage, fail-closed via the store seam.)
 
+**otp/verify upstream refusal:** connect-api answers `otpFailed` with
+`response_type_id 1563` ("Invalid Initiator for verification") when it refuses
+the verification itself rather than judging the OTP. That answers **502
+`OTP_UPSTREAM_REFUSED`** (`source: "api"`) instead of 401 `OTP_INVALID`, so the
+user is told to request a new OTP rather than retype one. It still counts
+against both brute-force counters (fail-closed), so repeated refusals end in 429.
+
 ### Security: KV fail-open/closed matrix
 
 **Default rule:** an unguarded KV call **fails closed** — `withStoreErrors`
@@ -770,6 +814,12 @@ The unhandled branch adds one more field. It still answers `502 UPSTREAM_ERROR
 "Something went wrong"`, but `cause` now carries what actually threw (`"Eko
 upstream HTTP 503"`), scrubbed of URL credentials and capped at 200 characters.
 It is withheld from anonymous callers, since it names our own hosts and paths.
+
+An upstream timeout never reaches that branch. A `TimeoutError` (the
+`withTimeout` AbortSignal, e.g. connect-api login hanging past
+`CONNECT_API_TIMEOUT_MS`) answers **504 `UPSTREAM_TIMEOUT`** "The service is
+taking too long to respond" and logs `[eps-backend] upstream timeout` instead
+of `unhandled`. `/context/*` keeps its JSON-RPC 500.
 
 `errorBody` has exactly five call sites — the four `onError` branches and
 `app.notFound` — and all five carry the diagnostics. No route builds an error

@@ -218,7 +218,7 @@ export const PaymentsRateTable = () => (
 		<div className="max-w-3xl mx-auto">
 			<SectionCard
 				title="UPI Cash Withdrawal"
-				subtitle="Same commission as AePS cashout · ₹100–₹5,000 in multiples of ₹100"
+				subtitle="Same commission as AePS cashout · ₹200–₹5,000 in multiples of ₹100"
 				action={
 					<AddButton productId="upi-cash-withdrawal" name="UPI Cash Withdrawal" />
 				}

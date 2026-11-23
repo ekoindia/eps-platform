@@ -10,6 +10,7 @@ import type {
 import type { ApiErrorCode } from "@/lib/data/api-error-codes";
 import { formatPatterns } from "@/lib/data/api-formats";
 import { isRetrySafe } from "@/lib/data/api-specs-common";
+import { buildRedact, type SdkRedact } from "@/lib/sdk/sdk-redact";
 
 /** A single request param exposed to SDKs for local validation. `type` is the
  * spec type (string | number | integer | boolean); other types pass unchecked. */
@@ -53,13 +54,26 @@ export interface SdkSurface {
 	errorCodes: ApiErrorCode[];
 	/** Named format → portable regex source, see `api-formats.ts`. */
 	formats: Record<string, string>;
+	/** Debug-mode masking classes, see `sdk-redact.ts`. */
+	redact: SdkRedact;
 }
 
-export const buildSdkSurface = (bundle: AgentBundle): SdkSurface => ({
-	apiVersion: bundle.meta.apiVersion,
-	bundleVersion: bundle.meta.bundleVersion,
-	environments: bundle.meta.environments,
-	endpoints: bundle.apis.map((a) => {
+export const buildSdkSurface = (bundle: AgentBundle): SdkSurface => {
+	const endpoints = buildEndpoints(bundle);
+	return {
+		apiVersion: bundle.meta.apiVersion,
+		bundleVersion: bundle.meta.bundleVersion,
+		environments: bundle.meta.environments,
+		endpoints,
+		errorCodes: bundle.topics.errors.codes,
+		formats: formatPatterns(),
+		redact: buildRedact(endpoints),
+	};
+};
+
+/** One thin catalog entry per API: what SDKs need to validate and send. */
+const buildEndpoints = (bundle: AgentBundle): SdkEndpoint[] =>
+	bundle.apis.map((a) => {
 		// Optional constraints are emitted only when set, so untouched params keep
 		// their bytes (and the release fingerprint) unchanged.
 		const params: SdkParam[] = a.requestParams.map((p) => ({
@@ -83,7 +97,4 @@ export const buildSdkSurface = (bundle: AgentBundle): SdkSurface => ({
 				retrySafe: isRetrySafe(a.semantics, a.financial),
 			}),
 		};
-	}),
-	errorCodes: bundle.topics.errors.codes,
-	formats: formatPatterns(),
-});
+	});

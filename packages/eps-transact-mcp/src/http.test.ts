@@ -30,7 +30,7 @@ const INITIALIZE = rpc("initialize", {
 
 /** Fetch mock that always returns an EPS success envelope. */
 const okFetch = (async () =>
-	new Response(JSON.stringify({ response_status_id: 0, data: { ok: true } }), {
+	new Response(JSON.stringify({ status: 0, response_status_id: 0, data: { ok: true } }), {
 		status: 200,
 		headers: { "content-type": "application/json" },
 	})) as typeof fetch;

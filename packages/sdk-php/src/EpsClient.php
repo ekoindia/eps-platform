@@ -17,11 +17,19 @@ final class EpsClient
     private const MAX_RETRY_DELAY_MS = 2000;
     /** Spec types whose values are scalars the value checks can stringify. */
     private const SCALAR_TYPES = ['string', 'number', 'integer', 'boolean'];
+    /**
+     * A "blank" ref: only Unicode White_Space or zero-width characters. One
+     * explicit class shared by all five SDKs (docs/sdk-golden-vector.md) —
+     * trim() strips ASCII only, so a lone U+00A0 would otherwise pass.
+     */
+    private const BLANK_REF = '/^[\t\n\x0B\f\r \x{85}\x{A0}\x{1680}\x{2000}-\x{200D}\x{2028}\x{2029}\x{202F}\x{205F}\x{2060}\x{3000}\x{FEFF}]*$/uD';
 
     private array $surface;
     private string $baseUrl;
     /** @var array<string, string> format name → delimited PCRE, compiled at construction. */
     private array $formats = [];
+    /** Debug mode, or null when off (see the `$debug` constructor param). */
+    private ?EpsDebug $debugger = null;
 
     public function __construct(
         private string $developerKey,
@@ -42,14 +50,23 @@ final class EpsClient
         // min(base × 2^(n-1), 2s). 0 retries immediately (tests).
         private float $retryBaseDelay = 0.2,
         // After an indeterminate failure on a `financial` endpoint, look the
-        // transaction up by its client_ref_id and surface the result on
-        // EpsIndeterminateException::$statusCheck.
+        // transaction up by its client_ref_id (or tid) and surface the result on
+        // EpsIndeterminateException::$statusCheck. Off skips only the inquiry:
+        // the call still throws EpsIndeterminateException with the key.
         private bool $autoStatusCheck = true,
         // Test-only clock injection (not part of the public surface).
         private $now = null,
         // Test-only transport injection: fn(array $target, array $curlOptions):
         // array{0: int, 1: string} (status, raw), or throws EpsTransportException.
-        private $transport = null
+        private $transport = null,
+        // Debug mode: log masked request / response / validation / retry
+        // events. `true` writes JSON lines to STDERR (CLI) or error_log()
+        // (other SAPIs), a Closure receives each event as an array, `false`
+        // forces it off. Null: on when the env var EPS_SDK_DEBUG is `1` or
+        // `true`. Credentials and personal data are masked best-effort; review
+        // the output before sharing it with Eko support. See "Debug mode
+        // conformance" in docs/sdk-golden-vector.md.
+        bool|\Closure|null $debug = null
     ) {
         if (!is_finite($this->timeout) || $this->timeout <= 0) {
             throw new \InvalidArgumentException("Invalid timeout: " . var_export($this->timeout, true) . ". Expected a positive number of seconds.");
@@ -89,6 +106,11 @@ final class EpsClient
             if ($env['id'] === $environment) { $this->baseUrl = $env['baseUrl']; break; }
         }
         if (!isset($this->baseUrl)) throw new \InvalidArgumentException("Unknown environment: $environment");
+        // Null when off, or if starting it fails: debug never breaks a client.
+        $this->debugger = EpsDebug::create(
+            $debug, $environment, $this->baseUrl, $this->surface, $this->formats['client-ref'] ?? null,
+            $this->developerKey, (int) round($this->timeout * 1000), $this->retries, $this->autoStatusCheck
+        );
     }
 
     /** secret-key = base64(HMAC-SHA256(timestamp, base64(access_key))). */
@@ -202,7 +224,7 @@ final class EpsClient
      * `form-data` JSON field plus CURLFile values) for file-upload endpoints.
      * Exposed for testing; `call()` builds on it.
      *
-     * @return array{url: string, body: string|array|null, method: string, multipart: bool, slug: string, financial: bool, retrySafe: bool, clientRefId: ?string, initiatorId: mixed}
+     * @return array{url: string, body: string|array|null, method: string, multipart: bool, slug: string, financial: bool, retrySafe: bool, clientRefId: ?string, tid: ?string, initiatorId: mixed}
      * @throws \InvalidArgumentException On an unknown slug, a missing required param, a type mismatch or a bad value.
      * @throws \JsonException When a multipart endpoint's non-file params cannot be JSON-encoded.
      */
@@ -210,7 +232,7 @@ final class EpsClient
     {
         $endpoint = null;
         foreach ($this->surface['endpoints'] as $e) if ($e['slug'] === $slug) { $endpoint = $e; break; }
-        if ($endpoint === null) throw new \InvalidArgumentException("Unknown endpoint slug: $slug");
+        if ($endpoint === null) throw new \InvalidArgumentException("Unknown endpoint slug: $slug. Check the spelling, or upgrade the SDK if this API is newer than your installed version (composer update ekoindia/eps-sdk).");
 
         // Client-level defaults (initiator_id, user_code) are injected first; an
         // explicit per-call value overrides because $params wins the merge.
@@ -273,6 +295,14 @@ final class EpsClient
                 "Invalid param values for \"$slug\": " . implode(', ', $badValues) . '.'
             );
         }
+        // A financial call's ref is its only reconciliation key after a lost
+        // response, so a blank one is refused (never silently replaced) even on
+        // endpoints whose param declares no client-ref format.
+        if (($endpoint['financial'] ?? false) && $clientRefId !== null && preg_match(self::BLANK_REF, $clientRefId) === 1) {
+            throw new \InvalidArgumentException(
+                "Invalid param values for \"$slug\": client_ref_id (must not be blank on a financial call)."
+            );
+        }
 
         // A `type:"file"` param flips the whole request to multipart/form-data.
         $fileParams = [];
@@ -325,6 +355,8 @@ final class EpsClient
             // Older surfaces lack `retrySafe`: then only a GET is retried.
             'retrySafe' => (bool) ($endpoint['retrySafe'] ?? $endpoint['method'] === 'GET'),
             'clientRefId' => $clientRefId,
+            // Inquiry key for a financial endpoint with no ref (initiate-refund).
+            'tid' => $clientRefId === null && isset($params['tid']) ? self::wireString($params['tid']) : null,
             'initiatorId' => $params['initiator_id'] ?? null,
         ];
     }
@@ -355,22 +387,31 @@ final class EpsClient
      * pure function is the seam for the response contract shared by all five
      * SDKs (see docs/sdk-golden-vector.md).
      *
-     * ponytail: the `array` return type cannot represent a valid JSON scalar or
-     * `null`, so those are reported as "not valid JSON". EPS always returns an
-     * object envelope; widen to `mixed` if that ever stops being true.
+     * Only a JSON object is an envelope. A JSON scalar or `null` is reported as
+     * "not valid JSON", and so is a JSON array — `json_decode(…, true)` turns
+     * `[…]` into a PHP array too, hence the leading-`{` check.
      *
      * @throws EpsHttpException On any non-2xx response.
-     * @throws EpsException When a 2xx body is not a JSON object — never a silent [].
+     * @param bool $financial A financial endpoint's envelope must also carry a numeric
+     *     `response_status_id`, so a proxy's `{"status":502,…}` cannot pass for a result.
+     * @throws EpsInvalidResponseException When a 2xx body is not an EPS envelope (a JSON object
+     *     with a numeric `status`, plus `response_status_id` when `$financial`) — never a silent [].
      */
-    public static function decodeResponse(int $status, string $url, string $raw): array
+    public static function decodeResponse(int $status, string $url, string $raw, bool $financial = false): array
     {
         $decoded = json_decode($raw, true);
-        $body = is_array($decoded) ? $decoded : null;
+        $body = is_array($decoded) && str_starts_with(ltrim($raw), '{') ? $decoded : null;
         if ($status < 200 || $status >= 300) {
             throw new EpsHttpException($status, $url, $body, $raw);
         }
-        if ($body === null) {
-            throw new EpsException("EPS response from $url was not valid JSON.");
+        // Only an EPS envelope — an object with a numeric `status` — is a result;
+        // `{}` or a proxy's error object is as unreadable as a truncated body.
+        // A financial endpoint also needs a numeric `response_status_id` (a
+        // wrong "no" there just costs an inquiry).
+        $numeric = fn ($v) => is_int($v) || is_float($v);
+        if ($body === null || !$numeric($body['status'] ?? null)
+            || ($financial && !$numeric($body['response_status_id'] ?? null))) {
+            throw new EpsInvalidResponseException($status, $url, $raw);
         }
         return $body;
     }
@@ -389,24 +430,37 @@ final class EpsClient
      * @throws EpsIndeterminateException When a financial non-GET call has no confirmed outcome.
      * @throws EpsHttpException On any other non-2xx response (the envelope is on `$body`).
      * @throws EpsTransportException On a transport failure that was not retried.
-     * @throws EpsException On a 2xx body that is not JSON.
+     * @throws EpsInvalidResponseException On a 2xx body that is not an EPS envelope (when not inquired).
      */
     public function call(string $slug, array $params = []): array
+    {
+        $trace = $this->debugger?->trace($slug);
+        try {
+            return $this->run($slug, $params, $trace);
+        } catch (\Throwable $e) {
+            $trace?->error($e);
+            throw $e;
+        }
+    }
+
+    /** `call()` without the debug wrapper: validate, send, retry, inquire. */
+    private function run(string $slug, array $params, ?EpsDebug $trace): array
     {
         $target = $this->resolveTarget($slug, $params);
         $attempts = $target['retrySafe'] ? $this->retries + 1 : 1;
         for ($attempt = 1; ; $attempt++) {
             try {
-                return $this->send($target);
+                return $this->send($target, $attempt, $trace);
             } catch (EpsException $e) {
                 if (!self::isIndeterminate($e)) throw $e;
                 if ($attempt < $attempts) {
-                    $this->backoff($attempt);
+                    $this->backoff($attempt, $trace);
                     continue;
                 }
                 // Never re-send a non-GET: that is how a customer is debited twice.
-                // Ask EPS what happened to the ref instead, if there is one to ask by.
-                if ($this->autoStatusCheck && $target['financial'] && $target['clientRefId'] !== null) {
+                // Ask EPS what happened instead — by the ref, or by the tid on an
+                // endpoint that has no ref (initiate-refund).
+                if ($target['financial']) {
                     throw $this->indeterminate($target, $e);
                 }
                 throw $e;
@@ -415,51 +469,67 @@ final class EpsClient
     }
 
     /**
-     * True when the outcome is unknown: no response, or a 429/5xx that says
-     * nothing about whether the request was processed. A 4xx is a decisive no.
+     * True when the outcome is unknown: no response, a 429/5xx, or a 2xx whose
+     * body could not be read — none says whether the request was processed. A
+     * 4xx is a decisive no.
      */
     private static function isIndeterminate(EpsException $e): bool
     {
         if ($e instanceof EpsHttpException) return $e->status === 429 || $e->status >= 500;
-        return $e instanceof EpsTransportException;
+        return $e instanceof EpsTransportException || $e instanceof EpsInvalidResponseException;
     }
 
     /** Attempt n sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter. */
-    private function backoff(int $attempt): void
+    private function backoff(int $attempt, ?EpsDebug $trace = null): void
     {
         $capMs = (int) min($this->retryBaseDelay * 1000 * 2 ** ($attempt - 1), self::MAX_RETRY_DELAY_MS);
         $delayMs = $capMs > 0 ? random_int(0, $capMs) : 0;
+        $trace?->retry($attempt, $delayMs);
         if ($delayMs > 0) usleep($delayMs * 1000);
     }
 
     /**
-     * One inquiry by `client_ref_id=<ref>`; its own failure is reported, never
-     * allowed to mask the original one.
+     * One inquiry by `client_ref_id=<ref>`, else `tid=<tid>`, else none; its
+     * own failure is reported, never allowed to mask the original one.
      */
     private function indeterminate(array $target, \Throwable $cause): EpsIndeterminateException
     {
         $statusCheck = null;
         $statusCheckError = null;
-        $params = ['client_ref_id' => $target['clientRefId']];
-        if ($target['initiatorId'] !== null) $params['initiator_id'] = $target['initiatorId'];
-        try {
-            $statusCheck = $this->call(self::INQUIRY_SLUG, $params);
-        } catch (\Throwable $e) {
-            $statusCheckError = $e;
+        $params = $target['clientRefId'] !== null
+            ? ['client_ref_id' => $target['clientRefId']]
+            : ($target['tid'] !== null ? ['tid' => $target['tid']] : null);
+        // Off opts out of the inquiry, not of the key: the ref/tid still surfaces.
+        if ($params !== null && $this->autoStatusCheck) {
+            if ($target['initiatorId'] !== null) $params['initiator_id'] = $target['initiatorId'];
+            try {
+                $statusCheck = $this->call(self::INQUIRY_SLUG, $params);
+            } catch (\Throwable $e) {
+                $statusCheckError = $e;
+            }
         }
-        return new EpsIndeterminateException($target['slug'], $target['clientRefId'], $cause, $statusCheck, $statusCheckError);
+        return new EpsIndeterminateException($target['slug'], $target['clientRefId'], $cause, $statusCheck, $statusCheckError, $target['tid']);
     }
 
     /**
      * Sign (fresh timestamp, via curlOptions) and send one attempt; decode per
-     * the contract. The injected `$transport`, when present, stands in for cURL.
+     * the contract. The injected `$transport`, when present, stands in for cURL;
+     * debug hooks sit around both paths alike.
      */
-    private function send(array $target): array
+    private function send(array $target, int $attempt = 1, ?EpsDebug $trace = null): array
     {
         $options = $this->curlOptions($target);
+        $trace?->request($attempt, $target['method'], $target['url'], $options[CURLOPT_HTTPHEADER], $target['body']);
         if ($this->transport !== null) {
-            [$status, $raw] = ($this->transport)($target, $options);
-            return self::decodeResponse($status, $target['url'], $raw);
+            try {
+                $result = ($this->transport)($target, $options);
+            } catch (\Throwable $e) {
+                $trace?->transportError($attempt, $e);
+                throw $e;
+            }
+            [$status, $raw] = $result;
+            $trace?->response($attempt, $status, $raw);
+            return self::decodeResponse($status, $target['url'], $raw, $target['financial']);
         }
         $ch = curl_init($target['url']);
         curl_setopt_array($ch, $options);
@@ -469,8 +539,11 @@ final class EpsClient
         $curlError = curl_error($ch);
         curl_close($ch);
         if ($res === false) {
-            throw new EpsTransportException("EPS request to {$target['url']} failed: $curlError");
+            $e = new EpsTransportException("EPS request to {$target['url']} failed: $curlError");
+            $trace?->transportError($attempt, $e);
+            throw $e;
         }
-        return self::decodeResponse($status, $target['url'], $res);
+        $trace?->response($attempt, $status, $res);
+        return self::decodeResponse($status, $target['url'], $res, $target['financial']);
     }
 }

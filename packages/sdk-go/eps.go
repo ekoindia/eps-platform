@@ -69,6 +69,10 @@ var surfaceJSON []byte
 var (
 	numberRe  = regexp.MustCompile(`^-?\d+(\.\d+)?$`)
 	integerRe = regexp.MustCompile(`^-?\d+$`)
+	// blankRefRe: a "blank" ref is only Unicode White_Space or zero-width
+	// characters. One explicit class shared by all five SDKs
+	// (docs/sdk-golden-vector.md); strings.TrimSpace would miss U+200B / U+FEFF.
+	blankRefRe = regexp.MustCompile(`^[\t\n\v\f\r \x{85}\x{A0}\x{1680}\x{2000}-\x{200D}\x{2028}\x{2029}\x{202F}\x{205F}\x{2060}\x{3000}\x{FEFF}]*$`)
 )
 
 // Param is one request parameter as declared by the API spec.
@@ -109,9 +113,12 @@ type environment struct {
 }
 
 type surface struct {
-	Environments []environment     `json:"environments"`
-	Endpoints    []Endpoint        `json:"endpoints"`
-	Formats      map[string]string `json:"formats"`
+	BundleVersion string            `json:"bundleVersion"`
+	Environments  []environment     `json:"environments"`
+	Endpoints     []Endpoint        `json:"endpoints"`
+	Formats       map[string]string `json:"formats"`
+	// Redact classifies keys for debug-mode masking.
+	Redact redactLists `json:"redact"`
 }
 
 var loadedSurface = func() surface {
@@ -178,8 +185,33 @@ func (e *TransportError) Error() string {
 
 func (e *TransportError) Unwrap() error { return e.Err }
 
+// InvalidResponseError is a 2xx response whose body is not an EPS envelope —
+// a JSON object with a numeric "status", plus a numeric "response_status_id" on
+// a financial endpoint (empty, truncated, a proxy's HTML page, valid JSON such
+// as null or [], or an object such as {} or a proxy's {"status":502,…}). EPS may well have processed the request, so
+// the outcome is unknown, not decided: a financial call gets a status check and
+// a retry-safe one is retried. Err is the decode error, reachable with
+// errors.As / errors.Is.
+type InvalidResponseError struct {
+	StatusCode int
+	URL        string
+	Raw        []byte
+	Err        error
+}
+
+func (e *InvalidResponseError) Error() string {
+	return fmt.Sprintf("eps: response from %s was not valid JSON: %v", e.URL, e.Err)
+}
+
+func (e *InvalidResponseError) Unwrap() error { return e.Err }
+
 // IndeterminateError is a non-GET call on a money-moving endpoint that ended
-// without a confirmed outcome (timeout, transport failure, HTTP 429 or 5xx).
+// without a confirmed outcome (timeout, transport failure, HTTP 429 or 5xx, or
+// a 2xx that was not an EPS envelope). Inquiry key: the call's client_ref_id, or — on an
+// endpoint that has none, such as initiate-refund — the tid it acted on (then
+// TID is set and ClientRefID is empty). Only tx_status 4 (refunded) confirms
+// the refund; 3 (refund pending) is also the state before a refund is
+// requested, so it settles nothing.
 // The SDK never re-sends such a request — that is how a customer gets debited
 // twice — so it inquired by the call's client_ref_id instead and reports what
 // it found. StatusCheck is the Transaction Inquiry envelope (data.tx_status:
@@ -188,10 +220,14 @@ func (e *TransportError) Unwrap() error { return e.Err }
 // reachable with errors.As (for *HTTPError) and errors.Is. Reconcile with the
 // ref before retrying; never assume a timeout meant failure.
 type IndeterminateError struct {
-	Slug        string
+	Slug string
+	// ClientRefID is the call's ref, or empty on an endpoint without one (then
+	// TID is the key inquired by).
 	ClientRefID string
-	// Status is the HTTP status of the original attempt, or 0 for a transport
-	// failure.
+	// TID is the tid inquired by when there was no ref, else empty.
+	TID string
+	// Status is the HTTP status of the original attempt (a 2xx when its body
+	// was not an EPS envelope), or 0 for a transport failure.
 	Status         int
 	StatusCheck    map[string]any
 	StatusCheckErr error
@@ -199,21 +235,28 @@ type IndeterminateError struct {
 }
 
 func (e *IndeterminateError) Error() string {
-	return fmt.Sprintf("eps: request for %q with client_ref_id %q has no confirmed outcome", e.Slug, e.ClientRefID)
+	switch {
+	case e.ClientRefID != "":
+		return fmt.Sprintf("eps: request for %q with client_ref_id %q has no confirmed outcome", e.Slug, e.ClientRefID)
+	case e.TID != "":
+		return fmt.Sprintf("eps: request for %q on tid %q has no confirmed outcome", e.Slug, e.TID)
+	}
+	return fmt.Sprintf("eps: request for %q without a client_ref_id or tid has no confirmed outcome", e.Slug)
 }
 
 func (e *IndeterminateError) Unwrap() error { return e.Err }
 
-// isIndeterminate reports whether the outcome is unknown: no response, or a
-// 429/5xx that says nothing about whether the request was processed. A 4xx is
-// a decisive no, and so is a 2xx that failed to decode.
+// isIndeterminate reports whether the outcome is unknown: no response, a
+// 429/5xx, or a 2xx whose body could not be read — none says whether the
+// request was processed. A 4xx is a decisive no.
 func isIndeterminate(err error) bool {
 	var httpErr *HTTPError
 	if errors.As(err, &httpErr) {
 		return httpErr.StatusCode == 429 || httpErr.StatusCode >= 500
 	}
 	var transportErr *TransportError
-	return errors.As(err, &transportErr)
+	var invalidErr *InvalidResponseError
+	return errors.As(err, &transportErr) || errors.As(err, &invalidErr)
 }
 
 // GenerateClientRefID mints a client_ref_id for a non-GET call that did not
@@ -253,8 +296,10 @@ type Config struct {
 	// min(base × 2^(n-1), 2s). Zero means the default of 200ms.
 	RetryBaseDelay time.Duration
 	// AutoStatusCheck: after an indeterminate failure on a financial endpoint,
-	// look the transaction up by its client_ref_id and surface the result on
-	// IndeterminateError.StatusCheck. nil means the default of true.
+	// look the transaction up by its client_ref_id (or tid) and surface the
+	// result on IndeterminateError.StatusCheck. nil means the default of true.
+	// Off skips only the inquiry: the call still returns *IndeterminateError
+	// with the key.
 	AutoStatusCheck *bool
 }
 
@@ -269,10 +314,29 @@ type Client struct {
 	// now is test-only clock injection (milliseconds since the epoch); not part
 	// of the public surface.
 	now func() int64
+	// debug is nil when debug mode is off.
+	debug *debugger
 }
 
 // New validates the config against the baked surface and returns a client.
+// Debug mode follows the EPS_SDK_DEBUG env var; see NewWithDebug.
 func New(cfg Config) (*Client, error) {
+	return NewWithDebug(cfg, nil)
+}
+
+// NewWithDebug is New with debug mode: masked diagnostics (init, request,
+// response, transport_error, retry and error events) to share with Eko
+// support. w == nil: on when the env var EPS_SDK_DEBUG is "1" or "true"
+// (trimmed, case-insensitive), writing to os.Stderr; w == io.Discard: off,
+// even with the env var set; any other writer: on.
+//
+// Each event is one JSON object plus "\n" in a single Write. A package-level
+// mutex serializes this SDK's own writes (every client, every writer); it does
+// not coordinate with anything else writing to w. Write errors and panics are
+// swallowed: debug never changes a call's outcome. Credentials and personal
+// data are masked best-effort; review the output before sharing it. See
+// "Debug mode conformance" in docs/sdk-golden-vector.md.
+func NewWithDebug(cfg Config, w io.Writer) (*Client, error) {
 	c := &Client{
 		cfg:             cfg,
 		http:            cfg.HTTPClient,
@@ -302,6 +366,7 @@ func New(cfg Config) (*Client, error) {
 	for _, env := range loadedSurface.Environments {
 		if env.ID == cfg.Environment {
 			c.baseURL = env.BaseURL
+			c.debug = startDebug(c, w)
 			return c, nil
 		}
 	}
@@ -478,6 +543,9 @@ type Target struct {
 	ClientRefID string
 	// InitiatorID is the initiator the call resolved, reused by the status check.
 	InitiatorID any
+	// TID is the inquiry key for a financial endpoint with no ref
+	// (initiate-refund): the tid the call acted on. Empty otherwise.
+	TID string
 }
 
 func endpointFor(slug string) (*Endpoint, error) {
@@ -486,7 +554,7 @@ func endpointFor(slug string) (*Endpoint, error) {
 			return &loadedSurface.Endpoints[i], nil
 		}
 	}
-	return nil, fmt.Errorf("Unknown endpoint slug %q.", slug)
+	return nil, fmt.Errorf("Unknown endpoint slug %q. Check the spelling, or upgrade the SDK if this API is newer than your installed version (go get github.com/ekoindia/eps-sdk-go@latest).", slug)
 }
 
 // BuildHeaders returns the signed auth headers. Multipart callers get no
@@ -510,6 +578,14 @@ func (c *Client) BuildHeaders(multipartBody bool) map[string]string {
 // documents. nil values are dropped (a form field has no null encoding), while
 // nulls nested inside a value survive the JSON.
 func encodeMultipart(values map[string]any, fileParams map[string]bool) ([]byte, string, error) {
+	body, contentType, _, err := encodeMultipartWithMeta(values, fileParams)
+	return body, contentType, err
+}
+
+// encodeMultipartWithMeta is encodeMultipart plus the debug metadata (the
+// form-data JSON and each upload's param, name and size) from values already
+// in hand.
+func encodeMultipartWithMeta(values map[string]any, fileParams map[string]bool) ([]byte, string, *multipartMeta, error) {
 	payload := map[string]any{}
 	type upload struct {
 		field, name string
@@ -533,11 +609,11 @@ func encodeMultipart(values map[string]any, fileParams map[string]bool) ([]byte,
 		case string:
 			content, err := os.ReadFile(v)
 			if err != nil {
-				return nil, "", fmt.Errorf("eps: reading upload %q: %w", name, err)
+				return nil, "", nil, fmt.Errorf("eps: reading upload %q: %w", name, err)
 			}
 			uploads = append(uploads, upload{name, filepath.Base(v), content})
 		default:
-			return nil, "", fmt.Errorf("eps: param %q is not a file value", name)
+			return nil, "", nil, fmt.Errorf("eps: param %q is not a file value", name)
 		}
 	}
 
@@ -545,27 +621,31 @@ func encodeMultipart(values map[string]any, fileParams map[string]bool) ([]byte,
 	// fail far from its cause.
 	encoded, err := json.Marshal(payload)
 	if err != nil {
-		return nil, "", fmt.Errorf("eps: params could not be JSON-encoded: %w", err)
+		return nil, "", nil, fmt.Errorf("eps: params could not be JSON-encoded: %w", err)
 	}
 
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
 	if err := writer.WriteField(MultipartJSONField, string(encoded)); err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	for _, u := range uploads {
 		part, err := writer.CreateFormFile(u.field, u.name)
 		if err != nil {
-			return nil, "", err
+			return nil, "", nil, err
 		}
 		if _, err := part.Write(u.content); err != nil {
-			return nil, "", err
+			return nil, "", nil, err
 		}
 	}
 	if err := writer.Close(); err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
-	return buf.Bytes(), writer.FormDataContentType(), nil
+	meta := &multipartMeta{fields: string(encoded)}
+	for _, u := range uploads {
+		meta.files = append(meta.files, uploadMeta{u.field, u.name, len(u.content)})
+	}
+	return buf.Bytes(), writer.FormDataContentType(), meta, nil
 }
 
 // sortedKeys keeps request bytes deterministic — Go map iteration is randomized,
@@ -584,9 +664,16 @@ func sortedKeys(m map[string]any) []string {
 // It fails before anything is signed or sent on an unknown slug, a missing
 // required param or a type mismatch.
 func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, error) {
+	target, _, err := c.resolve(slug, params)
+	return target, err
+}
+
+// resolve is ResolveTarget plus the multipart debug metadata (nil unless the
+// body is multipart).
+func (c *Client) resolve(slug string, params map[string]any) (*Target, *multipartMeta, error) {
 	endpoint, err := endpointFor(slug)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Client-level defaults first; an explicit per-call value wins, including an
@@ -632,7 +719,7 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		}
 	}
 	if len(missing) > 0 {
-		return nil, fmt.Errorf("Missing required params for %q: %s.", slug, strings.Join(missing, ", "))
+		return nil, nil, fmt.Errorf("Missing required params for %q: %s.", slug, strings.Join(missing, ", "))
 	}
 
 	// Type guard: every provided param known to the spec must match its type.
@@ -648,7 +735,7 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		}
 	}
 	if len(badTypes) > 0 {
-		return nil, fmt.Errorf("Invalid param types for %q: %s.", slug, strings.Join(badTypes, ", "))
+		return nil, nil, fmt.Errorf("Invalid param types for %q: %s.", slug, strings.Join(badTypes, ", "))
 	}
 
 	// Value guard: enum / format / min / max / maxLength from the spec, on the
@@ -664,7 +751,14 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		}
 	}
 	if len(badValues) > 0 {
-		return nil, fmt.Errorf("Invalid param values for %q: %s.", slug, strings.Join(badValues, ", "))
+		return nil, nil, fmt.Errorf("Invalid param values for %q: %s.", slug, strings.Join(badValues, ", "))
+	}
+	// A financial call's ref is its only reconciliation key after a lost
+	// response, so a blank one is refused (never silently replaced) even on
+	// endpoints whose param declares no client-ref format. ("" would also read
+	// as "no ref" on IndeterminateError.)
+	if endpoint.Financial && declaresRef && blankRefRe.MatchString(clientRefID) {
+		return nil, nil, fmt.Errorf("Invalid param values for %q: client_ref_id (must not be blank on a financial call).", slug)
 	}
 
 	// A type:"file" param flips the whole request to multipart/form-data.
@@ -701,9 +795,13 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		ClientRefID: clientRefID,
 		InitiatorID: merged["initiator_id"],
 	}
+	if tid, ok := merged["tid"]; ok && tid != nil && clientRefID == "" {
+		target.TID = wireString(tid)
+	}
 	if endpoint.RetrySafe != nil {
 		target.RetrySafe = *endpoint.RetrySafe
 	}
+	var meta *multipartMeta
 	switch {
 	case endpoint.Method == http.MethodGet:
 		query := url.Values{}
@@ -718,20 +816,21 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 			target.URL += separator + encoded
 		}
 	case isMultipart:
-		body, contentType, err := encodeMultipart(rest, fileParams)
+		body, contentType, multipartDebug, err := encodeMultipartWithMeta(rest, fileParams)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		meta = multipartDebug
 		target.Body = body
 		target.Headers["content-type"] = contentType
 	default:
 		body, err := json.Marshal(rest)
 		if err != nil {
-			return nil, fmt.Errorf("eps: params could not be JSON-encoded: %w", err)
+			return nil, nil, fmt.Errorf("eps: params could not be JSON-encoded: %w", err)
 		}
 		target.Body = body
 	}
-	return target, nil
+	return target, meta, nil
 }
 
 // Call signs and sends one endpoint call, returning the decoded response
@@ -743,34 +842,51 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 // is followed by a Transaction Inquiry on its client_ref_id and returned as
 // *IndeterminateError. Otherwise a non-2xx response yields *HTTPError, a
 // transport failure *TransportError, and a body that is not JSON is an error,
-// never a silent empty map. A cancelled ctx stops everything: no retry, no
-// inquiry. See docs/sdk-golden-vector.md.
+// never a silent empty map. A done ctx (deadline or cancel) stops retries and
+// the inquiry, but a financial call still returns *IndeterminateError carrying
+// its ref (or TID) so it can be reconciled later. See docs/sdk-golden-vector.md.
 func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (map[string]any, error) {
-	target, err := c.ResolveTarget(slug, params)
+	tr := c.debug.trace(slug)
+	envelope, err := c.call(ctx, slug, params, tr)
+	if err != nil {
+		tr.failed(err)
+	}
+	return envelope, err
+}
+
+// call is Call without the debug wrapper: validate, send, retry, inquire.
+func (c *Client) call(ctx context.Context, slug string, params map[string]any, tr *trace) (map[string]any, error) {
+	target, meta, err := c.resolve(slug, params)
 	if err != nil {
 		return nil, err
 	}
+	tr.resolved(meta)
 	attempts := 1
 	if target.RetrySafe {
 		attempts = c.retries + 1
 	}
 	for attempt := 1; ; attempt++ {
-		envelope, err := c.send(ctx, target)
+		envelope, err := c.send(ctx, target, attempt, tr)
 		if err == nil {
 			return envelope, nil
 		}
-		if !isIndeterminate(err) || ctx.Err() != nil {
+		if !isIndeterminate(err) {
 			return nil, err
 		}
-		if attempt < attempts {
-			if err := c.backoff(ctx, attempt); err != nil {
+		// A done ctx (deadline or cancel) stops retries and the inquiry — both
+		// would fail on it — but a financial call still falls through, so the
+		// caller gets the ref/TID to reconcile by with a fresh ctx.
+		ctxDone := ctx.Err() != nil
+		if attempt < attempts && !ctxDone {
+			if err := c.backoff(ctx, attempt, tr); err != nil {
 				return nil, err
 			}
 			continue
 		}
 		// Never re-send an unsafe call: that is how a customer is debited twice. Ask
-		// EPS what happened to the ref instead, if there is one to ask by.
-		if c.autoStatusCheck && target.Financial && target.ClientRefID != "" {
+		// EPS what happened instead — by the ref, or by the tid on an endpoint
+		// that has no ref (initiate-refund).
+		if target.Financial {
 			return nil, c.indeterminate(ctx, target, err)
 		}
 		return nil, err
@@ -778,16 +894,18 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 }
 
 // backoff sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter —
-// or returns early when ctx is done.
-func (c *Client) backoff(ctx context.Context, attempt int) error {
+// or returns early when ctx is done. The debug retry event precedes the sleep.
+func (c *Client) backoff(ctx context.Context, attempt int, tr *trace) error {
 	limit := c.retryBaseDelay << (attempt - 1)
 	if limit > maxRetryDelay || limit < 0 {
 		limit = maxRetryDelay
 	}
 	if limit <= 0 {
+		tr.retry(attempt, 0)
 		return nil
 	}
 	delay := time.Duration(rand.Int63n(int64(limit) + 1))
+	tr.retry(attempt, delay)
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -796,24 +914,41 @@ func (c *Client) backoff(ctx context.Context, attempt int) error {
 	}
 }
 
-// indeterminate runs one inquiry by client_ref_id=<ref>; its own failure is
-// reported, never allowed to mask the original one.
+// indeterminate runs one inquiry by client_ref_id=<ref>, else tid=<tid>, else
+// none; its own failure is reported, never allowed to mask the original one.
+// When ctx is already done the inquiry is skipped and StatusCheckErr is
+// ctx.Err(): the key is still on the error for a later inquiry.
 func (c *Client) indeterminate(ctx context.Context, target *Target, cause error) *IndeterminateError {
-	params := map[string]any{"client_ref_id": target.ClientRefID}
-	if target.InitiatorID != nil {
-		params["initiator_id"] = target.InitiatorID
-	}
-	statusCheck, checkErr := c.Call(ctx, inquirySlug, params)
 	result := &IndeterminateError{
-		Slug:           target.Slug,
-		ClientRefID:    target.ClientRefID,
-		StatusCheck:    statusCheck,
-		StatusCheckErr: checkErr,
-		Err:            cause,
+		Slug:        target.Slug,
+		ClientRefID: target.ClientRefID,
+		TID:         target.TID,
+		Err:         cause,
+	}
+	var params map[string]any
+	if target.ClientRefID != "" {
+		params = map[string]any{"client_ref_id": target.ClientRefID}
+	} else if target.TID != "" {
+		params = map[string]any{"tid": target.TID}
+	}
+	// Off opts out of the inquiry, not of the key: the ref/TID still surfaces.
+	if !c.autoStatusCheck {
+		params = nil
+	}
+	if params != nil && ctx.Err() != nil {
+		result.StatusCheckErr = ctx.Err()
+	} else if params != nil {
+		if target.InitiatorID != nil {
+			params["initiator_id"] = target.InitiatorID
+		}
+		result.StatusCheck, result.StatusCheckErr = c.Call(ctx, inquirySlug, params)
 	}
 	var httpErr *HTTPError
+	var invalidErr *InvalidResponseError
 	if errors.As(cause, &httpErr) {
 		result.Status = httpErr.StatusCode
+	} else if errors.As(cause, &invalidErr) {
+		result.Status = invalidErr.StatusCode
 	}
 	return result
 }
@@ -822,7 +957,7 @@ func (c *Client) indeterminate(ctx context.Context, target *Target, cause error)
 // contract. The multipart content-type, with its boundary, is kept from the
 // target; every other header is re-signed so a retry never reuses a stale
 // secret-key-timestamp.
-func (c *Client) send(ctx context.Context, target *Target) (map[string]any, error) {
+func (c *Client) send(ctx context.Context, target *Target, attempt int, tr *trace) (map[string]any, error) {
 	var body io.Reader
 	if target.Body != nil {
 		body = bytes.NewReader(target.Body)
@@ -834,25 +969,43 @@ func (c *Client) send(ctx context.Context, target *Target) (map[string]any, erro
 	for name, value := range target.Headers {
 		req.Header.Set(name, value)
 	}
-	for name, value := range c.BuildHeaders(target.Multipart) {
+	signed := c.BuildHeaders(target.Multipart)
+	for name, value := range signed {
 		req.Header.Set(name, value)
 	}
+	tr.request(attempt, target, signed)
 	res, err := c.http.Do(req)
 	if err != nil {
+		tr.transportError(attempt, err, 0)
 		return nil, &TransportError{URL: target.URL, Err: err}
 	}
 	defer res.Body.Close()
 	raw, err := io.ReadAll(res.Body)
 	if err != nil {
+		tr.transportError(attempt, err, res.StatusCode)
 		return nil, &TransportError{URL: target.URL, Err: err}
 	}
+	tr.response(attempt, res.StatusCode, raw)
 	var envelope map[string]any
 	decodeErr := json.Unmarshal(raw, &envelope)
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return nil, &HTTPError{StatusCode: res.StatusCode, URL: target.URL, Body: envelope, Raw: raw}
 	}
+	// A JSON string, number or array already fails to decode into the map; a
+	// JSON null decodes cleanly to a nil map, but is no envelope either. Only
+	// an object with a numeric "status" is an EPS envelope — `{}` or a proxy's
+	// error object is as unreadable as a truncated body.
+	if decodeErr == nil && envelope == nil {
+		decodeErr = errors.New("body is JSON null, not an object")
+	} else if _, numeric := envelope["status"].(float64); decodeErr == nil && !numeric {
+		decodeErr = errors.New(`body has no numeric "status", not an EPS envelope`)
+	} else if _, numeric := envelope["response_status_id"].(float64); decodeErr == nil && target.Financial && !numeric {
+		// A financial envelope also needs it, so a proxy's {"status":502,…}
+		// cannot pass for a result (a wrong "no" just costs an inquiry).
+		decodeErr = errors.New(`financial body has no numeric "response_status_id", not an EPS envelope`)
+	}
 	if decodeErr != nil {
-		return nil, fmt.Errorf("eps: response from %s was not valid JSON: %w", target.URL, decodeErr)
+		return nil, &InvalidResponseError{StatusCode: res.StatusCode, URL: target.URL, Raw: raw, Err: decodeErr}
 	}
 	return envelope, nil
 }

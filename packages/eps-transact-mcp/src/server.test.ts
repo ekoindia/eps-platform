@@ -19,7 +19,7 @@ const mockFetch = () => {
 	const impl = (async (input: RequestInfo | URL, init?: RequestInit) => {
 		calls.push({ url: String(input), init: init ?? {} });
 		return new Response(
-			JSON.stringify({ response_status_id: 0, data: { ok: true } }),
+			JSON.stringify({ status: 0, response_status_id: 0, data: { ok: true } }),
 			{ status: 200, headers: { "content-type": "application/json" } },
 		);
 	}) as typeof fetch;

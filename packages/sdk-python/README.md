@@ -27,6 +27,8 @@ One generic `call(slug, params)` covers every endpoint. The slug list, each
 endpoint's params and which of them are required all come from the same
 generated API surface the docs are built from, so the client validates your
 input **before** it signs and sends anything.
+That surface is pinned to the SDK release: a newly launched API returns
+"Unknown endpoint slug" until you upgrade (`pip install -U eps-sdk`).
 
 `timeout` is the whole-request budget in **seconds**, defaulting to `30.0` — the
 same 30s every EPS SDK defaults to. (Node names its knob `timeout_ms` /
@@ -49,9 +51,9 @@ reach — a leaked access key lets anyone transact as you.
   `multipart/form-data` for file-upload endpoints, per the endpoint's spec.
 - **Fails loudly** — a non-2xx response raises `EpsHttpError` (with the decoded
   envelope on `.body`); a non-JSON body raises rather than returning `{}`.
-- **Never loses a transaction** — every non-GET call carries a `client_ref_id` (yours, or a generated 15-char one). A money-moving call that times out is looked up by that ref and surfaced as `EpsIndeterminateError` with the inquiry result attached, never silently re-sent.
-- **Retries the safe things** — a call that times out or gets a 429/5xx is retried with jittered backoff (`retries`, default 2) only when the endpoint is marked `retrySafe` (idempotent, free, moves no money). Paid lookups and money-moving calls are never re-sent.
-- **Validates values too** — spec-driven format / enum / range / length rules (dates, PAN, IFSC, `client_ref_id` …) fail before the request is signed.
+- **Never loses a transaction** — every non-GET call carries a `client_ref_id` (yours, or a generated 15-char one). A money-moving call that times out (or gets back an unreadable response) is looked up by that ref (or, on a refund, which has no ref, by its `tid`) and surfaced as `EpsIndeterminateError` with the inquiry result attached, never silently re-sent.
+- **Retries the safe things** — a call that times out or gets a 429/5xx or an unreadable 2xx is retried with jittered backoff (`retries`, default 2) only when the endpoint is marked `retrySafe` (idempotent, free, moves no money). Paid lookups and money-moving calls are never re-sent.
+- **Validates values too** — spec-driven format / enum / range / length rules (dates, PAN, IFSC, `client_ref_id` …) fail before the request is signed. A `client_ref_id` you pass to a money-moving call must not be blank (whitespace, incl. no-break and zero-width spaces) — it is the only key a lost response can be reconciled by.
 
 Files can be a path or an in-memory pair:
 
@@ -77,7 +79,57 @@ except EpsIndeterminateError as err:
     ...
 ```
 
-Knobs: `retries` (2), `retry_base_delay` (0.2 s), `auto_status_check` (True).
+Knobs: `retries` (2), `retry_base_delay` (0.2 s), `auto_status_check` (True). Off skips only the
+inquiry — a financial call still fails with the indeterminate error carrying
+its ref (or `tid`).
+
+## Debugging
+
+Debug mode shows what the SDK sends and receives: the environment, the full URL,
+headers, body, HTTP status, the raw EPS response, validation failures, retries
+and the automatic status check. Each event is one JSON object per line. Turn it
+on when a call misbehaves and share the output with Eko support instead of just
+the response body.
+
+No code change: set the env var and rerun.
+
+```bash
+EPS_SDK_DEBUG=1 python app.py
+```
+
+Or in code:
+
+```python
+EpsClient(..., debug=True)                        # JSON lines on stderr
+EpsClient(..., debug=lambda event: log.debug(event))  # your logger (event is a dict)
+EpsClient(..., debug=False)                       # off, even when EPS_SDK_DEBUG is set
+```
+
+A request line looks like this:
+
+```json
+{"logger":"eps-sdk","ts":"2026-11-23T11:31:25.884Z","event":"request","sdk":"python","sdk_version":"3.1.0","surface":"48eb0cf2","env":"sandbox","call_id":"f020eef5","slug":"bbps-operator-code-circle","attempt":1,"method":"GET","url":"https://staging.eko.in/ekoapi/v3/customer/payment/bbps/recharge/****3210/operator?initiator_id=****1729","headers":{"developer_key":"****wxyz","secret-key":"****","secret-key-timestamp":"1763897485884","content-type":"application/json"},"body":null}
+```
+
+Events: `init` (once per client), `request` and `response` (per attempt),
+`transport_error` (no usable response), `retry`, and `error` (the call threw;
+a validation failure has no `request` before it, so nothing was sent). Lines of
+one call share a `call_id`.
+
+What is masked: `developer_key` shows its last 4 characters and `secret-key` is
+hidden. Aadhaar, PAN, account and mobile numbers show their last 4. OTPs,
+biometrics, names, addresses, e-mails, dates of birth and any field the SDK does
+not recognise print as `****`. Ids, status codes, amounts and the EPS `message`
+print as-is so support can trace the call. Debug mode never changes a call's
+outcome, and costs nothing while off.
+
+> ⚠️ Masking is best-effort. Free text (upstream error pages, messages) is
+> scrubbed but may still contain credentials or personal data, and id and status
+> fields print as-is. Review the output before sharing it, share it only with
+> Eko support, and turn debug mode off when you are done.
+
+The format is identical across all five EPS SDKs; see "Debug mode conformance"
+in [docs/sdk-golden-vector.md](../../docs/sdk-golden-vector.md).
 
 ## Zero dependencies
 

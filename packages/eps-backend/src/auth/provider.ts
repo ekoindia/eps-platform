@@ -54,9 +54,13 @@ export interface UpstreamSession {
  * against the brute-force budget. Every other outcome (inactive account,
  * unknown user, upstream failure) arrives as `ok: true` with a `profile` kind
  * describing it, because the OTP *did* authenticate the number.
+ *
+ * `refused` marks an `ok: false` where upstream refused the verification
+ * itself (connect-api 1563 "Invalid Initiator for verification") rather than
+ * judging the OTP, so the user isn't told to retype a code that may be right.
  */
 export type VerifyResult =
-	| { ok: false }
+	| { ok: false; refused?: true }
 	| { ok: true; profile: ProfileResult; upstream?: UpstreamSession };
 
 /**
