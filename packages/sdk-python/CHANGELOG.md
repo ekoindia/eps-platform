@@ -4,6 +4,12 @@
 
 ### Changed
 
+- A financial endpoint without a `client_ref_id` param (`initiate-refund`) now
+  raises `EpsIndeterminateError` on an indeterminate outcome too, after a
+  Transaction Inquiry by the call's `tid` (`tx_status` 3/4 = refund
+  initiated/done). `EpsIndeterminateError.client_ref_id` is `None` there and the
+  new `tid` attribute holds the key. Previously the 5xx / invalid-response error
+  was raised as is, with no inquiry.
 - A 2xx response whose body is not a JSON object (unparseable, or a bare
   `null` / string / number / array) now raises `EpsInvalidResponseError`
   (still an `EpsError`) and counts as an indeterminate outcome: a financial call

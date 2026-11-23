@@ -642,14 +642,33 @@ class RetryAndStatusCheck(unittest.TestCase):
                 fast().call("pan-lite", PAN)
         self.assertEqual(len(t.requests), 1)
 
-    def test_financial_without_ref_param_no_inquiry(self):
-        t = Transport(_http(500))
-        with patched(t):
-            with self.assertRaises(EpsHttpError):
-                fast().call(
-                    "initiate-refund", {"initiator_id": "9962981729", "tid": "1", "otp": "1"}
+    def test_financial_without_ref_param_inquires_by_tid(self):
+        inquiry = {"status": 0, "data": {"tx_status": "4", "tid": "777"}}
+        for failure, cause_type in (
+            (_http(500), EpsHttpError),
+            (_response(b"null"), EpsInvalidResponseError),
+        ):
+            with self.subTest(cause=cause_type.__name__):
+                t = Transport(failure, _response(json.dumps(inquiry).encode()))
+                with patched(t):
+                    with self.assertRaises(EpsIndeterminateError) as ctx:
+                        fast().call(
+                            "initiate-refund",
+                            {"initiator_id": "9962981729", "tid": "777", "otp": "1"},
+                        )
+                e = ctx.exception
+                self.assertIsNone(e.client_ref_id)
+                self.assertEqual(e.tid, "777")
+                self.assertEqual(e.status_check, inquiry)
+                self.assertIsInstance(e.__cause__, cause_type)
+                self.assertEqual(
+                    str(e),
+                    'EPS request for "initiate-refund" on tid "777" has no confirmed outcome.',
                 )
-        self.assertEqual(len(t.requests), 1)
+                self.assertEqual(len(t.requests), 2)
+                query = urllib.parse.parse_qs(urllib.parse.urlsplit(t.url(1)).query)
+                self.assertEqual(query["tid"], ["777"])
+                self.assertNotIn("client_ref_id", query)
 
     def test_auto_status_check_off(self):
         t = Transport(_http(500))

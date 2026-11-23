@@ -199,7 +199,10 @@ func (e *InvalidResponseError) Unwrap() error { return e.Err }
 
 // IndeterminateError is a non-GET call on a money-moving endpoint that ended
 // without a confirmed outcome (timeout, transport failure, HTTP 429 or 5xx, or
-// a 2xx that was not JSON).
+// a 2xx that was not JSON). Inquiry key: the call's client_ref_id, or — on an
+// endpoint that has none, such as initiate-refund — the tid it acted on (then
+// TID is set and ClientRefID is empty; tx_status 3/4 means the refund is
+// initiated/done).
 // The SDK never re-sends such a request — that is how a customer gets debited
 // twice — so it inquired by the call's client_ref_id instead and reports what
 // it found. StatusCheck is the Transaction Inquiry envelope (data.tx_status:
@@ -208,8 +211,12 @@ func (e *InvalidResponseError) Unwrap() error { return e.Err }
 // reachable with errors.As (for *HTTPError) and errors.Is. Reconcile with the
 // ref before retrying; never assume a timeout meant failure.
 type IndeterminateError struct {
-	Slug        string
+	Slug string
+	// ClientRefID is the call's ref, or empty on an endpoint without one (then
+	// TID is the key inquired by).
 	ClientRefID string
+	// TID is the tid inquired by when there was no ref, else empty.
+	TID string
 	// Status is the HTTP status of the original attempt (a 2xx when its body
 	// was not JSON), or 0 for a transport failure.
 	Status         int
@@ -219,7 +226,13 @@ type IndeterminateError struct {
 }
 
 func (e *IndeterminateError) Error() string {
-	return fmt.Sprintf("eps: request for %q with client_ref_id %q has no confirmed outcome", e.Slug, e.ClientRefID)
+	switch {
+	case e.ClientRefID != "":
+		return fmt.Sprintf("eps: request for %q with client_ref_id %q has no confirmed outcome", e.Slug, e.ClientRefID)
+	case e.TID != "":
+		return fmt.Sprintf("eps: request for %q on tid %q has no confirmed outcome", e.Slug, e.TID)
+	}
+	return fmt.Sprintf("eps: request for %q without a client_ref_id or tid has no confirmed outcome", e.Slug)
 }
 
 func (e *IndeterminateError) Unwrap() error { return e.Err }
@@ -499,6 +512,9 @@ type Target struct {
 	ClientRefID string
 	// InitiatorID is the initiator the call resolved, reused by the status check.
 	InitiatorID any
+	// TID is the inquiry key for a financial endpoint with no ref
+	// (initiate-refund): the tid the call acted on. Empty otherwise.
+	TID string
 }
 
 func endpointFor(slug string) (*Endpoint, error) {
@@ -722,6 +738,9 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		ClientRefID: clientRefID,
 		InitiatorID: merged["initiator_id"],
 	}
+	if tid, ok := merged["tid"]; ok && tid != nil && clientRefID == "" {
+		target.TID = wireString(tid)
+	}
 	if endpoint.RetrySafe != nil {
 		target.RetrySafe = *endpoint.RetrySafe
 	}
@@ -790,8 +809,9 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 			continue
 		}
 		// Never re-send an unsafe call: that is how a customer is debited twice. Ask
-		// EPS what happened to the ref instead, if there is one to ask by.
-		if c.autoStatusCheck && target.Financial && target.ClientRefID != "" {
+		// EPS what happened instead — by the ref, or by the tid on an endpoint
+		// that has no ref (initiate-refund).
+		if c.autoStatusCheck && target.Financial {
 			return nil, c.indeterminate(ctx, target, err)
 		}
 		return nil, err
@@ -817,20 +837,26 @@ func (c *Client) backoff(ctx context.Context, attempt int) error {
 	}
 }
 
-// indeterminate runs one inquiry by client_ref_id=<ref>; its own failure is
-// reported, never allowed to mask the original one.
+// indeterminate runs one inquiry by client_ref_id=<ref>, else tid=<tid>, else
+// none; its own failure is reported, never allowed to mask the original one.
 func (c *Client) indeterminate(ctx context.Context, target *Target, cause error) *IndeterminateError {
-	params := map[string]any{"client_ref_id": target.ClientRefID}
-	if target.InitiatorID != nil {
-		params["initiator_id"] = target.InitiatorID
-	}
-	statusCheck, checkErr := c.Call(ctx, inquirySlug, params)
 	result := &IndeterminateError{
-		Slug:           target.Slug,
-		ClientRefID:    target.ClientRefID,
-		StatusCheck:    statusCheck,
-		StatusCheckErr: checkErr,
-		Err:            cause,
+		Slug:        target.Slug,
+		ClientRefID: target.ClientRefID,
+		TID:         target.TID,
+		Err:         cause,
+	}
+	var params map[string]any
+	if target.ClientRefID != "" {
+		params = map[string]any{"client_ref_id": target.ClientRefID}
+	} else if target.TID != "" {
+		params = map[string]any{"tid": target.TID}
+	}
+	if params != nil {
+		if target.InitiatorID != nil {
+			params["initiator_id"] = target.InitiatorID
+		}
+		result.StatusCheck, result.StatusCheckErr = c.Call(ctx, inquirySlug, params)
 	}
 	var httpErr *HTTPError
 	var invalidErr *InvalidResponseError

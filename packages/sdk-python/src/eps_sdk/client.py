@@ -100,7 +100,11 @@ class EpsInvalidResponseError(EpsError):
 class EpsIndeterminateError(EpsError):
     """A non-GET call on a money-moving endpoint ended without a confirmed outcome.
 
-    Timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON. The SDK never re-sends such a
+    Timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON.
+    Inquiry key: the call's ``client_ref_id``, or -- on an endpoint that has
+    none, such as ``initiate-refund`` -- the ``tid`` it acted on (then ``tid`` is
+    set and ``client_ref_id`` is None; ``tx_status`` 3/4 means the refund is
+    initiated/done). The SDK never re-sends such a
     request -- that is how a customer gets debited twice -- so it inquired by the
     call's ``client_ref_id`` instead. ``status_check`` is the Transaction Inquiry
     envelope (``data.tx_status``: 0 success, 1 fail, 2 awaited, ...) or ``None``
@@ -112,17 +116,24 @@ class EpsIndeterminateError(EpsError):
     def __init__(
         self,
         slug: str,
-        client_ref_id: str,
+        client_ref_id: Optional[str],
         cause: BaseException,
         status_check: Any,
         status_check_error: Optional[BaseException],
+        tid: Optional[str] = None,
     ) -> None:
-        super().__init__(
-            f'EPS request for "{slug}" with client_ref_id "{client_ref_id}" '
-            "has no confirmed outcome."
-        )
+        if client_ref_id is not None:
+            subject = f'with client_ref_id "{client_ref_id}"'
+        elif tid is not None:
+            subject = f'on tid "{tid}"'
+        else:
+            subject = "without a client_ref_id or tid"
+        super().__init__(f'EPS request for "{slug}" {subject} has no confirmed outcome.')
         self.slug = slug
+        #: The call's ref, or None on an endpoint without one (see ``tid``).
         self.client_ref_id = client_ref_id
+        #: The ``tid`` inquired by when there was no ref, else None.
+        self.tid = tid
         #: HTTP status of the original attempt (a 2xx when its body was not
         #: JSON), or None for a transport failure.
         self.status = (
@@ -345,6 +356,8 @@ class Target:
     client_ref_id: Optional[str] = None
     #: The initiator the call resolved, reused by the status check.
     initiator_id: Any = None
+    #: Inquiry key for a financial endpoint with no ref (initiate-refund).
+    tid: Optional[str] = None
 
 
 def _encode_multipart(
@@ -581,6 +594,11 @@ class EpsClient:
             retry_safe=bool(endpoint.get("retrySafe", endpoint["method"] == "GET")),
             client_ref_id=client_ref_id,
             initiator_id=merged.get("initiator_id"),
+            tid=(
+                _to_wire_str(merged["tid"])
+                if client_ref_id is None and merged.get("tid") is not None
+                else None
+            ),
         )
 
     def call(self, slug: str, params: Optional[Mapping[str, Any]] = None) -> Any:
@@ -608,13 +626,9 @@ class EpsClient:
                     self._backoff(attempt)
                     continue
                 # Never re-send an unsafe call: that is how a customer is
-                # debited twice. Ask EPS what happened to the ref instead, if there is
-                # one to ask by.
-                if (
-                    self.auto_status_check
-                    and target.financial
-                    and target.client_ref_id is not None
-                ):
+                # debited twice. Ask EPS what happened instead -- by the ref, or
+                # by the tid on an endpoint that has no ref (initiate-refund).
+                if self.auto_status_check and target.financial:
                     raise self._indeterminate(target, exc) from exc
                 raise
 
@@ -628,19 +642,29 @@ class EpsClient:
     def _indeterminate(
         self, target: Target, cause: BaseException
     ) -> EpsIndeterminateError:
-        """One inquiry by ``client_ref_id=<ref>``; its own failure is reported,
-        never allowed to mask the original one."""
+        """One inquiry by ``client_ref_id=<ref>``, else ``tid=<tid>``, else none;
+        its own failure is reported, never allowed to mask the original one."""
         status_check: Any = None
         status_check_error: Optional[BaseException] = None
-        params: Dict[str, Any] = {"client_ref_id": target.client_ref_id}
-        if target.initiator_id is not None:
-            params["initiator_id"] = target.initiator_id
-        try:
-            status_check = self.call(_INQUIRY_SLUG, params)
-        except Exception as exc:  # reported on the error, not raised
-            status_check_error = exc
+        params: Optional[Dict[str, Any]] = (
+            {"client_ref_id": target.client_ref_id}
+            if target.client_ref_id is not None
+            else {"tid": target.tid} if target.tid is not None else None
+        )
+        if params is not None:
+            if target.initiator_id is not None:
+                params["initiator_id"] = target.initiator_id
+            try:
+                status_check = self.call(_INQUIRY_SLUG, params)
+            except Exception as exc:  # reported on the error, not raised
+                status_check_error = exc
         return EpsIndeterminateError(
-            target.slug, str(target.client_ref_id), cause, status_check, status_check_error
+            target.slug,
+            target.client_ref_id,
+            cause,
+            status_check,
+            status_check_error,
+            target.tid,
         )
 
     def _send(self, target: Target) -> Any:

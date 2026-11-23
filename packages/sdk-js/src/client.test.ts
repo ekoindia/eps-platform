@@ -830,17 +830,39 @@ describe("retry and status check", () => {
 		expect(f).toHaveBeenCalledTimes(1);
 	});
 
-	it("financial endpoint without a client_ref_id param (initiate-refund): no inquiry", async () => {
-		const f = vi.fn(async () => http(500));
-		await expect(
-			make(f).call("initiate-refund", {
-				initiator_id: "9962981729",
-				tid: "1",
-				otp: "1",
-			}),
-		).rejects.toBeInstanceOf(EpsHttpError);
-		expect(f).toHaveBeenCalledTimes(1);
-	});
+	it.each([
+		["HTTP 500", () => http(500), EpsHttpError],
+		["non-object 2xx", () => new Response("null", { status: 200 }), EpsInvalidResponseError],
+	] as const)(
+		"financial endpoint without a client_ref_id param (initiate-refund) + %s: indeterminate, inquires by tid",
+		async (_l, fail, causeType) => {
+			const inquiry = { status: 0, data: { tx_status: "4", tid: "777" } };
+			const f = vi
+				.fn()
+				.mockResolvedValueOnce(fail())
+				.mockResolvedValueOnce(new Response(JSON.stringify(inquiry)));
+			const err = (await make(f)
+				.call("initiate-refund", {
+					initiator_id: "9962981729",
+					tid: "777",
+					otp: "1",
+				})
+				.catch((e: unknown) => e)) as EpsIndeterminateError;
+			expect(err).toBeInstanceOf(EpsIndeterminateError);
+			expect(err.clientRefId).toBeNull();
+			expect(err.tid).toBe("777");
+			expect(err.statusCheck).toEqual(inquiry);
+			expect(err.cause).toBeInstanceOf(causeType);
+			expect(err.message).toBe(
+				'EPS request for "initiate-refund" on tid "777" has no confirmed outcome.',
+			);
+			expect(f).toHaveBeenCalledTimes(2);
+			const q = new URL(urlOf(f, 1)).searchParams;
+			expect(q.get("tid")).toBe("777");
+			expect(q.has("client_ref_id")).toBe(false);
+			expect(q.get("initiator_id")).toBe("9962981729");
+		},
+	);
 
 	it("autoStatusCheck: false → no inquiry", async () => {
 		const f = vi.fn(async () => http(500));

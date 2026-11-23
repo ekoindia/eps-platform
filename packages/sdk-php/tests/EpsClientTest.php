@@ -636,14 +636,24 @@ final class EpsClientTest extends TestCase
         try { self::fast($t)->call('pan-lite', self::PAN); } finally { $this->assertCount(1, $t->requests); }
     }
 
-    public function testFinancialWithoutRefParamNoInquiry(): void
+    public function testFinancialWithoutRefParamInquiresByTid(): void
     {
-        $t = self::transport([self::http(500)]);
-        $this->expectException(EpsHttpException::class);
-        try {
-            self::fast($t)->call('initiate-refund', ['initiator_id' => '9962981729', 'tid' => '1', 'otp' => '1']);
-        } finally {
-            $this->assertCount(1, $t->requests);
+        $inquiry = ['status' => 0, 'data' => ['tx_status' => '4', 'tid' => '777']];
+        foreach ([[self::http(500), EpsHttpException::class], [[200, 'null'], EpsInvalidResponseException::class]] as [$failure, $causeType]) {
+            $t = self::transport([$failure, [200, json_encode($inquiry)]]);
+            try {
+                self::fast($t)->call('initiate-refund', ['initiator_id' => '9962981729', 'tid' => '777', 'otp' => '1']);
+                $this->fail('expected EpsIndeterminateException');
+            } catch (EpsIndeterminateException $e) {
+                $this->assertNull($e->clientRefId);
+                $this->assertSame('777', $e->tid);
+                $this->assertSame($inquiry, $e->statusCheck);
+                $this->assertInstanceOf($causeType, $e->getPrevious());
+                $this->assertSame('EPS request for "initiate-refund" on tid "777" has no confirmed outcome.', $e->getMessage());
+                $this->assertCount(2, $t->requests);
+                $this->assertStringContainsString('tid=777', $t->url(1));
+                $this->assertStringNotContainsString('client_ref_id', $t->url(1));
+            }
         }
     }
 

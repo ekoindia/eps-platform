@@ -211,7 +211,10 @@ export class EpsInvalidResponseError extends EpsError {
 
 /**
  * A non-GET call on a money-moving endpoint ended without a confirmed outcome
- * (timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON). The SDK never re-sends such a
+ * (timeout, transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON).
+ * Inquiry key: the call's `client_ref_id`, or — on an endpoint that has none,
+ * such as `initiate-refund` — the `tid` it acted on (then `tid` is set and
+ * `clientRefId` is null; `tx_status` 3/4 means the refund is initiated/done). The SDK never re-sends such a
  * request — that is how a customer gets debited twice — so it inquired by the
  * call's `client_ref_id` instead and reports what it found. `statusCheck` is the
  * Transaction Inquiry envelope (`data.tx_status`: 0 success, 1 fail, 2 awaited,
@@ -225,13 +228,22 @@ export class EpsIndeterminateError extends EpsError {
 	readonly status: number | null;
 	constructor(
 		readonly slug: string,
-		readonly clientRefId: string,
+		/** The call's ref, or null on an endpoint without one (see `tid`). */
+		readonly clientRefId: string | null,
 		cause: unknown,
 		readonly statusCheck: unknown,
 		readonly statusCheckError: unknown,
+		/** The `tid` inquired by when there was no ref, else null. */
+		readonly tid: string | null = null,
 	) {
 		super(
-			`EPS request for "${slug}" with client_ref_id "${clientRefId}" has no confirmed outcome.`,
+			`EPS request for "${slug}" ${
+				clientRefId !== null
+					? `with client_ref_id "${clientRefId}"`
+					: tid !== null
+						? `on tid "${tid}"`
+						: "without a client_ref_id or tid"
+			} has no confirmed outcome.`,
 			{ cause },
 		);
 		this.name = "EpsIndeterminateError";
@@ -445,18 +457,21 @@ export class EpsClient {
 					continue;
 				}
 				// Never re-send an unsafe call: that is how a customer is debited twice.
-				// Ask EPS what happened to the ref instead, if there is one to ask by.
-				if (
-					this.autoStatusCheck &&
-					endpoint.financial &&
-					clientRefId !== undefined
-				)
+				// Ask EPS what happened instead — by the ref, or by the tid on an
+				// endpoint that has no ref (initiate-refund).
+				if (this.autoStatusCheck && endpoint.financial) {
+					const tid =
+						clientRefId === undefined && merged["tid"] != null
+							? String(merged["tid"])
+							: null;
 					throw await this.indeterminate(
 						slug,
-						clientRefId,
+						clientRefId ?? null,
+						tid,
 						merged["initiator_id"],
 						err,
 					);
+				}
 				throw err;
 			}
 		}
@@ -472,30 +487,39 @@ export class EpsClient {
 		if (delay > 0) await new Promise((r) => setTimeout(r, delay));
 	}
 
-	/** One inquiry by `client_ref_id=<ref>`; its own failure is reported, never
-	 * allowed to mask the original one. */
+	/** One inquiry by `client_ref_id=<ref>`, else `tid=<tid>`, else none; its
+	 * own failure is reported, never allowed to mask the original one. */
 	private async indeterminate(
 		slug: string,
-		clientRefId: string,
+		clientRefId: string | null,
+		tid: string | null,
 		initiatorId: unknown,
 		cause: unknown,
 	): Promise<EpsIndeterminateError> {
 		let statusCheck: unknown = null;
 		let statusCheckError: unknown = null;
-		try {
-			statusCheck = await this.call(INQUIRY_SLUG, {
-				client_ref_id: clientRefId,
-				...(initiatorId !== undefined && { initiator_id: initiatorId }),
-			});
-		} catch (err) {
-			statusCheckError = err;
-		}
+		const key =
+			clientRefId !== null
+				? { client_ref_id: clientRefId }
+				: tid !== null
+					? { tid }
+					: null;
+		if (key)
+			try {
+				statusCheck = await this.call(INQUIRY_SLUG, {
+					...key,
+					...(initiatorId !== undefined && { initiator_id: initiatorId }),
+				});
+			} catch (err) {
+				statusCheckError = err;
+			}
 		return new EpsIndeterminateError(
 			slug,
 			clientRefId,
 			cause,
 			statusCheck,
 			statusCheckError,
+			tid,
 		);
 	}
 

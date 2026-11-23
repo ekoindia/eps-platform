@@ -141,7 +141,10 @@ public final class EpsClient {
 
 	/**
 	 * A non-GET call on a money-moving endpoint ended without a confirmed outcome (timeout,
-	 * transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON). The SDK never re-sends such a request — that is how a
+	 * transport failure, HTTP 429 or 5xx, or a 2xx that was not JSON). Inquiry key: the call's {@code
+	 * client_ref_id}, or — on an endpoint that has none, such as {@code initiate-refund} — the {@code
+	 * tid} it acted on (then {@link #tid} is set and {@link #clientRefId} is null; {@code tx_status}
+	 * 3/4 means the refund is initiated/done). The SDK never re-sends such a request — that is how a
 	 * customer gets debited twice — so it inquired by the call's {@code client_ref_id} instead and
 	 * reports what it found. {@link #statusCheck} is the Transaction Inquiry envelope ({@code
 	 * data.tx_status}: "0" success, "1" fail, "2" awaited, …) or null when the inquiry itself
@@ -150,7 +153,10 @@ public final class EpsClient {
 	 */
 	public static final class EpsIndeterminateException extends EpsException {
 		public final String slug;
+		/** The call's ref, or null on an endpoint without one (see {@link #tid}). */
 		public final String clientRefId;
+		/** The {@code tid} inquired by when there was no ref, else null. */
+		public final String tid;
 		/** HTTP status of the original attempt (a 2xx when its body was not JSON), or null for a transport failure. */
 		public final Integer status;
 		public final Map<String, Object> statusCheck;
@@ -161,13 +167,18 @@ public final class EpsClient {
 				String clientRefId,
 				Throwable cause,
 				Map<String, Object> statusCheck,
-				Throwable statusCheckError) {
+				Throwable statusCheckError,
+				String tid) {
 			super(
-					"EPS request for \"" + slug + "\" with client_ref_id \"" + clientRefId
-							+ "\" has no confirmed outcome.",
+					"EPS request for \"" + slug + "\" "
+							+ (clientRefId != null
+									? "with client_ref_id \"" + clientRefId + "\""
+									: tid != null ? "on tid \"" + tid + "\"" : "without a client_ref_id or tid")
+							+ " has no confirmed outcome.",
 					cause);
 			this.slug = slug;
 			this.clientRefId = clientRefId;
+			this.tid = tid;
 			this.status =
 					cause instanceof EpsHttpException h
 							? Integer.valueOf(h.status)
@@ -781,9 +792,13 @@ public final class EpsClient {
 					continue;
 				}
 				// Never re-send an unsafe call: that is how a customer is debited twice. Ask
-				// EPS what happened to the ref instead, if there is one to ask by.
-				if (autoStatusCheck && target.financial() && target.clientRefId() != null) {
-					throw indeterminate(target, e);
+				// EPS what happened instead — by the ref, or by the tid on an endpoint that
+				// has no ref (initiate-refund). Client defaults never set tid, so the
+				// caller's params hold the resolved value.
+				if (autoStatusCheck && target.financial()) {
+					Object tid = params == null ? null : params.get("tid");
+					throw indeterminate(
+							target, target.clientRefId() == null && tid != null ? wireString(tid) : null, e);
 				}
 				throw e;
 			}
@@ -804,22 +819,25 @@ public final class EpsClient {
 	}
 
 	/**
-	 * One inquiry by {@code client_ref_id=<ref>}; its own failure is reported, never allowed to mask
-	 * the original one.
+	 * One inquiry by {@code client_ref_id=<ref>}, else {@code tid=<tid>}, else none; its own failure
+	 * is reported, never allowed to mask the original one.
 	 */
-	private EpsIndeterminateException indeterminate(Target target, EpsException cause) {
-		Map<String, Object> params = new LinkedHashMap<>();
-		params.put("client_ref_id", target.clientRefId());
-		if (target.initiatorId() != null) params.put("initiator_id", target.initiatorId());
+	private EpsIndeterminateException indeterminate(Target target, String tid, EpsException cause) {
 		Map<String, Object> statusCheck = null;
 		Throwable statusCheckError = null;
-		try {
-			statusCheck = call(INQUIRY_SLUG, params);
-		} catch (RuntimeException e) {
-			statusCheckError = e;
+		if (target.clientRefId() != null || tid != null) {
+			Map<String, Object> params = new LinkedHashMap<>();
+			if (target.clientRefId() != null) params.put("client_ref_id", target.clientRefId());
+			else params.put("tid", tid);
+			if (target.initiatorId() != null) params.put("initiator_id", target.initiatorId());
+			try {
+				statusCheck = call(INQUIRY_SLUG, params);
+			} catch (RuntimeException e) {
+				statusCheckError = e;
+			}
 		}
 		return new EpsIndeterminateException(
-				target.slug(), target.clientRefId(), cause, statusCheck, statusCheckError);
+				target.slug(), target.clientRefId(), cause, statusCheck, statusCheckError, tid);
 	}
 
 	/**

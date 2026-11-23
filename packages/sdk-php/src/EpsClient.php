@@ -202,7 +202,7 @@ final class EpsClient
      * `form-data` JSON field plus CURLFile values) for file-upload endpoints.
      * Exposed for testing; `call()` builds on it.
      *
-     * @return array{url: string, body: string|array|null, method: string, multipart: bool, slug: string, financial: bool, retrySafe: bool, clientRefId: ?string, initiatorId: mixed}
+     * @return array{url: string, body: string|array|null, method: string, multipart: bool, slug: string, financial: bool, retrySafe: bool, clientRefId: ?string, tid: ?string, initiatorId: mixed}
      * @throws \InvalidArgumentException On an unknown slug, a missing required param, a type mismatch or a bad value.
      * @throws \JsonException When a multipart endpoint's non-file params cannot be JSON-encoded.
      */
@@ -325,6 +325,8 @@ final class EpsClient
             // Older surfaces lack `retrySafe`: then only a GET is retried.
             'retrySafe' => (bool) ($endpoint['retrySafe'] ?? $endpoint['method'] === 'GET'),
             'clientRefId' => $clientRefId,
+            // Inquiry key for a financial endpoint with no ref (initiate-refund).
+            'tid' => $clientRefId === null && isset($params['tid']) ? self::wireString($params['tid']) : null,
             'initiatorId' => $params['initiator_id'] ?? null,
         ];
     }
@@ -405,8 +407,9 @@ final class EpsClient
                     continue;
                 }
                 // Never re-send a non-GET: that is how a customer is debited twice.
-                // Ask EPS what happened to the ref instead, if there is one to ask by.
-                if ($this->autoStatusCheck && $target['financial'] && $target['clientRefId'] !== null) {
+                // Ask EPS what happened instead — by the ref, or by the tid on an
+                // endpoint that has no ref (initiate-refund).
+                if ($this->autoStatusCheck && $target['financial']) {
                     throw $this->indeterminate($target, $e);
                 }
                 throw $e;
@@ -434,21 +437,25 @@ final class EpsClient
     }
 
     /**
-     * One inquiry by `client_ref_id=<ref>`; its own failure is reported, never
-     * allowed to mask the original one.
+     * One inquiry by `client_ref_id=<ref>`, else `tid=<tid>`, else none; its
+     * own failure is reported, never allowed to mask the original one.
      */
     private function indeterminate(array $target, \Throwable $cause): EpsIndeterminateException
     {
         $statusCheck = null;
         $statusCheckError = null;
-        $params = ['client_ref_id' => $target['clientRefId']];
-        if ($target['initiatorId'] !== null) $params['initiator_id'] = $target['initiatorId'];
-        try {
-            $statusCheck = $this->call(self::INQUIRY_SLUG, $params);
-        } catch (\Throwable $e) {
-            $statusCheckError = $e;
+        $params = $target['clientRefId'] !== null
+            ? ['client_ref_id' => $target['clientRefId']]
+            : ($target['tid'] !== null ? ['tid' => $target['tid']] : null);
+        if ($params !== null) {
+            if ($target['initiatorId'] !== null) $params['initiator_id'] = $target['initiatorId'];
+            try {
+                $statusCheck = $this->call(self::INQUIRY_SLUG, $params);
+            } catch (\Throwable $e) {
+                $statusCheckError = $e;
+            }
         }
-        return new EpsIndeterminateException($target['slug'], $target['clientRefId'], $cause, $statusCheck, $statusCheckError);
+        return new EpsIndeterminateException($target['slug'], $target['clientRefId'], $cause, $statusCheck, $statusCheckError, $target['tid']);
     }
 
     /**

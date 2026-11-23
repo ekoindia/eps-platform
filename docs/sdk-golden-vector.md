@@ -226,20 +226,27 @@ three tries in all). Attempt `n` first sleeps a random slice of
 so the ref, if any) are fixed across attempts.
 
 **Not `retrySafe`** — never retried: re-sending a debit is how a customer is
-charged twice, and re-sending a paid lookup bills it twice. If the endpoint is `financial` in the surface **and** the call carries a
-`client_ref_id`, the SDK makes one Transaction Inquiry:
+charged twice, and re-sending a paid lookup bills it twice. If the endpoint is
+`financial` in the surface, the call **always** fails with the indeterminate
+error, after one Transaction Inquiry keyed by the call's `client_ref_id` — or,
+on a financial endpoint that has no ref param (`initiate-refund`), by the `tid`
+it acted on:
 
 ```
 GET transaction-inquiry          (GET /tools/reference/transaction)
-    client_ref_id = <the call's ref>
+    client_ref_id = <the call's ref>        (or tid = <the call's tid> when there is no ref)
     initiator_id  = <the initiator the call resolved>
 ```
+
+An inquiry by `tid` reports the **original** transaction: `tx_status` 3 (refund
+initiated) or 4 (refunded) means the refund went through. With neither a ref
+nor a `tid`, the indeterminate error is still thrown, with no inquiry.
 
 The inquiry goes through the ordinary GET path, so it has the GET retry budget
 and can never recurse (it is a GET). The call then fails with the language's
 indeterminate error, which **never** substitutes the inquiry envelope for the
 endpoint's own response — the shapes differ. Outside this path (non-financial
-endpoint, no ref, decisive status) behaviour is exactly as before.
+endpoint, decisive status, auto inquire off) behaviour is exactly as before.
 
 | SDK    | Indeterminate error            | Transport error                | Knobs (retries / backoff base / auto inquire)                       |
 | ------ | ------------------------------ | ------------------------------ | -------------------------------------------------------------------- |
@@ -265,7 +272,8 @@ The indeterminate error carries, under each language's naming:
 | field              | holds                                                                   |
 | ------------------ | ----------------------------------------------------------------------- |
 | `slug`             | the endpoint that failed                                                |
-| `clientRefId`      | the ref the failed call carried (generated or supplied)                 |
+| `clientRefId`      | the ref the failed call carried (generated or supplied); null/"" on an endpoint without one |
+| `tid`              | the `tid` inquired by when there was no ref; null/"" otherwise          |
 | `status`           | HTTP status of the original attempt, or null/nil/0 for a transport failure |
 | `statusCheck`      | the decoded inquiry envelope, or null when the inquiry itself failed    |
 | `statusCheckError` | the inquiry's own failure, or null — it must never mask the original    |
@@ -275,6 +283,8 @@ It extends the base error (`EpsError` / `EpsException`; Go wraps), so existing
 `catch` blocks and `errors.As(err, &httpErr)` keep matching. Fixed message:
 `EPS request for "<slug>" with client_ref_id "<ref>" has no confirmed outcome.`
 (Go: `eps: request for %q with client_ref_id %q has no confirmed outcome`.)
+Without a ref: `… on tid "<tid>" has no confirmed outcome.`, and with neither
+`… without a client_ref_id or tid has no confirmed outcome.`
 
 Fixtures — `bbps-get-operators` is the GET, `pan-lite` the non-financial POST,
 `dmt-initiate-transfer` the financial POST, `initiate-refund` the financial
@@ -291,7 +301,7 @@ POST that omits `client_ref_id`. Every suite pins the exact request counts:
 | financial POST: transport failure, supplied ref, inquiry 200 | 2       | indeterminate error; `status` null; `clientRefId` is the supplied value |
 | financial POST: 500, inquiry 503 every attempt              | 1 + 3    | indeterminate error; `statusCheck` null; `statusCheckError` is the 503; cause is the 500 |
 | financial POST: 401                                         | 1        | typed HTTP error, no inquiry                                    |
-| `initiate-refund` (financial, no ref param): 500            | 1        | typed HTTP error, no inquiry                                    |
+| `initiate-refund` (financial, no ref param): 500 or 2xx `null`, inquiry 200 | 2 | indeterminate error; `clientRefId` null/""; `tid` the call's tid; inquiry query `tid=<tid>`, no `client_ref_id`; message `… on tid "<tid>" …` |
 | financial POST with auto inquire off: 500                   | 1        | typed HTTP error                                                |
 
 ## Value validation conformance

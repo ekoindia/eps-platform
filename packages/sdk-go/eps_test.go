@@ -901,13 +901,32 @@ func TestNonFinancialPost5xxNoInquiry(t *testing.T) {
 	}
 }
 
-func TestFinancialWithoutRefParamNoInquiry(t *testing.T) {
-	tr := &scripted{steps: []step{httpStep(500)}}
-	_, err := fastClient(t, tr).Call(context.Background(), "initiate-refund",
-		map[string]any{"initiator_id": "9962981729", "tid": "1", "otp": "1"})
-	var ind *IndeterminateError
-	if errors.As(err, &ind) || len(tr.requests) != 1 {
-		t.Errorf("err = %v after %d requests, want plain *HTTPError after 1", err, len(tr.requests))
+func TestFinancialWithoutRefParamInquiresByTID(t *testing.T) {
+	inquiry := `{"status":0,"data":{"tx_status":"4","tid":"777"}}`
+	for name, failure := range map[string]step{"HTTP 500": httpStep(500), "null 2xx": withBody(`null`)} {
+		t.Run(name, func(t *testing.T) {
+			tr := &scripted{steps: []step{failure, withBody(inquiry)}}
+			_, err := fastClient(t, tr).Call(context.Background(), "initiate-refund",
+				map[string]any{"initiator_id": "9962981729", "tid": "777", "otp": "1"})
+			var ind *IndeterminateError
+			if !errors.As(err, &ind) {
+				t.Fatalf("err = %v, want *IndeterminateError", err)
+			}
+			if ind.ClientRefID != "" || ind.TID != "777" || ind.StatusCheck == nil || ind.StatusCheckErr != nil {
+				t.Errorf("IndeterminateError = %+v, want TID 777, no ref, the inquiry envelope", ind)
+			}
+			want := `eps: request for "initiate-refund" on tid "777" has no confirmed outcome`
+			if err.Error() != want {
+				t.Errorf("Error() = %q, want %q", err.Error(), want)
+			}
+			if len(tr.requests) != 2 {
+				t.Fatalf("sent %d requests, want 2", len(tr.requests))
+			}
+			q := tr.requests[1].URL.Query()
+			if q.Get("tid") != "777" || q.Has("client_ref_id") || q.Get("initiator_id") != "9962981729" {
+				t.Errorf("inquiry url = %s, want tid=777 and no client_ref_id", tr.requests[1].URL)
+			}
+		})
 	}
 }
 

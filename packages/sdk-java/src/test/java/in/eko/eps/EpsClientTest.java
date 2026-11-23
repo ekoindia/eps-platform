@@ -955,15 +955,29 @@ class EpsClientTest {
 		}
 
 		@Test
-		void financialWithoutRefParamNoInquiry() {
-			Scripted t = new Scripted(Step.http(500));
-			assertThrows(
-					EpsClient.EpsHttpException.class,
-					() ->
-							fast(t).call(
-									"initiate-refund",
-									Map.of("initiator_id", "9962981729", "tid", "1", "otp", "1")));
-			assertEquals(1, t.sent.size());
+		void financialWithoutRefParamInquiresByTid() {
+			String inquiry = "{\"status\":0,\"data\":{\"tx_status\":\"4\",\"tid\":\"777\"}}";
+			Map<Step, Class<?>> cases =
+					Map.of(Step.http(500), EpsClient.EpsHttpException.class, Step.body("null"), EpsClient.EpsInvalidResponseException.class);
+			for (Map.Entry<Step, Class<?>> c : cases.entrySet()) {
+				Scripted t = new Scripted(c.getKey(), Step.body(inquiry));
+				EpsClient.EpsIndeterminateException e =
+						assertThrows(
+								EpsClient.EpsIndeterminateException.class,
+								() ->
+										fast(t).call(
+												"initiate-refund",
+												Map.of("initiator_id", "9962981729", "tid", "777", "otp", "1")));
+				assertNull(e.clientRefId);
+				assertEquals("777", e.tid);
+				assertEquals("4", ((Map<?, ?>) e.statusCheck.get("data")).get("tx_status"));
+				assertTrue(c.getValue().isInstance(e.getCause()), c.getValue().getName());
+				assertEquals("EPS request for \"initiate-refund\" on tid \"777\" has no confirmed outcome.", e.getMessage());
+				assertEquals(2, t.sent.size());
+				String uri = t.sent.get(1).request().uri().toString();
+				assertTrue(uri.contains("tid=777"), uri);
+				assertFalse(uri.contains("client_ref_id"), uri);
+			}
 		}
 
 		@Test
