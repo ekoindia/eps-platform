@@ -3,6 +3,16 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+	Debug,
+	type EpsDebugSink,
+	type MultipartDebug,
+	type Redact,
+	type Trace,
+	fileMeta,
+	resolveSink,
+} from "./debug.js";
+
 export interface SdkParam {
 	name: string;
 	type: string;
@@ -138,7 +148,7 @@ export const MULTIPART_JSON_FIELD = "form-data";
 const buildFormData = (
 	values: Record<string, unknown>,
 	fileParams: Set<string>,
-): FormData => {
+): { form: FormData; debug: MultipartDebug } => {
 	const form = new FormData();
 	const payload: Record<string, unknown> = {};
 	const uploads: Array<[string, Blob, string]> = [];
@@ -157,10 +167,15 @@ const buildFormData = (
 		}
 	}
 	// Envelope first, then the uploads — the order the API documents.
-	form.append(MULTIPART_JSON_FIELD, JSON.stringify(payload));
+	const fields = JSON.stringify(payload);
+	form.append(MULTIPART_JSON_FIELD, fields);
 	for (const [name, blob, filename] of uploads)
 		form.append(name, blob, filename);
-	return form;
+	// Debug metadata from values already in hand: never re-reads a file.
+	const files = uploads.map(([name, blob, filename]) =>
+		fileMeta(name, filename, blob.size),
+	);
+	return { form, debug: { fields, files } };
 };
 
 /**
@@ -297,9 +312,11 @@ const MAX_RETRY_DELAY_MS = 2_000;
 const INQUIRY_SLUG = "transaction-inquiry";
 
 interface Surface {
+	bundleVersion?: string;
 	environments: { id: string; baseUrl: string }[];
 	endpoints: SdkEndpoint[];
 	formats?: Record<string, string>;
+	redact?: Redact;
 }
 
 // The surface is read at runtime from the shipped `data/` asset (not bundled).
@@ -378,6 +395,13 @@ export interface EpsClientOptions {
 	 * the inquiry: the call still throws `EpsIndeterminateError` with the key. */
 	autoStatusCheck?: boolean;
 	now?: () => number;
+	/** Debug mode: log masked request / response / validation / retry events.
+	 * `true` writes JSON lines to stderr, a function receives each event object,
+	 * `false` forces it off. Unset: on when the env var `EPS_SDK_DEBUG` is `1` or
+	 * `true`. Credentials and personal data are masked best-effort; review the
+	 * output before sharing it with Eko support. See "Debug mode conformance" in
+	 * docs/sdk-golden-vector.md. */
+	debug?: boolean | EpsDebugSink;
 }
 
 /** secret-key = base64(HMAC-SHA256(timestamp, base64(access_key))). */
@@ -397,6 +421,7 @@ export class EpsClient {
 	private readonly retryBaseDelayMs: number;
 	private readonly autoStatusCheck: boolean;
 	private readonly now: () => number;
+	private readonly debug: Debug | null;
 
 	constructor(private readonly opts: EpsClientOptions) {
 		// Backend-only guard: access_key must never run in a browser.
@@ -429,6 +454,39 @@ export class EpsClient {
 		this.retryBaseDelayMs = baseDelay;
 		this.autoStatusCheck = opts.autoStatusCheck ?? true;
 		this.now = opts.now ?? Date.now;
+		if (
+			opts.debug !== undefined &&
+			typeof opts.debug !== "boolean" &&
+			typeof opts.debug !== "function"
+		)
+			throw new EpsError(
+				`Invalid debug: ${String(opts.debug)}. Expected a boolean or a function.`,
+			);
+		this.debug = this.startDebug(opts);
+	}
+
+	/** Debug mode per the option, else `EPS_SDK_DEBUG`; null when off or if
+	 * setting it up fails (debug must never break a client). */
+	private startDebug(opts: EpsClientOptions): Debug | null {
+		try {
+			const resolved = resolveSink(opts.debug, process.env["EPS_SDK_DEBUG"]);
+			if (!resolved) return null;
+			return new Debug({
+				...resolved,
+				here,
+				env: opts.environment,
+				baseUrl: this.baseUrl,
+				bundleVersion: SURFACE.bundleVersion,
+				redact: SURFACE.redact,
+				clientRef: FORMATS.get("client-ref"),
+				developerKey: opts.developerKey,
+				timeoutMs: this.timeoutMs,
+				retries: this.retries,
+				autoStatusCheck: this.autoStatusCheck,
+			});
+		} catch {
+			return null;
+		}
 	}
 
 	private endpoint(slug: string): SdkEndpoint {
@@ -452,6 +510,21 @@ export class EpsClient {
 		slug: string,
 		params: Record<string, unknown> = {},
 	): Promise<T> {
+		const trace = this.debug?.trace(slug);
+		try {
+			return (await this.run(slug, params, trace)) as T;
+		} catch (err) {
+			trace?.error(err);
+			throw err;
+		}
+	}
+
+	/** `call()` without the debug wrapper: validate, send, retry, inquire. */
+	private async run(
+		slug: string,
+		params: Record<string, unknown>,
+		trace: Trace | undefined,
+	): Promise<unknown> {
 		const { endpoint, merged, clientRefId, ...target } = this.resolve(
 			slug,
 			params,
@@ -459,11 +532,11 @@ export class EpsClient {
 		const attempts = isRetrySafe(endpoint) ? this.retries + 1 : 1;
 		for (let attempt = 1; ; attempt++) {
 			try {
-				return (await this.send(endpoint, target)) as T;
+				return await this.send(endpoint, target, attempt, trace);
 			} catch (err) {
 				if (!isIndeterminate(err)) throw err;
 				if (attempt < attempts) {
-					await this.backoff(attempt);
+					await this.backoff(attempt, trace);
 					continue;
 				}
 				// Never re-send an unsafe call: that is how a customer is debited twice.
@@ -488,12 +561,13 @@ export class EpsClient {
 	}
 
 	/** Attempt n sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter. */
-	private async backoff(attempt: number): Promise<void> {
+	private async backoff(attempt: number, trace?: Trace): Promise<void> {
 		const cap = Math.min(
 			this.retryBaseDelayMs * 2 ** (attempt - 1),
 			MAX_RETRY_DELAY_MS,
 		);
 		const delay = Math.floor(Math.random() * (cap + 1));
+		trace?.retry(attempt, delay);
 		if (delay > 0) await new Promise((r) => setTimeout(r, delay));
 	}
 
@@ -627,23 +701,41 @@ export class EpsClient {
 		}
 		let url = `${this.baseUrl}${path}`;
 		let body: RequestInit["body"];
+		let multipartDebug: MultipartDebug | undefined;
 		if (endpoint.method === "GET") {
 			const query = new URLSearchParams(
 				Object.entries(rest).map(([k, v]) => [k, String(v)]),
 			).toString();
 			if (query) url += (url.includes("?") ? "&" : "?") + query;
 		} else if (multipart) {
-			body = buildFormData(rest, fileParams);
+			const built = buildFormData(rest, fileParams);
+			body = built.form;
+			multipartDebug = built.debug;
 		} else {
 			body = JSON.stringify(rest);
 		}
-		return { endpoint, merged, clientRefId, url, body, multipart };
+		return {
+			endpoint,
+			merged,
+			clientRefId,
+			url,
+			body,
+			multipart,
+			multipartDebug,
+		};
 	}
 
 	/** Sign (fresh timestamp) and send one attempt; decode per the contract. */
 	private async send(
 		endpoint: SdkEndpoint,
-		target: { url: string; body: RequestInit["body"]; multipart: boolean },
+		target: {
+			url: string;
+			body: RequestInit["body"];
+			multipart: boolean;
+			multipartDebug?: MultipartDebug;
+		},
+		attempt = 1,
+		trace?: Trace,
 	): Promise<unknown> {
 		const { url, body, multipart } = target;
 		const timestamp = String(this.now());
@@ -661,8 +753,29 @@ export class EpsClient {
 			signal: AbortSignal.timeout(this.timeoutMs),
 		};
 		if (body !== undefined) init.body = body;
-		const res = await this.fetchFn(url, init);
-		const raw = await res.text();
+		trace?.request(attempt, {
+			method: endpoint.method,
+			url,
+			template: endpoint.path,
+			headers,
+			body,
+			multipart: target.multipartDebug,
+		});
+		let res: Response;
+		try {
+			res = await this.fetchFn(url, init);
+		} catch (err) {
+			trace?.transportError(attempt, err);
+			throw err;
+		}
+		let raw: string;
+		try {
+			raw = await res.text();
+		} catch (err) {
+			trace?.transportError(attempt, err, res.status);
+			throw err;
+		}
+		trace?.response(attempt, res.status, raw);
 		const envelope = decodeJsonOrNull(raw);
 		// A non-2xx envelope is an error, not a result — see docs/sdk-golden-vector.md.
 		if (!res.ok) throw new EpsHttpError(res.status, url, envelope, raw);

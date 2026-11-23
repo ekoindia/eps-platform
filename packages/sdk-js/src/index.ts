@@ -9,3 +9,4 @@ export {
 	signSecretKey,
 } from "./client.js";
 export type { EpsClientOptions, SdkEndpoint, SdkParam } from "./client.js";
+export type { EpsDebugEvent, EpsDebugSink } from "./debug.js";
